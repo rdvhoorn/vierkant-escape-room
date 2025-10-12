@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 
-enum Phase {
-  Prologue = "Prologue",
-  FuelFix = "FuelFix",
-  Epilogue = "Epilogue",
-}
+const Phase = {
+  Prologue: "Prologue",
+  FuelFix: "FuelFix",
+  Epilogue: "Epilogue",
+} as const;
+type Phase = typeof Phase[keyof typeof Phase];
 
 export default class IntroScene extends Phaser.Scene {
   private phase: Phase = Phase.Prologue;
@@ -227,7 +228,7 @@ export default class IntroScene extends Phaser.Scene {
 
   private goToPlanet() {
     this.cameras.main.fadeOut(250, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("PlanetScene");
+      if (p === 1) this.scene.start("FaceTopScene");
     });
   }
 
