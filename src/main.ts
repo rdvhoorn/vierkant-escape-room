@@ -23,7 +23,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [FaceBottomScene, FaceTopScene, BootScene, PreloadScene, TitleScene, IntroScene],
+  scene: [BootScene, PreloadScene, TitleScene, IntroScene, FaceBottomScene, FaceTopScene],
 };
 
 new Phaser.Game(config);

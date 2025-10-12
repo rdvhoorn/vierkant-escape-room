@@ -11,6 +11,9 @@ const RAD = Math.PI / 180;
 const DIHEDRAL = 116.565051 * RAD;
 
 export default abstract class FaceBase extends Phaser.Scene {
+  protected world!: Phaser.GameObjects.Container;
+  private worldBounds!: Phaser.Geom.Rectangle;
+
   protected player!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
@@ -24,6 +27,24 @@ export default abstract class FaceBase extends Phaser.Scene {
   // drawing caches
   private gMain!: Phaser.GameObjects.Graphics;      // central face
   private gNeighbors!: Phaser.GameObjects.Graphics; // neighbors ring (behind)
+
+  protected createWorldLayer() {
+    if (this.world) this.world.destroy();
+    this.world = this.add.container(0, 0);
+  }
+
+  protected setCameraToPlayerBounds() {
+    // Give camera a box to roam: the worldBounds with a small margin
+    const pad = 80;
+    const b = new Phaser.Geom.Rectangle(
+      this.worldBounds.x - pad,
+      this.worldBounds.y - pad,
+      this.worldBounds.width + pad * 2,
+      this.worldBounds.height + pad * 2
+    );
+    this.cameras.main.setBounds(b.x, b.y, b.width, b.height);
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12); // smooth follow
+  }
 
   // ------------ Player / Controls / Movement ------------
   protected createPlayerAt(x: number, y: number) {
@@ -215,17 +236,17 @@ export default abstract class FaceBase extends Phaser.Scene {
     const mainFill = center.fill ?? 0x15284b;
     const defaultNeighFill = center.neighborFill ?? 0x0f1d38;
   
-    // fresh polygon at z=0
+    // fresh polygon at z=0 (WORLD coordinates!)
     const poly2D = this.regularPentagon(cx, cy, radius);
     this.poly = poly2D;
   
-    // ALWAYS recreate graphics to avoid dangling destroyed refs after scene.start()
-    if (this.gNeighbors) this.gNeighbors.destroy();
-    if (this.gMain) this.gMain.destroy();
+    // (Re)create world layer and graphics inside it
+    this.createWorldLayer();
     this.gNeighbors = this.add.graphics();
     this.gMain = this.add.graphics();
+    this.world.add([this.gNeighbors, this.gMain]);
   
-    // neighbors
+    // neighbors (projected into WORLD coords since we use absolute numbers)
     const neighbors = this.buildNeighborsProjected(poly2D);
     for (let i = 0; i < neighbors.length; i++) {
       const n = neighbors[i];
@@ -237,8 +258,38 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
     this.gNeighbors.setAlpha(0.88);
   
-    // central face
+    // central face last
     this.drawPolygon(this.gMain, poly2D, mainFill, 1, 0x66a3ff);
+  
+    // compute world bounds from central + neighbors
+    const allPolys = [poly2D, ...neighbors];
+    const rects = allPolys.map(p => this.getPolyBounds(p));
+    this.worldBounds = this.unionRects(rects);
+  }
+
+  private getPolyBounds(poly: Phaser.Geom.Polygon): Phaser.Geom.Rectangle {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of poly.points) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    return new Phaser.Geom.Rectangle(minX, minY, maxX - minX, maxY - minY);
+  }
+  
+  // Union of many rectangles → one tight bounding box
+  private unionRects(rects: Phaser.Geom.Rectangle[]): Phaser.Geom.Rectangle {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const r of rects) {
+      if (r.x < minX) minX = r.x;
+      if (r.y < minY) minY = r.y;
+      const rx2 = r.x + r.width;
+      const ry2 = r.y + r.height;
+      if (rx2 > maxX) maxX = rx2;
+      if (ry2 > maxY) maxY = ry2;
+    }
+    return new Phaser.Geom.Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
 
 }

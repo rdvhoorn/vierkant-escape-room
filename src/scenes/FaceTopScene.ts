@@ -13,52 +13,61 @@ export default class FaceTopScene extends FaceBase {
   create() {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor("#0b1020");
-
-    // stars
+  
+    // stars (optional: add to world after render if you want them to scroll)
     const stars = this.add.graphics();
     for (let i = 0; i < 200; i++) {
       stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.15, 0.8));
       stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
     }
-
-    // ---- Define neighbor scene keys per edge (0..4) ----
-    // For now we only have two real scenes; use FaceBottomScene on edge 2, and mirror FaceTopScene for others.
+  
+    // Neighbor mapping for this face
     const neighborsByEdge: (string | null)[] = [
       "FaceTopScene",      // edge 0 (placeholder)
       "FaceTopScene",      // edge 1 (placeholder)
-      "FaceBottomScene",   // edge 2 (the one we travel to)
+      "FaceBottomScene",   // edge 2 (travel down)
       "FaceTopScene",      // edge 3 (placeholder)
       "FaceTopScene",      // edge 4 (placeholder)
     ];
-
-    // Assign a color per scene key
     const colorMap: Record<string, number> = {
       FaceTopScene: 0x311111,
       FaceBottomScene: 0x133333,
     };
-
-    // Build neighbor styles array using the color map
     const neighborStyles = neighborsByEdge.map((key) =>
-      key
-        ? { fill: colorMap[key], stroke: 0x4b7ad1, alpha: 0.95 }
-        : undefined
+      key ? { fill: colorMap[key], stroke: 0x4b7ad1, alpha: 0.95 } : undefined
     );
-
-    // Render with per-edge colors
+  
+    // Render face + neighbors in WORLD coords
     this.renderFaceAndNeighbors({
       cx: width / 2,
       cy: height / 2,
       radius: 180,
-      fill: 0x15284b,            // main face color
-      neighborFill: 0x0f1d38,    // default if any neighbor undefined
+      fill: 0x15284b,
+      neighborFill: 0x0f1d38,
       neighborStyles,
     });
-
-    // For our orientation, "bottom" edge is index 2 (between points 2-3)
+  
+    // If you want stars to scroll with camera:
+    // this.world.add(stars);
+  
+    // Portal edge (downwards): index 2
     this.bottomEdge = this.edges[2];
-
-    // player & controls
-    this.createPlayerAt(width / 2, height / 2 - 20);
+  
+    // ---- Valid spawn position (use provided spawnX/spawnY if any; else center) ----
+    let spawnX = (this.data.get("spawnX") as number) ?? width / 2;
+    let spawnY = (this.data.get("spawnY") as number) ?? (height / 2 - 20);
+  
+    const tryPos = new Phaser.Geom.Point(spawnX, spawnY);
+    if (!Phaser.Geom.Polygon.ContainsPoint(this.poly, tryPos)) {
+      const c = this.getPolygonCenter(this.poly);
+      spawnX = c.x; spawnY = c.y - 20;
+    }
+  
+    // Player + camera follow/bounds
+    this.createPlayerAt(spawnX, spawnY);
+    this.setCameraToPlayerBounds();
+  
+    // Input
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = {
       W: this.input.keyboard!.addKey("W"),
@@ -67,10 +76,10 @@ export default class FaceTopScene extends FaceBase {
       D: this.input.keyboard!.addKey("D"),
     };
     this.setupControls();
-
-    // ESC for iteration
+  
+    // ESC back to Title
     this.input.keyboard?.on("keydown-ESC", () => this.scene.start("TitleScene"));
-
+  
     // E to move down through the shared edge
     this.input.keyboard?.on("keydown-E", () => {
       if (this.isNearEdge(this.player, this.bottomEdge)) {
@@ -79,6 +88,7 @@ export default class FaceTopScene extends FaceBase {
       }
     });
   }
+
 
   update() {
     this.updateMovement(this.cursors, this.wasd);
