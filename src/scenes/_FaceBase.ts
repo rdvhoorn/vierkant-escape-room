@@ -14,7 +14,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected world!: Phaser.GameObjects.Container;
   private worldBounds!: Phaser.Geom.Rectangle;
 
-  protected player!: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+  protected player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
   protected portalHint!: Phaser.GameObjects.Text;
@@ -55,10 +55,15 @@ export default abstract class FaceBase extends Phaser.Scene {
       g.destroy();
     }
 
-    this.player = this.physics.add.image(x, y, "playerBox").setOrigin(0.5).setCollideWorldBounds(false);
+    // BEFORE: this.physics.add.image(...)
+    this.player = this.physics.add.sprite(x, y, "playerBox")
+      .setOrigin(0.5)
+      .setCollideWorldBounds(false);
+
     this.player.setDrag(800, 800).setMaxVelocity(240, 240);
     this.lastSafePos.set(x, y);
   }
+
 
   protected setupControls() {
     this.add
