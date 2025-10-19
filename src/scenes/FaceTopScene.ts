@@ -17,7 +17,7 @@ export default class FaceTopScene extends FaceBase {
     ui: null as Phaser.GameObjects.Container | null,
   };
 
-  private bottomEdge!: Edge;
+  // private bottomEdge!: Edge;
 
   private shipZone!: Phaser.GameObjects.Zone;                   // proximity window
   private shipHighlight!: Phaser.GameObjects.Graphics;          // visual highlight around ship
@@ -75,21 +75,21 @@ export default class FaceTopScene extends FaceBase {
     this.createPlayerAt(spawnX, spawnY);
 
     // ---- Define the actionable portal edge (index 2 = bottom)
-    this.bottomEdge = this.edges[2];
-    this.registerEdgeAction(
-      this.bottomEdge,
-      () => {
-        const mid = this.midpoint(this.bottomEdge);
-        this.scene.start("FaceBottomScene", { spawnFromTop: true, spawnX: mid.x, spawnY: mid.y });
-      },
-      { hintText: "Edge access: press E to descend", key: "E" }
-    );
+    // this.bottomEdge = this.edges[2];
+    // this.registerEdgeAction(
+    //   this.bottomEdge,
+    //   () => {
+    //     const mid = this.midpoint(this.bottomEdge);
+    //     this.scene.start("FaceBottomScene", { spawnFromTop: true, spawnX: mid.x, spawnY: mid.y });
+    //   },
+    //   { hintText: "Edge access: press E to descend", key: "E" }
+    // );
 
     // ---- Crash site dressing (face-specific art)
     const center = this.getPolygonCenter(this.poly);
-    const edgeMid = this.midpoint(this.bottomEdge);
-    const dir = new Phaser.Math.Vector2(center.x - edgeMid.x, center.y - edgeMid.y).normalize();
-    const shipPos = new Phaser.Math.Vector2(edgeMid.x, edgeMid.y - 50).add(dir.scale(40));
+    // const edgeMid = this.midpoint(this.bottomEdge);
+    // const dir = new Phaser.Math.Vector2(center.x - edgeMid.x, center.y - edgeMid.y).normalize();
+    const shipPos = new Phaser.Math.Vector2(center.x, center.y + 50);
 
     const ship = this.add.image(shipPos.x, shipPos.y, "ship").setOrigin(0.5, 0.6).setDisplaySize(48, 48).setDepth(50);
     ship.setAngle(-18);
