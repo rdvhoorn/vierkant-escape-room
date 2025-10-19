@@ -10,15 +10,36 @@ const RAD = Math.PI / 180;
 // Regular dodecahedron dihedral angle ~= 116.565051°
 const DIHEDRAL = 116.565051 * RAD;
 
+type EdgeAction = {
+  edge: Edge;
+  hintText?: string;
+  key?: string;               // default "E"
+  onUse: () => void;
+};
+
 export default abstract class FaceBase extends Phaser.Scene {
   protected world!: Phaser.GameObjects.Container;
   private worldBounds!: Phaser.Geom.Rectangle;
 
+  // Player & controls (now fully owned by FaceBase)
   protected player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  private lastSafePos = new Phaser.Math.Vector2();
+  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
+
+  // Player animations: defaults (no per-face config needed)
+  // If these frames don't exist in your atlas, we'll gracefully fall back to a simple box texture.
+  private readonly IDLE_FRAMES = ["player_normal_4", "player_normal_5"];
+  private readonly MOVE_FRAMES = ["player_normal_1", "player_normal_2", "player_normal_3", "player_normal_4", "player_normal_5"];
+
+  // Gameplay geometry
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
+
+  // Portal hint & edge actions
   protected portalHint!: Phaser.GameObjects.Text;
-  private lastSafePos = new Phaser.Math.Vector2();
+  private edgeActions: EdgeAction[] = [];
+  private edgeKey?: Phaser.Input.Keyboard.Key;
 
   // ---- CAMERA for pseudo-3D preview ----
   private camZ = 1800;  // camera position on +Z
@@ -28,13 +49,16 @@ export default abstract class FaceBase extends Phaser.Scene {
   private gMain!: Phaser.GameObjects.Graphics;      // central face
   private gNeighbors!: Phaser.GameObjects.Graphics; // neighbors ring (behind)
 
+  // ---------------------------
+  // Scene lifecycle helpers
+  // ---------------------------
   protected createWorldLayer() {
     if (this.world) this.world.destroy();
     this.world = this.add.container(0, 0);
   }
 
   protected setCameraToPlayerBounds() {
-    // Give camera a box to roam: the worldBounds with a small margin
+    if (!this.worldBounds || !this.player) return;
     const pad = 80;
     const b = new Phaser.Geom.Rectangle(
       this.worldBounds.x - pad,
@@ -46,8 +70,15 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12); // smooth follow
   }
 
-  // ------------ Player / Controls / Movement ------------
+  // ---------------------------
+  // Player: creation & controls (all generic)
+  // ---------------------------
+  /**
+   * Call this AFTER you've called renderFaceAndNeighbors() so worldBounds is known.
+   * If the requested spawn is outside the polygon, we tuck the player to a safe center spot.
+   */
   protected createPlayerAt(x: number, y: number) {
+    // Ensure a fallback texture exists in case your intended frames aren't loaded.
     if (!this.textures.exists("playerBox")) {
       const g = this.add.graphics();
       g.fillStyle(0x78e3ff, 1).fillRect(0, 0, 24, 24).lineStyle(2, 0x134a84).strokeRect(0, 0, 24, 24);
@@ -55,17 +86,78 @@ export default abstract class FaceBase extends Phaser.Scene {
       g.destroy();
     }
 
-    // BEFORE: this.physics.add.image(...)
-    this.player = this.physics.add.sprite(x, y, "playerBox")
-      .setOrigin(0.5)
+    // Clamp to inside polygon if needed
+    const tryPt = new Phaser.Geom.Point(x, y);
+    if (!Phaser.Geom.Polygon.ContainsPoint(this.poly, tryPt)) {
+      const c = this.getPolygonCenter(this.poly);
+      x = c.x; y = c.y - 20;
+    }
+
+    // Create sprite
+    const startTexture = this.textures.exists(this.IDLE_FRAMES[0]) ? this.IDLE_FRAMES[0] : "playerBox";
+    this.player = this.physics.add.sprite(x, y, startTexture)
+      .setOrigin(0.5, 0.8)
+      .setDisplaySize(24, 24)
+      .setDepth(35)
       .setCollideWorldBounds(false);
 
     this.player.setDrag(800, 800).setMaxVelocity(240, 240);
     this.lastSafePos.set(x, y);
+
+    // Input setup (stored internally)
+    this.cursors = this.input.keyboard!.createCursorKeys();
+    this.wasd = {
+      W: this.input.keyboard!.addKey("W"),
+      A: this.input.keyboard!.addKey("A"),
+      S: this.input.keyboard!.addKey("S"),
+      D: this.input.keyboard!.addKey("D"),
+    };
+
+    this.setupControlsUI();
+    this.ensurePlayerAnimations();
+    if (this.hasAnim("player-idle")) {
+      (this.player as Phaser.Physics.Arcade.Sprite).play("player-idle");
+    }
+
+    // Soft shadow under player (generic)
+    this.addSoftShadowBelow(this.player as unknown as Phaser.GameObjects.Sprite, 8, 0x000000, 0.25);
+
+    // Follow cam now that both worldBounds & player exist
+    this.setCameraToPlayerBounds();
+
+    // Per-frame behavior: movement, orientation, animation switching, edge hints/usage
+    this.events.on("update", this.basePerFrameUpdate, this);
   }
 
+  private hasAnim(key: string): boolean {
+    return !!this.anims.exists(key);
+  }
 
-  protected setupControls() {
+  private ensurePlayerAnimations() {
+    // Only create if the frames exist; otherwise the fallback "playerBox" doesn't need anims.
+    const framesExist = this.IDLE_FRAMES.every(k => this.textures.exists(k)) && this.MOVE_FRAMES.every(k => this.textures.exists(k));
+
+    if (framesExist && !this.anims.exists("player-idle")) {
+      this.anims.create({
+        key: "player-idle",
+        frames: this.IDLE_FRAMES.map(key => ({ key })),
+        frameRate: 3,
+        repeat: -1,
+        yoyo: true,
+      });
+    }
+    if (framesExist && !this.anims.exists("player-move")) {
+      this.anims.create({
+        key: "player-move",
+        frames: this.MOVE_FRAMES.map(key => ({ key })),
+        frameRate: 10,
+        repeat: -1,
+        yoyo: false,
+      });
+    }
+  }
+
+  private setupControlsUI() {
     this.add
       .text(
         this.scale.width - 12,
@@ -82,18 +174,60 @@ export default abstract class FaceBase extends Phaser.Scene {
       .setScrollFactor(0)
       .setOrigin(0.5)
       .setAlpha(0);
+
+    // ESC: go back to Title (generic)
+    this.input.keyboard?.on("keydown-ESC", () => this.scene.start("TitleScene"));
   }
 
-  protected updateMovement(
-    cursors: Phaser.Types.Input.Keyboard.CursorKeys,
-    wasd: Record<string, Phaser.Input.Keyboard.Key>
-  ) {
+  private basePerFrameUpdate() {
+    // 1) Movement
+    this.updateMovement();
+
+    // 2) Orientation & animation switching
+    const spr = this.player as Phaser.Physics.Arcade.Sprite;
+    const left  = !!(this.cursors.left?.isDown || this.wasd.A.isDown);
+    const right = !!(this.cursors.right?.isDown || this.wasd.D.isDown);
+    const up    = !!(this.cursors.up?.isDown || this.wasd.W.isDown);
+    const down  = !!(this.cursors.down?.isDown || this.wasd.S.isDown);
+
+    spr.setFlipX(left && !right);
+
+    // tilt
+    const ANGLE_LEFT = -10;
+    const ANGLE_RIGHT = 10;
+    if (left || up) spr.setAngle(ANGLE_LEFT);
+    else if (right || down) spr.setAngle(ANGLE_RIGHT);
+    else spr.setAngle(0);
+
+    // speed-based animation gating
+    const MOVE_SPEED_THRESHOLD = 20;
+    const body = spr.body as Phaser.Physics.Arcade.Body;
+    const speed = body.velocity.length();
+
+    const want = speed > MOVE_SPEED_THRESHOLD ? "player-move" : "player-idle";
+    if (this.hasAnim(want) && spr.anims.currentAnim?.key !== want) spr.play(want);
+
+    // scale anim speed with velocity
+    const t = Phaser.Math.Clamp(speed / 120, 0.6, 1.6);
+    spr.anims.timeScale = t;
+
+    // 3) Edge hint + E-to-use
+    const active = this.edgeActions.find(a => this.isNearEdge(this.player, a.edge));
+    if (active) {
+      const hint = active.hintText ?? "Edge access: press E";
+      this.portalHint.setText(hint).setAlpha(1);
+    } else {
+      this.portalHint.setAlpha(0);
+    }
+  }
+
+  private updateMovement() {
     const accel = 900;
     let ax = 0, ay = 0;
-    if (cursors.left?.isDown || wasd["A"].isDown) ax = -accel;
-    else if (cursors.right?.isDown || wasd["D"].isDown) ax = accel;
-    if (cursors.up?.isDown || wasd["W"].isDown) ay = -accel;
-    else if (cursors.down?.isDown || wasd["S"].isDown) ay = accel;
+    if (this.cursors.left?.isDown || this.wasd["A"].isDown) ax = -accel;
+    else if (this.cursors.right?.isDown || this.wasd["D"].isDown) ax = accel;
+    if (this.cursors.up?.isDown || this.wasd["W"].isDown) ay = -accel;
+    else if (this.cursors.down?.isDown || this.wasd["S"].isDown) ay = accel;
 
     this.player.setAcceleration(ax, ay);
     if (ax === 0 && ay === 0) this.player.setAcceleration(0, 0);
@@ -109,6 +243,29 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
   }
 
+  // Public helper to register an actionable edge (e.g., “descend”/“ascend”).
+  protected registerEdgeAction(edge: Edge, onUse: () => void, options?: { hintText?: string; key?: string }) {
+    this.edgeActions.push({
+      edge,
+      onUse,
+      hintText: options?.hintText,
+      key: (options?.key ?? "E").toUpperCase(),
+    });
+
+    // Bind key once (first registration wins)
+    const useKey = (options?.key ?? "E").toUpperCase();
+    if (!this.edgeKey) {
+      this.edgeKey = this.input.keyboard?.addKey(useKey);
+      this.input.keyboard?.on(`keydown-${useKey}`, () => {
+        const active = this.edgeActions.find(a => this.isNearEdge(this.player, a.edge));
+        if (active) active.onUse();
+      });
+    }
+  }
+
+  // ---------------------------
+  // Geometry & proximity helpers
+  // ---------------------------
   protected distanceToEdge(p: V2, e: Edge): number {
     const { a, b } = e;
     const ab = b.clone().subtract(a);
@@ -118,7 +275,17 @@ export default abstract class FaceBase extends Phaser.Scene {
     return Phaser.Math.Distance.Between(p.x, p.y, closest.x, closest.y);
   }
 
-  // ------------ Geometry helpers ------------
+  protected isNearEdge(player: Phaser.GameObjects.Image, e: Edge): boolean {
+    const p = new Phaser.Math.Vector2(player.x, player.y);
+    return this.distanceToEdge(p, e) < 16;
+  }
+
+  protected getPolygonCenter(poly: Phaser.Geom.Polygon): V2 {
+    let sx = 0, sy = 0;
+    for (const p of poly.points) { sx += p.x; sy += p.y; }
+    return new Phaser.Math.Vector2(sx / poly.points.length, sy / poly.points.length);
+  }
+
   protected regularPentagon(cx: number, cy: number, radius: number): Phaser.Geom.Polygon {
     const pts: V2[] = [];
     for (let i = 0; i < 5; i++) {
@@ -134,12 +301,6 @@ export default abstract class FaceBase extends Phaser.Scene {
       this.edges.push({ a, b });
     }
     return poly;
-  }
-
-  protected getPolygonCenter(poly: Phaser.Geom.Polygon): V2 {
-    let sx = 0, sy = 0;
-    for (const p of poly.points) { sx += p.x; sy += p.y; }
-    return new Phaser.Math.Vector2(sx / poly.points.length, sy / poly.points.length);
   }
 
   protected drawPolygon(
@@ -161,7 +322,9 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
   }
 
-  // ------------ 3D core (for previews) ------------
+  // ---------------------------
+  // 3D preview core (unchanged)
+  // ---------------------------
   private v2to3(p: V2): V3 {
     return new Phaser.Math.Vector3(p.x, p.y, 0);
   }
@@ -170,7 +333,6 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   private rotateAroundAxis(point: V3, axisPoint: V3, axisDirUnit: V3, angleRad: number): V3 {
-    // Rodrigues rotation around axis through axisPoint in direction axisDirUnit
     const v = point.clone().subtract(axisPoint);
     const u = axisDirUnit;
     const cos = Math.cos(angleRad), sin = Math.sin(angleRad);
@@ -181,9 +343,8 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   private project(v: V3): V2 {
-    // Perspective projection onto z=0 plane from camera at (0,0,camZ)
     const denom = (this.camZ - v.z);
-    const k = this.camZ / denom; // camZ/(camZ - z)
+    const k = this.camZ / denom;
     return new Phaser.Math.Vector2(v.x * k, v.y * k);
   }
 
@@ -198,10 +359,6 @@ export default abstract class FaceBase extends Phaser.Scene {
     return { p0, dirUnit: dir.normalize() };
   }
 
-  /**
-   * Build neighbor faces by rotating a clone of the central face around each edge by the dodecahedron dihedral angle.
-   * Returns projected 2D polygons for drawing. The central face stays at z=0; neighbors tilt away (negative z).
-   */
   protected buildNeighborsProjected(centerPoly: Phaser.Geom.Polygon): Phaser.Geom.Polygon[] {
     const base3 = this.polygonToV3(centerPoly); // z=0
     const neighbors: Phaser.Geom.Polygon[] = [];
@@ -209,29 +366,13 @@ export default abstract class FaceBase extends Phaser.Scene {
     for (let i = 0; i < 5; i++) {
       const edge = this.edges[i];
       const { p0, dirUnit } = this.edgeAxis3D(edge);
-
-      // rotate whole face around this edge by 'tilt' radians
       const rotated = base3.map((v) => this.rotateAroundAxis(v, p0, dirUnit, this.tilt));
-
-      // Project to screen
       const projected = rotated.map((v3) => this.project(v3));
       neighbors.push(new Phaser.Geom.Polygon(projected.flatMap((p) => [p.x, p.y])));
     }
     return neighbors;
   }
 
-  /**
-   * Render current face + 5 neighbors. Neighbors drawn first (behind), then central on top.
-   * Keeps this.poly equal to the (unprojected) central 2D polygon for collision & movement (still z=0).
-   *
-   * neighborStyles: array of 5 styles (edge indices 0..4). If omitted, defaults used.
-   * Edge ordering for our regularPentagon() orientation:
-   *   edge 0: between vertex 0→1 (upper-right)
-   *   edge 1: between vertex 1→2 (right-lower)
-   *   edge 2: between vertex 2→3 (bottom)          ⟵ often your “descend” edge
-   *   edge 3: between vertex 3→4 (left-lower)
-   *   edge 4: between vertex 4→0 (upper-left)      ⟵ often your “ascend” edge
-   */
   protected renderFaceAndNeighbors(center: {
     cx: number; cy: number; radius: number;
     fill?: number; neighborFill?: number;
@@ -240,17 +381,17 @@ export default abstract class FaceBase extends Phaser.Scene {
     const { cx, cy, radius } = center;
     const mainFill = center.fill ?? 0x15284b;
     const defaultNeighFill = center.neighborFill ?? 0x0f1d38;
-  
+
     // fresh polygon at z=0 (WORLD coordinates!)
     const poly2D = this.regularPentagon(cx, cy, radius);
     this.poly = poly2D;
-  
+
     // (Re)create world layer and graphics inside it
     this.createWorldLayer();
     this.gNeighbors = this.add.graphics();
     this.gMain = this.add.graphics();
     this.world.add([this.gNeighbors, this.gMain]);
-  
+
     // neighbors (projected into WORLD coords since we use absolute numbers)
     const neighbors = this.buildNeighborsProjected(poly2D);
     for (let i = 0; i < neighbors.length; i++) {
@@ -262,10 +403,10 @@ export default abstract class FaceBase extends Phaser.Scene {
       this.drawPolygon(this.gNeighbors, n, f, a, s);
     }
     this.gNeighbors.setAlpha(0.88);
-  
+
     // central face last
     this.drawPolygon(this.gMain, poly2D, mainFill, 1, 0x66a3ff);
-  
+
     // compute world bounds from central + neighbors
     const allPolys = [poly2D, ...neighbors];
     const rects = allPolys.map(p => this.getPolyBounds(p));
@@ -282,8 +423,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
     return new Phaser.Geom.Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
-  
-  // Union of many rectangles → one tight bounding box
+
   private unionRects(rects: Phaser.Geom.Rectangle[]): Phaser.Geom.Rectangle {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const r of rects) {
@@ -297,4 +437,28 @@ export default abstract class FaceBase extends Phaser.Scene {
     return new Phaser.Geom.Rectangle(minX, minY, maxX - minX, maxY - minY);
   }
 
+  // ---------------------------
+  // Visual util moved to base (no layer coupling)
+  // ---------------------------
+  protected addSoftShadowBelow(
+    obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
+    radius: number,
+    color: number,
+    alpha: number
+  ) {
+    const g = this.add.graphics();
+    const b = 1; // blur-ish by layering circles
+    for (let i = 0; i < 4; i++) {
+      g.fillStyle(color, alpha * (0.5 / (i + 1)));
+      g.fillEllipse(0, 0, (radius + i * b) * 2, (radius * 0.6 + i * b) * 2);
+    }
+    g.setPosition(obj.x, obj.y + (obj.displayHeight ?? 0) * 0.35);
+    g.setDepth((obj.depth ?? 0) - 1);
+
+    // Keep shadow following the object
+    this.events.on("update", () => {
+      g.setPosition(obj.x, obj.y + (obj.displayHeight ?? 0) * 0.35);
+      g.setDepth((obj.depth ?? 0) - 1);
+    });
+  }
 }

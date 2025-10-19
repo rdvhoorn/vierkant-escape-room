@@ -7,11 +7,7 @@ export default class FaceTopScene extends FaceBase {
     super("FaceTopScene");
   }
 
-  private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
-  private bottomEdge!: Edge;
-
-  // Layers for tidy depth management
+  // Layers (optional; purely visual organization for this face)
   private layer = {
     bg: null as Phaser.GameObjects.Container | null,
     ground: null as Phaser.GameObjects.Container | null,
@@ -21,13 +17,17 @@ export default class FaceTopScene extends FaceBase {
     ui: null as Phaser.GameObjects.Container | null,
   };
 
+  private bottomEdge!: Edge;
+
+  private shipZone!: Phaser.GameObjects.Zone;                   // proximity window
+  private shipHighlight!: Phaser.GameObjects.Graphics;          // visual highlight around ship
+  private interactKey!: Phaser.Input.Keyboard.Key;              // E key
+  private hudHint!: Phaser.GameObjects.Container;               // top-of-screen hint
+  private inShipRange = false;                                  // current proximity state
+
   create() {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor("#0b1020");
-
-    // --- choose which frames to use when standing still ---
-    const IDLE_FRAMES = ["player_normal_4", "player_normal_5"]; // <- customize
-    const MOVE_FRAMES = ["player_normal_1", "player_normal_2", "player_normal_3", "player_normal_4", "player_normal_5"];
 
     // ---- Scene layers
     this.layer.bg = this.add.container(0, 0).setDepth(0);
@@ -45,7 +45,7 @@ export default class FaceTopScene extends FaceBase {
     }
     this.layer.bg.add(stars);
 
-    // ---- Neighbor mapping
+    // ---- Neighbor mapping (face-specific logic)
     const neighborsByEdge: (string | null)[] = [
       "FaceTopScene","FaceTopScene","FaceBottomScene","FaceTopScene","FaceTopScene",
     ];
@@ -65,161 +65,108 @@ export default class FaceTopScene extends FaceBase {
       neighborStyles,
     });
 
-    // Ground
+    // ---- Ground art for this face
     this.addGrassyGroundTexture(width / 2, height / 2, radius);
 
-    // Portal edge (downwards): index 2
-    this.bottomEdge = this.edges[2];
-
-    // ---- Valid spawn position
-    let spawnX = (this.data.get("spawnX") as number) ?? width / 2;
-    let spawnY = (this.data.get("spawnY") as number) ?? (height / 2 - 20);
-    const tryPos = new Phaser.Geom.Point(spawnX, spawnY);
-    if (!Phaser.Geom.Polygon.ContainsPoint(this.poly, tryPos)) {
-      const c = this.getPolygonCenter(this.poly);
-      spawnX = c.x; spawnY = c.y - 20;
-    }
-
-    // ---- Player (Arcade SPRITE; FaceBase now uses sprite)
+    // ---- Player (now completely generic & owned by FaceBase)
+    // If you stored spawnX/Y via scene data, FaceBase will clamp to polygon if needed.
+    const spawnX = (this.data.get("spawnX") as number) ?? width / 2;
+    const spawnY = (this.data.get("spawnY") as number) ?? (height / 2 - 20);
     this.createPlayerAt(spawnX, spawnY);
-    this.player
-      .setTexture(IDLE_FRAMES[0]) // start on first idle frame
-      .setDisplaySize(24, 24)
-      .setOrigin(0.5, 0.8)
-      .setDepth(35);
 
-    this.setCameraToPlayerBounds();
-
-    // Shadow under player
-    this.addSoftShadowBelow(this.player as unknown as Phaser.GameObjects.Sprite, 8, 0x000000, 0.25);
-
-    // ---- Inputs
-    this.cursors = this.input.keyboard!.createCursorKeys();
-    this.wasd = {
-      W: this.input.keyboard!.addKey("W"),
-      A: this.input.keyboard!.addKey("A"),
-      S: this.input.keyboard!.addKey("S"),
-      D: this.input.keyboard!.addKey("D"),
-    };
-    this.setupControls();
-
-    // ---- Animations
-    if (!this.anims.exists("player-idle")) {
-      this.anims.create({
-        key: "player-idle",
-        frames: IDLE_FRAMES.map(key => ({ key })),
-        frameRate: 3,          // gentle breathing
-        repeat: -1,
-        yoyo: true,
-      });
-    }
-    if (!this.anims.exists("player-move")) {
-      this.anims.create({
-        key: "player-move",
-        frames: MOVE_FRAMES.map(key => ({ key })),
-        frameRate: 10,         // quicker while moving
-        repeat: -1,
-        yoyo: false,
-      });
-    }
-
-    // ---- ESC back to Title
-    this.input.keyboard?.on("keydown-ESC", () => this.scene.start("TitleScene"));
-
-    // ---- E to move down through the shared edge
-    this.input.keyboard?.on("keydown-E", () => {
-      if (this.isNearEdge(this.player as unknown as Phaser.GameObjects.Image, this.bottomEdge)) {
+    // ---- Define the actionable portal edge (index 2 = bottom)
+    this.bottomEdge = this.edges[2];
+    this.registerEdgeAction(
+      this.bottomEdge,
+      () => {
         const mid = this.midpoint(this.bottomEdge);
         this.scene.start("FaceBottomScene", { spawnFromTop: true, spawnX: mid.x, spawnY: mid.y });
-      }
-    });
+      },
+      { hintText: "Edge access: press E to descend", key: "E" }
+    );
 
-    // ---- Spaceship crash site
-    // Choose a spot near the downward portal edge midpoint, pushed inward a bit
+    // ---- Crash site dressing (face-specific art)
     const center = this.getPolygonCenter(this.poly);
     const edgeMid = this.midpoint(this.bottomEdge);
     const dir = new Phaser.Math.Vector2(center.x - edgeMid.x, center.y - edgeMid.y).normalize();
     const shipPos = new Phaser.Math.Vector2(edgeMid.x, edgeMid.y - 50).add(dir.scale(40));
 
-    // Spaceship
     const ship = this.add.image(shipPos.x, shipPos.y, "ship").setOrigin(0.5, 0.6).setDisplaySize(48, 48).setDepth(50);
-    ship.setAngle(-18); // came in hot
+    ship.setAngle(-18);
     this.addSoftShadowBelow(ship, 22, 0x000000, 0.28);
 
-    const shipBlock = this.add.zone(shipPos.x, shipPos.y, 44, 28); // width/height: tweak to your art
-    this.physics.add.existing(shipBlock, true); // true = static body
+    const shipBlock = this.add.zone(shipPos.x, shipPos.y, 44, 28);
+    this.physics.add.existing(shipBlock, true);
     this.physics.add.collider(this.player, shipBlock);
 
-    // ---- Crash site dressing
-    this.decorateCrashSite(radius);
-
-    // ---- Orientation + animation switching
-    const ANGLE_LEFT = -10;
-    const ANGLE_RIGHT = 10;
-    const MOVE_SPEED_THRESHOLD = 20; // px/sec to consider "moving"
-
-    // start idle
-    (this.player as Phaser.Physics.Arcade.Sprite).play("player-idle");
-
-    this.events.on("update", () => {
-      // mirror/tilt like before
-      const left  = !!(this.cursors.left?.isDown || this.wasd.A.isDown);
-      const right = !!(this.cursors.right?.isDown || this.wasd.D.isDown);
-      const up    = !!(this.cursors.up?.isDown || this.wasd.W.isDown);
-      const down  = !!(this.cursors.down?.isDown || this.wasd.S.isDown);
-
-      const spr = this.player as Phaser.Physics.Arcade.Sprite;
-
-      spr.setFlipX(left && !right);
-
-      if (left || up)       spr.setAngle(ANGLE_LEFT);
-      else if (right || down) spr.setAngle(ANGLE_RIGHT);
-      else                  spr.setAngle(0);
-
-      // speed-based animation gating
-      const body = spr.body as Phaser.Physics.Arcade.Body;
-      const speed = body.velocity.length();
-
-      const want = speed > MOVE_SPEED_THRESHOLD ? "player-move" : "player-idle";
-      if (spr.anims.currentAnim?.key !== want) {
-        spr.play(want);
-      }
-
-      // optional: scale animation speed with velocity (feels great)
-      // 1.0 at ~120px/s, clamps to [0.6, 1.6]
-      const t = Phaser.Math.Clamp(speed / 120, 0.6, 1.6);
-      spr.anims.timeScale = t;
+    // --- Interaction: proximity window around the ship
+    this.shipZone = this.add.zone(shipPos.x, shipPos.y, 90, 70).setOrigin(0.5); // a bit larger than ship
+    this.physics.add.existing(this.shipZone, true);
+    this.physics.add.overlap(this.player, this.shipZone, () => {
+      this.inShipRange = true; // will be reconciled in update()
     });
+
+    // --- Visual: highlight box around the ship (hidden until in range)
+    this.shipHighlight = this.add.graphics().setDepth(51).setVisible(false);
+    this.shipHighlight.lineStyle(2, 0xffffff, 0.6);
+    const w = 90, h = 70, r = 10;
+    this.shipHighlight.strokeRoundedRect(shipPos.x - w/2, shipPos.y - h/2, w, h, r);
+    this.shipHighlight.setAlpha(0.8);
+    this.layer.fx?.add(this.shipHighlight);
+
+    // --- Input: E key for interaction
+    this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+    // --- HUD hint (top of screen)
+    const hudBg = this.add.graphics();
+    hudBg.fillStyle(0x000000, 0.45);
+    const padX = 16, padY = 8;
+    const msg = "Press E to board the ship";
+    const hintText = this.add.text(0, 0, msg, { fontSize: "16px", color: "#ffffff" });
+    const tw = hintText.width + padX * 2;
+    const th = hintText.height + padY * 2;
+    hudBg.fillRoundedRect(-tw / 2, -th / 2, tw, th, 10);
+    hintText.setPosition(-hintText.width / 2, -hintText.height / 2);
+
+    this.hudHint = this.add.container(width / 2, 28, [hudBg, hintText])
+      .setScrollFactor(0)
+      .setVisible(false)
+      .setDepth(20);
+    this.layer.deco?.add(this.hudHint);
+
+    this.decorateCrashSite(radius);
   }
 
-
-
-
   update() {
-    this.updateMovement(this.cursors, this.wasd);
+    // Check real overlap state each frame (overlap callback fires continuously; this reconfirms & handles exit)
+    const isOverlapping = this.physics.world.overlap(this.player, this.shipZone);
 
-    if (this.isNearEdge(this.player, this.bottomEdge)) {
-      this.portalHint.setText("Edge access: press E to descend").setAlpha(1);
-    } else {
-      this.portalHint.setAlpha(0);
+    if (isOverlapping && !this.inShipRange) {
+      this.inShipRange = true;
+    } else if (!isOverlapping && this.inShipRange) {
+      this.inShipRange = false;
+    }
+
+    // Toggle visuals/HUD based on proximity
+    this.hudHint.setVisible(this.inShipRange);
+    this.shipHighlight.setVisible(this.inShipRange);
+
+    // If in range, allow pressing E to go to next scene
+    if (this.inShipRange && Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+      this.scene.start("ShipFuelScene");
     }
   }
 
-  // ---------------------------
-  // Helpers
-  // ---------------------------
 
-  private isNearEdge(player: Phaser.GameObjects.Image, e: Edge): boolean {
-    const p = new Phaser.Math.Vector2(player.x, player.y);
-    return this.distanceToEdge(p, e) < 16;
-  }
+  // ---------------------------
+  // Face-specific helpers (kept here)
+  // ---------------------------
 
   private midpoint(e: Edge) {
     return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);
   }
 
   private addGrassyGroundTexture(cx: number, cy: number, radius: number) {
-    // 1) Create a canvas texture with noisy green grass
     const key = "grassTexFaceTop";
     const size = 512;
     if (!this.textures.exists(key)) {
@@ -227,15 +174,12 @@ export default class FaceTopScene extends FaceBase {
       if (tex === null) return;
 
       const ctx = tex.getContext();
-
-      // Base gradient
       const g = ctx.createLinearGradient(0, 0, size, size);
       g.addColorStop(0, "#1f4a2b");
       g.addColorStop(1, "#2c6b3b");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, size, size);
 
-      // Speckle noise
       for (let i = 0; i < 5000; i++) {
         const a = Math.random() * 0.08 + 0.02;
         ctx.fillStyle = `rgba(${30 + (Math.random() * 50)|0}, ${80 + (Math.random() * 80)|0}, ${40 + (Math.random() * 40)|0}, ${a})`;
@@ -245,7 +189,6 @@ export default class FaceTopScene extends FaceBase {
         ctx.fillRect(x, y, s, s);
       }
 
-      // A few blade clusters
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
       ctx.lineWidth = 1;
       for (let i = 0; i < 300; i++) {
@@ -261,12 +204,10 @@ export default class FaceTopScene extends FaceBase {
       tex.refresh();
     }
 
-    // 2) Place the grass image scaled to the face
     const img = this.add.image(cx, cy, key);
-    const scale = (radius * 2.2) / 256; // tweak fill coverage
+    const scale = (radius * 2.2) / 256;
     img.setScale(scale);
 
-    // 3) Mask the grass using the pentagon polygon
     const maskGfx = this.add.graphics();
     maskGfx.fillStyle(0xffffff, 1);
     maskGfx.beginPath();
@@ -279,7 +220,6 @@ export default class FaceTopScene extends FaceBase {
     img.setMask(mask);
     maskGfx.setVisible(false);
 
-    // 4) Soft edge highlight for depth
     const edge = this.add.graphics();
     edge.lineStyle(2, 0x0a3918, 0.8);
     edge.beginPath();
@@ -293,8 +233,6 @@ export default class FaceTopScene extends FaceBase {
 
   private decorateCrashSite(radius: number) {
     const center = this.getPolygonCenter(this.poly);
-
-    // Sprinkle decorations (rocks/tufts/debris) if available
     const candidates = ["rock", "tuft1", "tuft2", "debris1", "debris2"].filter(k => this.textures.exists(k));
     const count = Phaser.Math.Between(6, 10);
     for (let i = 0; i < count; i++) {
@@ -311,30 +249,7 @@ export default class FaceTopScene extends FaceBase {
     }
   }
 
-  private addSoftShadowBelow(
-    obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
-    radius: number,
-    color: number,
-    alpha: number
-  ) {
-    const g = this.add.graphics();
-    const b = 1; // blur-ish by layering circles
-    for (let i = 0; i < 4; i++) {
-      g.fillStyle(color, alpha * (0.5 / (i + 1)));
-      g.fillEllipse(0, 0, (radius + i * b) * 2, (radius * 0.6 + i * b) * 2);
-    }
-    g.setPosition(obj.x, obj.y + obj.displayHeight * 0.35);
-    g.setDepth((obj.depth ?? 0) - 1);
-    this.layer.ground?.add(g);
-
-    // Keep shadow following the object
-    this.events.on("update", () => {
-      g.setPosition(obj.x, obj.y + obj.displayHeight * 0.35);
-    });
-  }
-
   private randomPointInPolygon(poly: Phaser.Geom.Polygon, center: Phaser.Math.Vector2, maxR: number) {
-    // rejection sample inside polygon, biased a bit toward center
     for (let tries = 0; tries < 200; tries++) {
       const r = Phaser.Math.FloatBetween(maxR * 0.2, maxR);
       const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
@@ -342,7 +257,6 @@ export default class FaceTopScene extends FaceBase {
       const y = center.y + Math.sin(a) * r;
       if (Phaser.Geom.Polygon.Contains(poly, x, y)) return new Phaser.Math.Vector2(x, y);
     }
-    // fallback: center
     return center.clone();
   }
 }
