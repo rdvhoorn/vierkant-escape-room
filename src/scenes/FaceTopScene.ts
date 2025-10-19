@@ -49,7 +49,7 @@ export default class FaceTopScene extends FaceBase {
     const neighborsByEdge: (string | null)[] = [
       "FaceTopScene","FaceTopScene","FaceBottomScene","FaceTopScene","FaceTopScene",
     ];
-    const colorMap: Record<string, number> = { FaceTopScene: 0x311111, FaceBottomScene: 0x133333 };
+    const colorMap: Record<string, number> = { FaceTopScene: 0x311111, FaceBottomScene: 0x311111 };
     const neighborStyles = neighborsByEdge.map((key) =>
       key ? { fill: colorMap[key], stroke: 0x4b7ad1, alpha: 0.95 } : undefined
     );
@@ -60,8 +60,8 @@ export default class FaceTopScene extends FaceBase {
       cx: width / 2,
       cy: height / 2,
       radius,
-      fill: 0x15284b,
-      neighborFill: 0x0f1d38,
+      fill: 0x311111,
+      neighborFill: 0x311111,
       neighborStyles,
     });
 

@@ -65,7 +65,7 @@ export default class TitleScene extends Phaser.Scene {
   private startGame() {
     this.pulseTween?.stop();
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("FaceTopScene"); // ⟵ go to the new intro
+      if (p === 1) this.scene.start("IntroScene");
     });
   }
 }
