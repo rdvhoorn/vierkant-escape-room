@@ -4,7 +4,7 @@ import PreloadScene from "./scenes/PreloadScene";
 import TitleScene from "./scenes/TitleScene";
 import IntroScene from "./scenes/IntroScene";
 import FaceTopScene from "./scenes/FaceTopScene";
-import FaceBottomScene from "./scenes/FaceBottomScene";
+import FaceBottomScene from "./scenes/Later_FaceBottomScene";
 
 // Puzzle scenes
 import ShipFuelScene from "./scenes/puzzles/ShipFuelScene";
@@ -27,7 +27,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [PreloadScene, FaceTopScene, BootScene, TitleScene, IntroScene, FaceBottomScene, ShipFuelScene, MoreToComeScene],
+  scene: [PreloadScene, ShipFuelScene, FaceTopScene, BootScene, TitleScene, IntroScene, FaceBottomScene, MoreToComeScene],
 };
 
 new Phaser.Game(config);
