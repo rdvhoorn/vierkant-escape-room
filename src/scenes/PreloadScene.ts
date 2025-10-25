@@ -18,7 +18,7 @@ export default class PreloadScene extends Phaser.Scene {
       fontSize: "14px",
       color: "#cfe8ff",
     }).setOrigin(0.5);
-    this.add.text(width / 2, height / 2 - 60, "Preparing Launch…", {
+    this.add.text(width / 2, height / 2 - 60, "Lancering voorbereiden...", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#cfe8ff",

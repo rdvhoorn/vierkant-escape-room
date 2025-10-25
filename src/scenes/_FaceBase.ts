@@ -162,7 +162,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       .text(
         this.scale.width - 12,
         this.scale.height - 10,
-        "Move: WASD / Arrows   |   E: Use edge   |   ESC: Title",
+        "Lopen: WASD / Pijltjes   |  E:  Actie   |  ESC: Titel Scherm",
         { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
       )
       .setScrollFactor(0)

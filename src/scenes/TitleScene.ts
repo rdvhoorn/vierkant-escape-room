@@ -28,7 +28,7 @@ export default class TitleScene extends Phaser.Scene {
       strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.38, "Stranded. Math-powered liftoff awaits.", {
+    this.add.text(width / 2, height * 0.38, "Gestrand! De zoektocht naar een wiskundige manier om weer weg te komen.", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#b6d5ff",
@@ -36,7 +36,7 @@ export default class TitleScene extends Phaser.Scene {
 
     const pad = this.add.rectangle(width / 2, height * 0.65, 420, 70, 0x1e2a4a, 0.6)
       .setStrokeStyle(2, 0x3c5a99);
-    const startHint = this.add.text(width / 2, height * 0.65, "Press SPACE or CLICK to Start", {
+    const startHint = this.add.text(width / 2, height * 0.65, "Klik hier om te starten", {
       fontFamily: "sans-serif",
       fontSize: "22px",
       color: "#cfe8ff",
@@ -65,7 +65,7 @@ export default class TitleScene extends Phaser.Scene {
   private startGame() {
     this.pulseTween?.stop();
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("ShipFuelScene");
+      if (p === 1) this.scene.start("IntroScene");
     });
   }
 }

@@ -121,7 +121,7 @@ export default class FaceTopScene extends FaceBase {
     const hudBg = this.add.graphics();
     hudBg.fillStyle(0x000000, 0.45);
     const padX = 16, padY = 8;
-    const msg = "Press E to board the ship";
+    const msg = "Druk op E om het schip in te gaan";
     const hintText = this.add.text(0, 0, msg, { fontSize: "16px", color: "#ffffff" });
     const tw = hintText.width + padX * 2;
     const th = hintText.height + padY * 2;

@@ -15,10 +15,10 @@ export default class MoreToComeScene extends Phaser.Scene {
     }
 
     // Message
-    const title = this.add.text(width/2, height*0.45, "The escape room ends here—for now.", {
+    const title = this.add.text(width/2, height*0.45, "Dit was de teaser voor de escape room!", {
       fontFamily: "sans-serif", fontSize: "24px", color: "#e7f3ff"
     }).setOrigin(0.5);
-    const sub = this.add.text(width/2, title.y + 36, "More puzzles will be published in January.", {
+    const sub = this.add.text(width/2, title.y + 36, "Kom in Januari terug voor nog veel meer!", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#cfe8ff"
     }).setOrigin(0.5);
   }
