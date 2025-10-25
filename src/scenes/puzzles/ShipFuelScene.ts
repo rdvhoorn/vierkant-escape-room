@@ -23,6 +23,8 @@ export default class ShipFuelScene extends Phaser.Scene {
   private paths = new Map<number, Cell[]>(); // color -> path cells
   private lockedColors = new Set<number>();   // finished pairs
   private drawingColor?: number;
+  private advanceHint!: Phaser.GameObjects.Text;
+  private restartBtn?: Phaser.GameObjects.Text;
 
   constructor() {
     super("ShipFuelScene");
@@ -53,7 +55,8 @@ export default class ShipFuelScene extends Phaser.Scene {
         wordWrap: { width: box.width - 40, useAdvancedWrap: true },
       }
     ).setOrigin(0, 0);
-    this.add.text(width - 30, height - 18, "Click / Space →",
+    
+    this.advanceHint = this.add.text(width - 30, height - 18, "Click / Space →",
       { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" })
       .setOrigin(1, 1).setAlpha(0.85);
 
@@ -111,15 +114,33 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.gridOrigin.y = Math.floor((height - this.gridSize * this.cell) / 2) - 20;
 
     // Define 3 pairs (5x5)
+    // 5×5, one pair per row → guaranteed full coverage without overlaps
+    // Just change this to change the whole puzzle. Very easy :D 
+    this.gridSize = 6;
+
     this.pairs = [
-      { color: 0xf0c419, a: { x: 0, y: 0 }, b: { x: 3, y: 0 } }, // yellow
-      { color: 0x29abe2, a: { x: 0, y: 3 }, b: { x: 4, y: 4 } }, // blue
-      { color: 0x2ecc71, a: { x: 1, y: 2 }, b: { x: 0, y: 4 } }, // green
-      { color: 0xe74c3c, a: { x: 4, y: 0 }, b: { x: 4, y: 3 } }, // red
+      { color: 0x9b59b6, a: { x: 0, y: 0 }, b: { x: 0, y: 4 } }, // Purple
+      { color: 0xf0c419, a: { x: 2, y: 0 }, b: { x: 0, y: 5 } }, // Yellow
+      { color: 0xe74c3c, a: { x: 3, y: 0 }, b: { x: 5, y: 2 } }, // Red
+      { color: 0x29abe2, a: { x: 4, y: 1 }, b: { x: 4, y: 3 } }, // Blue
+      { color: 0x2ecc71, a: { x: 5, y: 3 }, b: { x: 5, y: 5 } }, // Green
+      { color: 0xe67e22, a: { x: 4, y: 2 }, b: { x: 3, y: 4 } }, // Orange
     ];
     this.paths.clear();
     this.lockedColors.clear();
     this.pairs.forEach(p => this.paths.set(p.color, [p.a]));
+
+    // Restart button (↻) at top-right of the grid
+    const rx = this.gridOrigin.x + this.gridSize * this.cell + 8;
+    const ry = this.gridOrigin.y - 8;
+    this.restartBtn = this.add.text(rx, ry, "↻", {
+      fontFamily: "sans-serif",
+      fontSize: "28px",
+      color: "#e7f3ff"
+    }).setOrigin(0, 1).setAlpha(0).setInteractive({ useHandCursor: true });
+
+    this.restartBtn.on("pointerdown", () => this.resetPuzzle());
+    this.tweens.add({ targets: this.restartBtn, alpha: 1, duration: 220 });
 
     // Graphics
     this.gridGfx = this.add.graphics().setAlpha(0);
@@ -130,8 +151,11 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.redrawPaths();
 
     // Fade in the puzzle and message
-    this.show("Connect matching fuel nodes. Drag to draw paths. Paths can’t overlap.");
+    this.show("Connect matching fuel nodes. Drag to draw paths. Paths can’t overlap—and fill every square!");
     this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.dotGfx], alpha: 1, duration: 220 });
+
+    // Remove advance hint
+    this.advanceHint.setVisible(false);
 
     // Pointer handling
     this.input.on("pointerdown", this.onPointerDown, this);
@@ -152,6 +176,15 @@ export default class ShipFuelScene extends Phaser.Scene {
         this.gridGfx?.destroy(); this.pathGfx?.destroy(); this.dotGfx?.destroy();
       }
     });
+
+    this.advanceHint.setVisible(true);
+
+    if (this.restartBtn) {
+      this.tweens.add({
+        targets: this.restartBtn, alpha: 0, duration: 200,
+        onComplete: () => this.restartBtn?.destroy()
+      });
+    }
 
     // Continue dialog
     this.i++;
@@ -235,6 +268,25 @@ export default class ShipFuelScene extends Phaser.Scene {
     const cell = this.fromWorld(pointer.x, pointer.y);
     if (!cell) return;
 
+    // --- delete a single line if you click any of its segments (but not on a dot)
+    const clickedColor = this.getColorAtCell(cell);
+    const epInfo = this.isEndpoint(cell);
+    if (clickedColor !== null && !(epInfo && epInfo.color === clickedColor)) {
+      // clicked somewhere on a path segment (not an endpoint) → clear that line
+      this.clearColor(clickedColor);
+      return;
+    }
+
+    // If you touch a locked color's endpoint or path, ignore
+    for (const p of this.pairs) {
+      if (this.equal(cell, p.a) || this.equal(cell, p.b)) {
+        if (this.lockedColors.has(p.color)) return;
+      }
+    }
+    for (const [color, path] of this.paths) {
+      if (this.lockedColors.has(color) && path.some(c => this.equal(c, cell))) return;
+    }
+
     // Start only on a dot or existing path of that color (to continue / backtrack)
     for (const p of this.pairs) {
       if (this.equal(cell, p.a) || this.equal(cell, p.b)) {
@@ -258,6 +310,7 @@ export default class ShipFuelScene extends Phaser.Scene {
 
   private onPointerMove(pointer: Phaser.Input.Pointer) {
     if (!this.puzzleActive || this.drawingColor == null) return;
+    if (this.lockedColors.has(this.drawingColor)) return;
     const next = this.fromWorld(pointer.x, pointer.y);
     if (!next) return;
 
@@ -280,6 +333,10 @@ export default class ShipFuelScene extends Phaser.Scene {
     const occ = this.cellOccupied(next);
     if (occ !== null && occ !== this.drawingColor) return;
 
+    // Don't step onto another color's endpoint
+    const ep = this.isEndpoint(next);
+    if (ep && ep.color !== this.drawingColor) return;
+
     // If our own path already has this cell (loop), trim back to it
     const existingIdx = path.findIndex(c => this.equal(c, next));
     if (existingIdx >= 0) path.splice(existingIdx + 1);
@@ -294,6 +351,12 @@ export default class ShipFuelScene extends Phaser.Scene {
       if (hasA && hasB) {
         this.lockedColors.add(this.drawingColor);
       }
+
+      this.paths.set(this.drawingColor, path);
+      this.redrawPaths();
+      // stop drawing right away once connected
+      this.drawingColor = undefined;
+      return;
     }
 
     this.paths.set(this.drawingColor, path);
@@ -304,11 +367,52 @@ export default class ShipFuelScene extends Phaser.Scene {
     if (!this.puzzleActive) return;
     this.drawingColor = undefined;
 
-    // Win when all colors are locked (both endpoints connected with a continuous path)
-    if (this.lockedColors.size === this.pairs.length) {
-      // brief success flash
+    // Win only when all colors are connected AND every cell is covered
+    if (this.lockedColors.size === this.pairs.length && this.isAllCovered()) {
       this.cameras.main.flash(160, 30, 200, 120);
       this.time.delayedCall(300, () => this.endPuzzle());
     }
+  }
+
+  private isEndpoint(c: Cell): { color: number; self: boolean } | null {
+    for (const p of this.pairs) {
+      if (this.equal(c, p.a) || this.equal(c, p.b)) {
+        return { color: p.color, self: true };
+      }
+    }
+    return null;
+  }
+
+  private isAllCovered(): boolean {
+    const used = new Set<string>();
+    for (const [, cells] of this.paths) {
+      for (const c of cells) used.add(`${c.x},${c.y}`);
+    }
+    // every grid cell must be used
+    return used.size === this.gridSize * this.gridSize;
+  }
+
+  private resetPuzzle() {
+    this.paths.clear();
+    this.lockedColors.clear();
+    for (const p of this.pairs) this.paths.set(p.color, [p.a]);
+    this.drawingColor = undefined;
+    this.redrawPaths();
+  }
+
+  private getColorAtCell(c: Cell): number | null {
+    for (const [color, cells] of this.paths) {
+      if (cells.some(p => this.equal(p, c))) return color;
+    }
+    return null;
+  }
+
+  private clearColor(color: number) {
+    // reset path to just its first endpoint
+    const pair = this.findPairByColor(color);
+    this.paths.set(color, [pair.a]);
+    this.lockedColors.delete(color);
+    if (this.drawingColor === color) this.drawingColor = undefined;
+    this.redrawPaths();
   }
 }
