@@ -97,10 +97,12 @@ export default abstract class FaceBase extends Phaser.Scene {
     const startTexture = this.textures.exists(this.IDLE_FRAMES[0]) ? this.IDLE_FRAMES[0] : "playerBox";
     this.player = this.physics.add.sprite(x, y, startTexture)
       .setOrigin(0.5, 0.8)
-      .setDisplaySize(24, 24)
+      .setDisplaySize(48, 48)
       .setDepth(35)
       .setCollideWorldBounds(false);
 
+    // Smaller hitbox than visual sprite (24x24 instead of 48x48)
+    this.player.body.setSize(24, 24);
     this.player.setDrag(800, 800).setMaxVelocity(240, 240);
     this.lastSafePos.set(x, y);
 
