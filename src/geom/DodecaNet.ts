@@ -47,9 +47,9 @@ function attachFace(base: Face, baseEdgeIndex: number, newId: number, R: number,
   } as Face;
 
   // Compute base edge mid and outward normal
-  const pA = base.points[baseEdgeIndex];
-  const pB = base.points[(baseEdgeIndex + 1) % 5];
-  const mid = new Phaser.Math.Vector2((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
+  // const pA = base.points[baseEdgeIndex];
+  // const pB = base.points[(baseEdgeIndex + 1) % 5];
+  // const mid = new Phaser.Math.Vector2((pA.x + pB.x) / 2, (pA.y + pB.y) / 2);
   const n = edgeNormal(base.points, baseEdgeIndex); // outward
 
   // For a regular pentagon: apothem a = R * cos(36°)

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import FaceBase from "./_FaceBase";
-import type { Edge } from "./_FaceBase";
+// import type { Edge } from "./_FaceBase";
 
 export default class FaceTopScene extends FaceBase {
   constructor() {
@@ -162,9 +162,9 @@ export default class FaceTopScene extends FaceBase {
   // Face-specific helpers (kept here)
   // ---------------------------
 
-  private midpoint(e: Edge) {
-    return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);
-  }
+  // private midpoint(e: Edge) {
+  //   return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);
+  // }
 
   private addGrassyGroundTexture(cx: number, cy: number, radius: number) {
     const key = "grassTexFaceTop";
