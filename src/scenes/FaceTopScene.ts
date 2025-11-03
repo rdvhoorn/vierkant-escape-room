@@ -24,6 +24,10 @@ export default class FaceTopScene extends FaceBase {
   private interactKey!: Phaser.Input.Keyboard.Key;              // E key
   private hudHint!: Phaser.GameObjects.Container;               // top-of-screen hint
   private inShipRange = false;                                  // current proximity state
+  private puzzleZone!: Phaser.GameObjects.Zone; //tweede zone
+  private puzzleHighlight!: Phaser.GameObjects.Graphics; //tweede zone highlighter
+  private inPuzzleRange = false;
+
 
   create() {
     const { width, height } = this.scale;
@@ -36,7 +40,9 @@ export default class FaceTopScene extends FaceBase {
     this.layer.actors = this.add.container(0, 0).setDepth(30);
     this.layer.fx = this.add.container(0, 0).setDepth(40);
     this.layer.ui = this.add.container(0, 0).setDepth(1000);
-
+    if (this.registry.get("energy") == null) {
+      this.registry.set("energy", 0); // start at 0
+    }
     // ---- Stars (screen space)
     const stars = this.add.graphics();
     for (let i = 0; i < 200; i++) {
@@ -45,7 +51,7 @@ export default class FaceTopScene extends FaceBase {
     }
     this.layer.bg.add(stars);
 
-    // ---- Neighbor mapping (face-specific logic)
+    const radius = 180;
     const neighborsByEdge: (string | null)[] = [
       "FaceTopScene","FaceTopScene","FaceBottomScene","FaceTopScene","FaceTopScene",
     ];
@@ -53,9 +59,6 @@ export default class FaceTopScene extends FaceBase {
     const neighborStyles = neighborsByEdge.map((key) =>
       key ? { fill: colorMap[key], stroke: 0x4b7ad1, alpha: 0.95 } : undefined
     );
-
-    // ---- Render face + neighbors
-    const radius = 180;
     this.renderFaceAndNeighbors({
       cx: width / 2,
       cy: height / 2,
@@ -65,30 +68,15 @@ export default class FaceTopScene extends FaceBase {
       neighborStyles,
     });
 
-    // ---- Ground art for this face
     this.addGrassyGroundTexture(width / 2, height / 2, radius);
 
-    // ---- Player (now completely generic & owned by FaceBase)
-    // If you stored spawnX/Y via scene data, FaceBase will clamp to polygon if needed.
+    // ---- Player
     const spawnX = (this.data.get("spawnX") as number) ?? width / 2;
     const spawnY = (this.data.get("spawnY") as number) ?? (height / 2 - 20);
     this.createPlayerAt(spawnX, spawnY);
 
-    // ---- Define the actionable portal edge (index 2 = bottom)
-    // this.bottomEdge = this.edges[2];
-    // this.registerEdgeAction(
-    //   this.bottomEdge,
-    //   () => {
-    //     const mid = this.midpoint(this.bottomEdge);
-    //     this.scene.start("FaceBottomScene", { spawnFromTop: true, spawnX: mid.x, spawnY: mid.y });
-    //   },
-    //   { hintText: "Edge access: press E to descend", key: "E" }
-    // );
-
-    // ---- Crash site dressing (face-specific art)
+    // ---- Crash site / ship
     const center = this.getPolygonCenter(this.poly);
-    // const edgeMid = this.midpoint(this.bottomEdge);
-    // const dir = new Phaser.Math.Vector2(center.x - edgeMid.x, center.y - edgeMid.y).normalize();
     const shipPos = new Phaser.Math.Vector2(center.x, center.y + 50);
 
     const ship = this.add.image(shipPos.x, shipPos.y, "ship").setOrigin(0.5, 0.6).setDisplaySize(48, 48).setDepth(50);
@@ -99,68 +87,122 @@ export default class FaceTopScene extends FaceBase {
     this.physics.add.existing(shipBlock, true);
     this.physics.add.collider(this.player, shipBlock);
 
-    // --- Interaction: proximity window around the ship
-    this.shipZone = this.add.zone(shipPos.x, shipPos.y, 90, 70).setOrigin(0.5); // a bit larger than ship
+    // ---- Ship zone & highlight
+    this.shipZone = this.add.zone(shipPos.x, shipPos.y, 90, 70).setOrigin(0.5);
     this.physics.add.existing(this.shipZone, true);
     this.physics.add.overlap(this.player, this.shipZone, () => {
-      this.inShipRange = true; // will be reconciled in update()
+      this.inShipRange = true;
     });
 
-    // --- Visual: highlight box around the ship (hidden until in range)
     this.shipHighlight = this.add.graphics().setDepth(51).setVisible(false);
     this.shipHighlight.lineStyle(2, 0xffffff, 0.6);
-    const w = 90, h = 70, r = 10;
-    this.shipHighlight.strokeRoundedRect(shipPos.x - w/2, shipPos.y - h/2, w, h, r);
+    this.shipHighlight.strokeRoundedRect(shipPos.x - 45, shipPos.y - 35, 90, 70, 10);
     this.shipHighlight.setAlpha(0.8);
     this.layer.fx?.add(this.shipHighlight);
 
-    // --- Input: E key for interaction
+    // ---- Puzzle zone near ship
+    const puzzlePos = new Phaser.Math.Vector2(shipPos.x + 100, shipPos.y-80); 
+
+    // Zone for physics overlap
+    this.puzzleZone = this.add.zone(puzzlePos.x, puzzlePos.y, 80, 80).setOrigin(0.5);
+    this.physics.add.existing(this.puzzleZone, true);
+
+    // Highlight graphics (appears when in range)
+    this.puzzleHighlight = this.add.graphics().setDepth(51).setVisible(false);
+    this.puzzleHighlight.lineStyle(2, 0xffff00, 0.6);
+    this.puzzleHighlight.strokeRoundedRect(puzzlePos.x - 40, puzzlePos.y - 40, 80, 80, 8);
+    this.puzzleHighlight.setAlpha(0.8);
+    this.layer.fx?.add(this.puzzleHighlight);
+
+    // Puzzle visual image
+    const puzzleImage = this.add.image(puzzlePos.x, puzzlePos.y, "letter")
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(48, 48)
+      .setDepth(50);
+    this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
+    this.layer.actors?.add(puzzleImage);
+
+    // ---- Update overlap state in the update() loop
+    // (keep this in your update() function)
+    const isOverlappingPuzzle = this.physics.world.overlap(this.player, this.puzzleZone);
+    if (isOverlappingPuzzle && !this.inPuzzleRange) this.inPuzzleRange = true;
+    else if (!isOverlappingPuzzle && this.inPuzzleRange) this.inPuzzleRange = false;
+
+    // Show highlight when in range
+    this.puzzleHighlight.setVisible(this.inPuzzleRange);
+
+    // ---- E key & HUD
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
-    // --- HUD hint (top of screen)
     const hudBg = this.add.graphics();
     hudBg.fillStyle(0x000000, 0.45);
     const padX = 16, padY = 8;
-    const msg = "Druk op E om het schip in te gaan";
+    const msg = "Druk op E om het schip in te gaan / puzzel te starten";
     const hintText = this.add.text(0, 0, msg, { fontSize: "16px", color: "#ffffff" });
     const tw = hintText.width + padX * 2;
     const th = hintText.height + padY * 2;
     hudBg.fillRoundedRect(-tw / 2, -th / 2, tw, th, 10);
     hintText.setPosition(-hintText.width / 2, -hintText.height / 2);
-
     this.hudHint = this.add.container(width / 2, 28, [hudBg, hintText])
       .setScrollFactor(0)
       .setVisible(false)
       .setDepth(20);
     this.layer.deco?.add(this.hudHint);
+    // ---- Energy bar in top-right corner
+    const energyBg = this.add.graphics();
+    energyBg.fillStyle(0x222222, 0.7);
+    energyBg.fillRect(0, 0, 104, 24);
+
+    const energyBar = this.add.graphics();
+    energyBar.fillStyle(0x00ff00, 1);
+    energyBar.fillRect(2, 2, this.registry.get("energy"), 20);
+    
+    const energyContainer = this.add.container(this.scale.width - 120, 28, [energyBg, energyBar])
+      .setScrollFactor(0)
+      .setDepth(20);
+
+    this.layer.ui?.add(energyContainer);
+
+    // Helper to update bar
+    this.events.on("updateEnergy", (newEnergy: number) => {
+      energyBar.clear();
+      energyBar.fillStyle(0x00ff00, 1);
+      energyBar.fillRect(2, 2, Math.min(newEnergy, 100), 20);
+    });
 
     this.decorateCrashSite(radius);
   }
 
   update() {
-    // Check real overlap state each frame (overlap callback fires continuously; this reconfirms & handles exit)
-    const isOverlapping = this.physics.world.overlap(this.player, this.shipZone);
-
-    if (isOverlapping && !this.inShipRange) {
-      this.inShipRange = true;
-    } else if (!isOverlapping && this.inShipRange) {
-      this.inShipRange = false;
-    }
-
-    // Toggle visuals/HUD based on proximity
-    this.hudHint.setVisible(this.inShipRange);
+    // ---- Ship overlap
+    const isOverlappingShip = this.physics.world.overlap(this.player, this.shipZone);
+    if (isOverlappingShip && !this.inShipRange) this.inShipRange = true;
+    else if (!isOverlappingShip && this.inShipRange) this.inShipRange = false;
     this.shipHighlight.setVisible(this.inShipRange);
 
-    // If in range, allow pressing E to go to next scene
-    if (this.inShipRange && Phaser.Input.Keyboard.JustDown(this.interactKey)) {
-      this.scene.start("ShipFuelScene");
+    // ---- Puzzle overlap
+    const isOverlappingPuzzle = this.physics.world.overlap(this.player, this.puzzleZone);
+    if (isOverlappingPuzzle && !this.inPuzzleRange) this.inPuzzleRange = true;
+    else if (!isOverlappingPuzzle && this.inPuzzleRange) this.inPuzzleRange = false;
+    this.puzzleHighlight.setVisible(this.inPuzzleRange);
+
+    // ---- HUD hint
+    this.hudHint.setVisible(this.inShipRange || this.inPuzzleRange);
+
+    // ---- E key actions
+    if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
+      if (this.inShipRange) {
+        this.scene.start("ShipFuelScene");
+      } else if (this.inPuzzleRange) {
+        if (this.registry.get("logic1Solved")) {
+          this.scene.start("PuzzleLogicTwoScene");
+        } else {
+          this.scene.start("PuzzleLogicOneScene");
+        }
+      }
     }
+    
   }
-
-
-  // ---------------------------
-  // Face-specific helpers (kept here)
-  // ---------------------------
 
   private midpoint(e: Edge) {
     return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);

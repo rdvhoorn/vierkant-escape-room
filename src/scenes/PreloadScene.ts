@@ -38,6 +38,7 @@ export default class PreloadScene extends Phaser.Scene {
     // ---------------------------
     // Lander / spaceship (e.g., from Kenney or itch.io packs)
     this.load.image("ship", "/assets/decor/ship.png");
+    this.load.image("letter", "/assets/decor/letter.png");
 
     // Small spark/smoke particle (8x8-ish white dot or smoke puff)
     // this.load.image("spark", "/assets/particles/spark.png");
