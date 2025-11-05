@@ -1,7 +1,9 @@
 import Phaser from "phaser";
+import { TwinklingStars } from "../utils/TwinklingStars";
 
 export default class TitleScene extends Phaser.Scene {
   private pulseTween?: Phaser.Tweens.Tween;
+  private twinklingStars?: TwinklingStars;
 
   constructor() {
     super("TitleScene");
@@ -10,14 +12,7 @@ export default class TitleScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    const stars = this.add.graphics();
-    for (let i = 0; i < 120; i++) {
-      const x = Phaser.Math.Between(0, width);
-      const y = Phaser.Math.Between(0, height);
-      const a = Phaser.Math.FloatBetween(0.2, 0.9);
-      stars.fillStyle(0xffffff, a);
-      stars.fillRect(x, y, 2, 2);
-    }
+    this.twinklingStars = new TwinklingStars(this, 140, width, height);
 
     this.add.text(width / 2, height * 0.28, "Dodecahedron Escape", {
       fontFamily: "sans-serif",
@@ -60,6 +55,10 @@ export default class TitleScene extends Phaser.Scene {
       fontSize: "12px",
       color: "#7ea7ff",
     }).setOrigin(1, 1).setAlpha(0.8);
+  }
+
+  update(_time: number, delta: number) {
+    this.twinklingStars?.update(delta);
   }
 
   private startGame() {

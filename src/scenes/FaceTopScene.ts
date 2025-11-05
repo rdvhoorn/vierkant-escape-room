@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import FaceBase from "./_FaceBase";
+import { TwinklingStars } from "../utils/TwinklingStars";
 // import type { Edge } from "./_FaceBase";
 
 export default class FaceTopScene extends FaceBase {
@@ -24,6 +25,7 @@ export default class FaceTopScene extends FaceBase {
   private interactKey!: Phaser.Input.Keyboard.Key;              // E key
   private hudHint!: Phaser.GameObjects.Container;               // top-of-screen hint
   private inShipRange = false;                                  // current proximity state
+  private twinklingStars?: TwinklingStars;
 
   create() {
     const { width, height } = this.scale;
@@ -37,13 +39,9 @@ export default class FaceTopScene extends FaceBase {
     this.layer.fx = this.add.container(0, 0).setDepth(40);
     this.layer.ui = this.add.container(0, 0).setDepth(1000);
 
-    // ---- Stars (screen space)
-    const stars = this.add.graphics();
-    for (let i = 0; i < 200; i++) {
-      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.15, 0.8));
-      stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
-    }
-    this.layer.bg.add(stars);
+    // ---- Twinkling stars (screen space)
+    this.twinklingStars = new TwinklingStars(this, 220, width, height);
+    this.layer.bg.add(this.twinklingStars.graphics);
 
     // ---- Neighbor mapping (face-specific logic)
     const neighborsByEdge: (string | null)[] = [
@@ -137,7 +135,9 @@ export default class FaceTopScene extends FaceBase {
     this.decorateCrashSite(radius);
   }
 
-  update() {
+  update(_time: number, delta: number) {
+    this.twinklingStars?.update(delta);
+
     // Check real overlap state each frame (overlap callback fires continuously; this reconfirms & handles exit)
     const isOverlapping = this.physics.world.overlap(this.player, this.shipZone);
 

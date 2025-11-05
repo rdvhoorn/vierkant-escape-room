@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { TwinklingStars } from "../../utils/TwinklingStars";
 
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
@@ -7,6 +8,7 @@ export default class ShipFuelScene extends Phaser.Scene {
   private lines: string[] = [];
   private i = 0;
   private dialogText!: Phaser.GameObjects.Text;
+  private twinklingStars?: TwinklingStars;
 
   // --- gating dialog while puzzle is active
   private blockAdvance = false;
@@ -33,13 +35,9 @@ export default class ShipFuelScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    // Background & stars
+    // Background & twinkling stars
     this.add.rectangle(0, 0, width, height, 0x0f1630).setOrigin(0);
-    const stars = this.add.graphics();
-    for (let i = 0; i < 140; i++) {
-      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.2, 0.9));
-      stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
-    }
+    this.twinklingStars = new TwinklingStars(this, 150, width, height);
 
     // Dialog UI
     const box = this.add.rectangle(width / 2, height - 88, width - 80, 120, 0x1b2748, 0.85)
@@ -72,6 +70,10 @@ export default class ShipFuelScene extends Phaser.Scene {
     // Input for dialog advance (disabled while puzzle is active)
     this.input.on("pointerdown", () => this.advance());
     this.input.keyboard?.on("keydown-SPACE", () => this.advance());
+  }
+
+  update(_time: number, delta: number) {
+    this.twinklingStars?.update(delta);
   }
 
   private show(text: string) {
@@ -108,15 +110,16 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.blockAdvance = true;
     this.puzzleActive = true;
 
+    // Define 3 pairs (5x5)
+    // 5×5, one pair per row → guaranteed full coverage without overlaps
+    // Just change this to change the whole puzzle. Very easy :D
+    this.gridSize = 6;
+    this.cell = 54; // smaller cells to fit better
+
     // Layout: a centered square grid
     const { width, height } = this.scale;
     this.gridOrigin.x = Math.floor((width - this.gridSize * this.cell) / 2);
-    this.gridOrigin.y = Math.floor((height - this.gridSize * this.cell) / 2) - 20;
-
-    // Define 3 pairs (5x5)
-    // 5×5, one pair per row → guaranteed full coverage without overlaps
-    // Just change this to change the whole puzzle. Very easy :D 
-    this.gridSize = 6;
+    this.gridOrigin.y = Math.floor((height - this.gridSize * this.cell) / 2) - 50;
 
     this.pairs = [
       { color: 0x9b59b6, a: { x: 0, y: 0 }, b: { x: 0, y: 4 } }, // Purple

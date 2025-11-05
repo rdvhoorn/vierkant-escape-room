@@ -1,18 +1,17 @@
 import Phaser from "phaser";
+import { TwinklingStars } from "../utils/TwinklingStars";
 
 export default class MoreToComeScene extends Phaser.Scene {
+  private twinklingStars?: TwinklingStars;
+
   constructor() { super("MoreToComeScene"); }
 
   create() {
     const { width, height } = this.scale;
 
-    // Background & stars
+    // Background & twinkling stars
     this.add.rectangle(0, 0, width, height, 0x0f1630).setOrigin(0);
-    const stars = this.add.graphics();
-    for (let i = 0; i < 140; i++) {
-      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.2, 0.9));
-      stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
-    }
+    this.twinklingStars = new TwinklingStars(this, 140, width, height);
 
     // Message
     const title = this.add.text(width/2, height*0.45, "Dit was de teaser voor de escape room!", {
@@ -22,5 +21,9 @@ export default class MoreToComeScene extends Phaser.Scene {
     this.add.text(width/2, title.y + 36, "Kom in Januari terug voor nog veel meer!", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#cfe8ff"
     }).setOrigin(0.5);
+  }
+
+  update(_time: number, delta: number) {
+    this.twinklingStars?.update(delta);
   }
 }

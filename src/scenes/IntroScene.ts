@@ -1,27 +1,25 @@
 import Phaser from "phaser";
+import { TwinklingStars } from "../utils/TwinklingStars";
 
 export default class IntroScene extends Phaser.Scene {
   private lines = [
     "Impact detected. Hull stable. Navigation nominal.",
-    "Fuel’s low, but we’ll figure it out planetside.",
-    "Let’s get moving…",
+    "Fuel's low, but we'll figure it out planetside.",
+    "Let's get moving…",
   ];
   private i = 0;
   private ship!: Phaser.GameObjects.Image;
   private dialogText!: Phaser.GameObjects.Text;
+  private twinklingStars?: TwinklingStars;
 
   constructor() { super("IntroScene"); }
 
   create() {
     const { width, height } = this.scale;
 
-    // Background & stars
+    // Background & twinkling stars
     this.add.rectangle(0, 0, width, height, 0x0f1630).setOrigin(0);
-    const stars = this.add.graphics();
-    for (let i = 0; i < 140; i++) {
-      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.2, 0.9));
-      stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
-    }
+    this.twinklingStars = new TwinklingStars(this, 160, width, height);
 
     // Square ship
 
@@ -51,6 +49,10 @@ export default class IntroScene extends Phaser.Scene {
     const next = () => this.advance();
     this.input.on("pointerdown", next);
     this.input.keyboard?.on("keydown-SPACE", next);
+  }
+
+  update(_time: number, delta: number) {
+    this.twinklingStars?.update(delta);
   }
 
   private show(t: string) {
