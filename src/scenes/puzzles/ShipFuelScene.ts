@@ -21,12 +21,15 @@ export default class ShipFuelScene extends Phaser.Scene {
   private gridGfx?: Phaser.GameObjects.Graphics;
   private pathGfx?: Phaser.GameObjects.Graphics;
   private dotGfx?: Phaser.GameObjects.Graphics;
+  private flowGfx?: Phaser.GameObjects.Graphics; // for animated electricity flow
   private pairs: Pair[] = [];
   private paths = new Map<number, Cell[]>(); // color -> path cells
   private lockedColors = new Set<number>();   // finished pairs
   private drawingColor?: number;
   private advanceHint!: Phaser.GameObjects.Text;
   private restartBtn?: Phaser.GameObjects.Text;
+  private flowOffset = 0; // for animating electricity flow
+  private pulseTime = 0; // for terminal pulsing
 
   constructor() {
     super("ShipFuelScene");
@@ -74,6 +77,12 @@ export default class ShipFuelScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     this.twinklingStars?.update(delta);
+
+    // Animate terminal pulsing
+    if (this.puzzleActive) {
+      this.pulseTime += delta * 0.003;
+      this.drawDots(); // redraw terminals for pulsing effect
+    }
   }
 
   private show(text: string) {
@@ -148,14 +157,15 @@ export default class ShipFuelScene extends Phaser.Scene {
     // Graphics
     this.gridGfx = this.add.graphics().setAlpha(0);
     this.pathGfx = this.add.graphics().setAlpha(0);
+    this.flowGfx = this.add.graphics().setAlpha(0);
     this.dotGfx = this.add.graphics().setAlpha(0);
     this.drawGrid();
     this.drawDots();
     this.redrawPaths();
 
     // Fade in the puzzle and message
-    this.show("Connect matching fuel nodes. Drag to draw paths. Paths can’t overlap—and fill every square!");
-    this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.dotGfx], alpha: 1, duration: 220 });
+    this.show("Verbind de elektriciteitskabels! Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
+    this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx], alpha: 1, duration: 220 });
 
     // Remove advance hint
     this.advanceHint.setVisible(false);
@@ -174,9 +184,9 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.input.off("pointerup", this.onPointerUp, this);
 
     this.tweens.add({
-      targets: [this.gridGfx, this.pathGfx, this.dotGfx],
+      targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx],
       alpha: 0, duration: 200, onComplete: () => {
-        this.gridGfx?.destroy(); this.pathGfx?.destroy(); this.dotGfx?.destroy();
+        this.gridGfx?.destroy(); this.pathGfx?.destroy(); this.flowGfx?.destroy(); this.dotGfx?.destroy();
       }
     });
 
@@ -228,10 +238,34 @@ export default class ShipFuelScene extends Phaser.Scene {
     const g = this.dotGfx!;
     g.clear();
     for (const p of this.pairs) {
-      g.fillStyle(p.color, 1);
+      const isLocked = this.lockedColors.has(p.color);
+
       for (const c of [p.a, p.b]) {
         const v = this.toWorld(c);
-        g.fillCircle(v.x, v.y, this.cell * 0.28);
+        const size = this.cell * 0.35;
+
+        // If locked/powered, add pulsing glow
+        if (isLocked) {
+          const pulse = Math.sin(this.pulseTime) * 0.3 + 0.7; // pulsing effect
+          g.fillStyle(p.color, 0.3 * pulse);
+          g.fillRoundedRect(v.x - size/2 - 6, v.y - size/2 - 6, size + 12, size + 12, 6);
+        }
+
+        // Draw as electrical terminals (rounded squares)
+        // Outer border (darker)
+        g.fillStyle(0x000000, 0.4);
+        g.fillRoundedRect(v.x - size/2 - 2, v.y - size/2 - 2, size + 4, size + 4, 4);
+
+        // Main terminal - duller when not connected
+        const colorAlpha = isLocked ? 1 : 0.8;
+        g.fillStyle(p.color, colorAlpha);
+        g.fillRoundedRect(v.x - size/2, v.y - size/2, size, size, 3);
+
+        // Inner highlight - only show when powered/locked
+        if (isLocked) {
+          g.fillStyle(0xffffff, 0.6);
+          g.fillRoundedRect(v.x - size/2 + 2, v.y - size/2 + 2, size * 0.5, size * 0.3, 2);
+        }
       }
     }
   }
@@ -241,8 +275,34 @@ export default class ShipFuelScene extends Phaser.Scene {
     g.clear();
     for (const [color, cells] of this.paths) {
       if (cells.length < 1) continue;
-      g.lineStyle(this.cell * 0.52, color, 0.95);
+      const lineWidth = this.cell * 0.15; // 3x smaller (was 0.45)
       const start = this.toWorld(cells[0]);
+      const isLocked = this.lockedColors.has(color);
+      const cableAlpha = isLocked ? 1 : 0.8; // duller when not connected
+
+      // Draw cables with outline (gives them depth like real cables)
+      // Outer black outline
+      g.lineStyle(lineWidth + 2, 0x000000, 0.4 * cableAlpha);
+      g.beginPath();
+      g.moveTo(start.x, start.y);
+      for (let i = 1; i < cells.length; i++) {
+        const v = this.toWorld(cells[i]);
+        g.lineTo(v.x, v.y);
+      }
+      g.strokePath();
+
+      // Main cable color
+      g.lineStyle(lineWidth, color, cableAlpha);
+      g.beginPath();
+      g.moveTo(start.x, start.y);
+      for (let i = 1; i < cells.length; i++) {
+        const v = this.toWorld(cells[i]);
+        g.lineTo(v.x, v.y);
+      }
+      g.strokePath();
+
+      // Inner highlight line (makes cables look 3D/shiny)
+      g.lineStyle(lineWidth * 0.3, 0xffffff, 0.4 * cableAlpha);
       g.beginPath();
       g.moveTo(start.x, start.y);
       for (let i = 1; i < cells.length; i++) {
@@ -251,7 +311,7 @@ export default class ShipFuelScene extends Phaser.Scene {
       }
       g.strokePath();
     }
-    this.drawDots(); // keep dots on top
+    this.drawDots(); // keep terminals on top
   }
 
   private cellOccupied(target: Cell): number | null {
@@ -417,5 +477,50 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.lockedColors.delete(color);
     if (this.drawingColor === color) this.drawingColor = undefined;
     this.redrawPaths();
+  }
+
+  private drawElectricityFlow() {
+    const g = this.flowGfx!;
+    g.clear();
+
+    // Only draw flow on locked/complete cables
+    for (const color of this.lockedColors) {
+      const cells = this.paths.get(color);
+      if (!cells || cells.length < 2) continue;
+
+      const lineWidth = this.cell * 0.15;
+
+      // Draw animated dashed line to simulate electricity flow
+      g.lineStyle(lineWidth, 0xffffff, 0.7);
+
+      for (let i = 0; i < cells.length - 1; i++) {
+        const start = this.toWorld(cells[i]);
+        const end = this.toWorld(cells[i + 1]);
+
+        // Calculate dash pattern
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.ceil(dist / 10);
+
+        for (let j = 0; j < steps; j++) {
+          const t1 = (j / steps) + (this.flowOffset / 20);
+          const t2 = ((j + 0.5) / steps) + (this.flowOffset / 20);
+
+          // Only draw every other segment (creates dashed effect)
+          if (Math.floor(t1 * 2) % 2 === 0) {
+            const x1 = start.x + dx * (t1 % 1);
+            const y1 = start.y + dy * (t1 % 1);
+            const x2 = start.x + dx * (t2 % 1);
+            const y2 = start.y + dy * (t2 % 1);
+
+            g.beginPath();
+            g.moveTo(x1, y1);
+            g.lineTo(x2, y2);
+            g.strokePath();
+          }
+        }
+      }
+    }
   }
 }
