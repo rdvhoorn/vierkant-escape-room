@@ -30,6 +30,7 @@ export default class ShipFuelScene extends Phaser.Scene {
   private restartBtn?: Phaser.GameObjects.Text;
   private flowOffset = 0; // for animating electricity flow
   private pulseTime = 0; // for terminal pulsing
+  private isShortCircuiting = false; // prevent input during explosion
 
   constructor() {
     super("ShipFuelScene");
@@ -372,7 +373,7 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private onPointerMove(pointer: Phaser.Input.Pointer) {
-    if (!this.puzzleActive || this.drawingColor == null) return;
+    if (!this.puzzleActive || this.drawingColor == null || this.isShortCircuiting) return;
     if (this.lockedColors.has(this.drawingColor)) return;
     const next = this.fromWorld(pointer.x, pointer.y);
     if (!next) return;
@@ -392,13 +393,22 @@ export default class ShipFuelScene extends Phaser.Scene {
       return;
     }
 
+    // SHORT CIRCUIT if trying to connect to wrong terminal! (check FIRST before blocking)
+    const ep = this.isEndpoint(next);
+    if (ep && ep.color !== this.drawingColor) {
+      // Allow the path to visually reach the wrong terminal before exploding
+      path.push(next);
+      this.paths.set(this.drawingColor, path);
+      this.redrawPaths();
+
+      const worldPos = this.toWorld(next);
+      this.triggerShortCircuit(worldPos.x, worldPos.y);
+      return;
+    }
+
     // Block if another color already occupies the cell
     const occ = this.cellOccupied(next);
     if (occ !== null && occ !== this.drawingColor) return;
-
-    // Don't step onto another color's endpoint
-    const ep = this.isEndpoint(next);
-    if (ep && ep.color !== this.drawingColor) return;
 
     // If our own path already has this cell (loop), trim back to it
     const existingIdx = path.findIndex(c => this.equal(c, next));
@@ -521,6 +531,73 @@ export default class ShipFuelScene extends Phaser.Scene {
           }
         }
       }
+    }
+  }
+
+  private triggerShortCircuit(x: number, y: number) {
+    this.isShortCircuiting = true;
+    this.drawingColor = undefined;
+
+    // Camera shake (immediate)
+    this.cameras.main.shake(400, 0.015);
+
+    // Initial explosion at wrong terminal
+    this.createExplosion(x, y, 30);
+
+    // Explosions at other terminals (250-450ms, random timing)
+    for (const p of this.pairs) {
+      for (const c of [p.a, p.b]) {
+        const v = this.toWorld(c);
+        // Skip if this is the current explosion point
+        if (Math.abs(v.x - x) < 5 && Math.abs(v.y - y) < 5) continue;
+
+        const delay = Phaser.Math.Between(250, 450);
+        this.time.delayedCall(delay, () => {
+          this.createExplosion(v.x, v.y, 20);
+        });
+      }
+    }
+
+    // Extra explosion at the wrong terminal at 400ms
+    this.time.delayedCall(400, () => {
+      this.createExplosion(x, y, 25);
+    });
+
+    // Red flash at 600ms, ends at 1400ms (800ms duration)
+    this.time.delayedCall(600, () => {
+      this.cameras.main.flash(800, 255, 50, 0);
+    });
+
+    // Message
+    this.show("⚡ KORTSLUITING! De puzzel is gereset...");
+
+    // Reset puzzle at 1000ms (cables disappear during flash)
+    this.time.delayedCall(1000, () => {
+      this.resetPuzzle();
+      this.isShortCircuiting = false;
+      this.show("Verbind de elektriciteitskabels! Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
+    });
+  }
+
+  private createExplosion(x: number, y: number, particleCount: number) {
+    const colors = [0xff0000, 0xff6600, 0xffff00, 0xffffff];
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const speed = Phaser.Math.Between(100, 300);
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+
+      const particle = this.add.circle(x, y, Phaser.Math.Between(2, 5), Phaser.Utils.Array.GetRandom(colors));
+
+      this.tweens.add({
+        targets: particle,
+        x: x + vx * 0.5,
+        y: y + vy * 0.5,
+        alpha: 0,
+        duration: Phaser.Math.Between(300, 600),
+        ease: 'cubic.out',
+        onComplete: () => particle.destroy()
+      });
     }
   }
 }
