@@ -31,6 +31,7 @@ export default class ShipFuelScene extends Phaser.Scene {
   private flowOffset = 0; // for animating electricity flow
   private pulseTime = 0; // for terminal pulsing
   private isShortCircuiting = false; // prevent input during explosion
+  private shortCircuitingColors = new Set<number>(); // colors currently short-circuiting
 
   constructor() {
     super("ShipFuelScene");
@@ -83,6 +84,13 @@ export default class ShipFuelScene extends Phaser.Scene {
     if (this.puzzleActive) {
       this.pulseTime += delta * 0.003;
       this.drawDots(); // redraw terminals for pulsing effect
+
+      // Animate short-circuit flow
+      if (this.shortCircuitingColors.size > 0) {
+        this.flowOffset += delta * 0.01;
+        this.flowGfx?.clear();
+        this.drawShortCircuitFlow();
+      }
     }
   }
 
@@ -442,8 +450,7 @@ export default class ShipFuelScene extends Phaser.Scene {
 
     // Win only when all colors are connected AND every cell is covered
     if (this.lockedColors.size === this.pairs.length && this.isAllCovered()) {
-      this.cameras.main.flash(160, 30, 200, 120);
-      this.time.delayedCall(300, () => this.endPuzzle());
+      this.triggerVictory();
     }
   }
 
@@ -534,15 +541,85 @@ export default class ShipFuelScene extends Phaser.Scene {
     }
   }
 
+  private drawShortCircuitFlow() {
+    const g = this.flowGfx!;
+
+    // Draw wild flashing electricity on short-circuiting cables
+    for (const color of this.shortCircuitingColors) {
+      const cells = this.paths.get(color);
+      if (!cells || cells.length < 2) continue;
+
+      const lineWidth = this.cell * 0.2;
+
+      // Random flickering colors (red/orange/yellow/white)
+      const colors = [0xff0000, 0xff6600, 0xffff00, 0xffffff];
+      const flickerColor = Phaser.Utils.Array.GetRandom(colors);
+      const flickerAlpha = Phaser.Math.FloatBetween(0.5, 1.0);
+
+      // Draw bright glowing outline
+      g.lineStyle(lineWidth + 4, flickerColor, flickerAlpha * 0.4);
+      g.beginPath();
+      const start = this.toWorld(cells[0]);
+      g.moveTo(start.x, start.y);
+      for (let i = 1; i < cells.length; i++) {
+        const v = this.toWorld(cells[i]);
+        g.lineTo(v.x, v.y);
+      }
+      g.strokePath();
+
+      // Draw core lightning bolt effect with fast moving dashes
+      g.lineStyle(lineWidth * 0.6, 0xffffff, flickerAlpha);
+      for (let i = 0; i < cells.length - 1; i++) {
+        const segStart = this.toWorld(cells[i]);
+        const segEnd = this.toWorld(cells[i + 1]);
+
+        const dx = segEnd.x - segStart.x;
+        const dy = segEnd.y - segStart.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.ceil(dist / 8);
+
+        for (let j = 0; j < steps; j++) {
+          const t1 = (j / steps) + (this.flowOffset / 8); // faster flow
+          const t2 = ((j + 0.4) / steps) + (this.flowOffset / 8); // shorter dashes
+
+          // Randomize which dashes appear for chaotic effect
+          if ((Math.floor(t1 * 3) + Math.floor(this.flowOffset * 10)) % 2 === 0) {
+            const x1 = segStart.x + dx * (t1 % 1);
+            const y1 = segStart.y + dy * (t1 % 1);
+            const x2 = segStart.x + dx * (t2 % 1);
+            const y2 = segStart.y + dy * (t2 % 1);
+
+            g.beginPath();
+            g.moveTo(x1, y1);
+            g.lineTo(x2, y2);
+            g.strokePath();
+          }
+        }
+      }
+    }
+  }
+
   private triggerShortCircuit(x: number, y: number) {
     this.isShortCircuiting = true;
+    const faultyColor = this.drawingColor;
     this.drawingColor = undefined;
+
+    // Start flashing electricity on the faulty cable immediately
+    if (faultyColor !== undefined) {
+      this.shortCircuitingColors.add(faultyColor);
+    }
 
     // Camera shake (immediate)
     this.cameras.main.shake(400, 0.015);
 
     // Initial explosion at wrong terminal
     this.createExplosion(x, y, 30);
+
+    // Track which colors we've already scheduled to avoid duplicates
+    const scheduledColors = new Set<number>();
+    if (faultyColor !== undefined) {
+      scheduledColors.add(faultyColor);
+    }
 
     // Explosions at other terminals (250-450ms, random timing)
     for (const p of this.pairs) {
@@ -554,6 +631,15 @@ export default class ShipFuelScene extends Phaser.Scene {
         const delay = Phaser.Math.Between(250, 450);
         this.time.delayedCall(delay, () => {
           this.createExplosion(v.x, v.y, 20);
+
+          // Start flashing electricity on this cable when its terminals explode
+          if (!scheduledColors.has(p.color)) {
+            const path = this.paths.get(p.color);
+            if (path && path.length > 1) {
+              this.shortCircuitingColors.add(p.color);
+            }
+            scheduledColors.add(p.color);
+          }
         });
       }
     }
@@ -563,15 +649,26 @@ export default class ShipFuelScene extends Phaser.Scene {
       this.createExplosion(x, y, 25);
     });
 
-    // Red flash at 600ms, ends at 1400ms (800ms duration)
+    // Cables disappear at 450ms (but flashing continues)
+    this.time.delayedCall(450, () => {
+      this.pathGfx?.clear(); // cables disappear
+    });
+
+    // Red flash at 600ms
     this.time.delayedCall(600, () => {
-      this.cameras.main.flash(800, 255, 50, 0);
+      this.cameras.main.flash(800, 255, 50, 0); // red flash starts
+    });
+
+    // Flashing electricity stops at 800ms
+    this.time.delayedCall(800, () => {
+      this.shortCircuitingColors.clear();
+      this.flowGfx?.clear();
     });
 
     // Message
     this.show("⚡ KORTSLUITING! De puzzel is gereset...");
 
-    // Reset puzzle at 1000ms (cables disappear during flash)
+    // Reset puzzle logic at 1000ms
     this.time.delayedCall(1000, () => {
       this.resetPuzzle();
       this.isShortCircuiting = false;
@@ -599,5 +696,78 @@ export default class ShipFuelScene extends Phaser.Scene {
         onComplete: () => particle.destroy()
       });
     }
+  }
+
+  private triggerVictory() {
+    this.isShortCircuiting = true; // block input during celebration
+
+    // Green/gold flash
+    this.cameras.main.flash(300, 100, 255, 100);
+
+    // Confetti explosion from grid center
+    const { width, height } = this.scale;
+    const cx = width / 2;
+    const cy = this.gridOrigin.y + (this.gridSize * this.cell) / 2;
+
+    // Multiple waves of confetti
+    const confettiColors = [0xffd700, 0x00ff00, 0x00ffff, 0xff00ff, 0xffffff, 0xffff00];
+
+    // First big burst
+    for (let i = 0; i < 60; i++) {
+      const angle = (Math.PI * 2 * i) / 60 + Phaser.Math.FloatBetween(-0.1, 0.1);
+      const speed = Phaser.Math.Between(150, 400);
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - 200; // bias upward
+
+      const particle = this.add.circle(
+        cx, cy,
+        Phaser.Math.Between(3, 7),
+        Phaser.Utils.Array.GetRandom(confettiColors)
+      );
+
+      this.tweens.add({
+        targets: particle,
+        x: cx + vx * 0.8,
+        y: cy + vy * 0.8,
+        alpha: 0,
+        angle: Phaser.Math.Between(0, 360),
+        duration: Phaser.Math.Between(800, 1200),
+        ease: 'cubic.out',
+        onComplete: () => particle.destroy()
+      });
+    }
+
+    // Second wave after 200ms
+    this.time.delayedCall(200, () => {
+      for (let i = 0; i < 40; i++) {
+        const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        const speed = Phaser.Math.Between(100, 250);
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed - 150;
+
+        const particle = this.add.circle(
+          cx, cy,
+          Phaser.Math.Between(2, 5),
+          Phaser.Utils.Array.GetRandom(confettiColors)
+        );
+
+        this.tweens.add({
+          targets: particle,
+          x: cx + vx * 0.6,
+          y: cy + vy * 0.6,
+          alpha: 0,
+          angle: Phaser.Math.Between(0, 360),
+          duration: Phaser.Math.Between(600, 1000),
+          ease: 'cubic.out',
+          onComplete: () => particle.destroy()
+        });
+      }
+    });
+
+    // Success message
+    this.show("✨ GELUKT! De elektriciteit stroomt weer!");
+
+    // End puzzle after celebration
+    this.time.delayedCall(1200, () => this.endPuzzle());
   }
 }
