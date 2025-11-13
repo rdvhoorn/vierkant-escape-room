@@ -75,6 +75,12 @@ export default class ShipFuelScene extends Phaser.Scene {
     // Input for dialog advance (disabled while puzzle is active)
     this.input.on("pointerdown", () => this.advance());
     this.input.keyboard?.on("keydown-SPACE", () => this.advance());
+
+    //terug met escape (rondlopen)
+    this.input.keyboard?.on("keydown-ESC", () => {
+      this.scene.stop(this.scene.key);
+      this.scene.start("FaceTopScene");
+    });
   }
 
   update(_time: number, delta: number) {
@@ -116,6 +122,20 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
+    const currentEnergy = this.registry.get("energy") || 0;
+
+    if (currentEnergy < 5) {
+      // Not enough energy — show warning message
+      this.tweens.killTweensOf(this.dialogText);
+      this.dialogText.setAlpha(1).setText("Vind minstens 5 energie voor je mag vertrekken! (druk ESCAPE)");
+      this.advanceHint.setVisible(false);
+
+      // Optional: after a short time, show the hint again
+      this.time.delayedCall(3000, () => this.advanceHint.setVisible(true));
+      return;
+    }
+
+    // Enough energy — proceed normally
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
       if (p === 1) this.scene.start("MoreToComeScene");
     });
@@ -495,6 +515,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     if (this.drawingColor === color) this.drawingColor = undefined;
     this.redrawPaths();
   }
+<<<<<<< HEAD
 
   private drawElectricityFlow() {
     const g = this.flowGfx!;
@@ -770,4 +791,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     // End puzzle after celebration
     this.time.delayedCall(1200, () => this.endPuzzle());
   }
+=======
+  
+>>>>>>> daniel_test
 }
