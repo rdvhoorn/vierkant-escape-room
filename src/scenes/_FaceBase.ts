@@ -30,13 +30,52 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
 
-  // ---- CAMERA for pseudo-3D preview ----
-  private camZ = 1800;  // camera position on +Z
+  // ---- ENERGY (shared across faces) ----
+  private static readonly ENERGY_KEY = "energy";
+  protected maxEnergy = 100;
+
+  // ---- CAMERA & 3D preview fields ----
+  private camZ = 1800; // camera position on +Z
   private tilt = -DIHEDRAL; // rotate neighbors away from viewer (negative z)
 
   // drawing caches
   private gMain!: Phaser.GameObjects.Graphics;      // central face
   private gNeighbors!: Phaser.GameObjects.Graphics; // neighbors ring (behind)
+
+  /**
+   * Ensure energy exists in the registry.
+   * Call this in your face `create()` if you want this scene to use energy.
+   */
+  protected ensureEnergyInitialized(initial: number = 0) {
+    const existing = this.registry.get(FaceBase.ENERGY_KEY);
+    if (typeof existing !== "number") {
+      const clamped = Phaser.Math.Clamp(initial, 0, this.maxEnergy);
+      this.registry.set(FaceBase.ENERGY_KEY, clamped);
+      this.events.emit("energyChanged", clamped);
+    } else {
+      // Emit event so HUD can sync to current value when entering this scene
+      this.events.emit("energyChanged", this.getEnergy());
+    }
+  }
+
+  protected getEnergy(): number {
+    let value = this.registry.get(FaceBase.ENERGY_KEY);
+    if (typeof value !== "number") {
+      value = 0;
+      this.registry.set(FaceBase.ENERGY_KEY, value);
+    }
+    return value;
+  }
+
+  protected setEnergy(value: number) {
+    const clamped = Phaser.Math.Clamp(value, 0, this.maxEnergy);
+    this.registry.set(FaceBase.ENERGY_KEY, clamped);
+    this.events.emit("energyChanged", clamped);
+  }
+
+  protected addEnergy(delta: number) {
+    this.setEnergy(this.getEnergy() + delta);
+  }
 
   // ---------------------------
   // Scene lifecycle helpers
@@ -92,6 +131,9 @@ export default abstract class FaceBase extends Phaser.Scene {
       getPlayer: () => this.player,
       isDesktop,
       onEscape: () => this.scene.start("TitleScene"),
+      // Energy hooks for HUD (optional in subclasses)
+      getEnergy: () => this.getEnergy(),
+      maxEnergy: this.maxEnergy,
     });
 
     this.setCameraToPlayerBounds();
@@ -193,11 +235,12 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   // ---------------------------
-  // 3D preview core (unchanged)
+  // 3D preview core
   // ---------------------------
   private v2to3(p: V2): V3 {
     return new Phaser.Math.Vector3(p.x, p.y, 0);
   }
+
   private v3(x: number, y: number, z: number): V3 {
     return new Phaser.Math.Vector3(x, y, z);
   }

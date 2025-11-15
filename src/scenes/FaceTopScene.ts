@@ -18,10 +18,10 @@ export default class FaceTopScene extends FaceBase {
     ui: null as Phaser.GameObjects.Container | null,
   };
 
-  private shipZone!: Phaser.GameObjects.Zone;              // proximity window
-  private shipHighlight!: Phaser.GameObjects.Graphics;     // visual highlight around ship
+  private shipZone!: Phaser.GameObjects.Zone;          // proximity window
+  private shipHighlight!: Phaser.GameObjects.Graphics; // visual highlight around ship
 
-  private puzzleZone!: Phaser.GameObjects.Zone;            // puzzle proximity
+  private puzzleZone!: Phaser.GameObjects.Zone;        // puzzle proximity
   private puzzleHighlight!: Phaser.GameObjects.Graphics;
 
   private inShipRange = false;
@@ -32,6 +32,9 @@ export default class FaceTopScene extends FaceBase {
   create() {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor("#0b1020");
+
+    // Shared energy initialization for this face
+    this.ensureEnergyInitialized(0);
 
     // ---- Scene layers
     this.layer.bg = this.add.container(0, 0).setDepth(0);
@@ -44,11 +47,6 @@ export default class FaceTopScene extends FaceBase {
     // ---- Twinkling stars (screen space)
     this.twinklingStars = new TwinklingStars(this, 220, width, height);
     this.layer.bg.add(this.twinklingStars.graphics);
-
-    // ---- Registry: energy
-    if (this.registry.get("energy") == null) {
-      this.registry.set("energy", 0); // start at 0
-    }
 
     // ---- Static starfield background
     const stars = this.add.graphics();
@@ -178,29 +176,7 @@ export default class FaceTopScene extends FaceBase {
       { hintText }
     );
 
-    // ---- Energy bar in top-right corner
-    const energyBg = this.add.graphics();
-    energyBg.fillStyle(0x222222, 0.7);
-    energyBg.fillRect(0, 0, 104, 24);
-
-    const energyBar = this.add.graphics();
-    energyBar.fillStyle(0x00ff00, 1);
-    energyBar.fillRect(2, 2, this.registry.get("energy"), 20);
-
-    const energyContainer = this.add
-      .container(this.scale.width - 120, 28, [energyBg, energyBar])
-      .setScrollFactor(0)
-      .setDepth(20);
-
-    this.layer.ui?.add(energyContainer);
-
-    // Helper to update bar
-    this.events.on("updateEnergy", (newEnergy: number) => {
-      energyBar.clear();
-      energyBar.fillStyle(0x00ff00, 1);
-      energyBar.fillRect(2, 2, Math.min(newEnergy, 100), 20);
-    });
-
+    // Decorations etc.
     this.decorateCrashSite(radius);
   }
 
@@ -222,18 +198,12 @@ export default class FaceTopScene extends FaceBase {
     );
     this.inPuzzleRange = isOverlappingPuzzle;
     this.puzzleHighlight.setVisible(this.inPuzzleRange);
-
-    // HUD update is already subscribed via FaceBase (events.on("update"))
-    // so we don't call this.hud.update() here.
   }
 
   /**
    * Override FaceBase's edge-based proximity:
    * For this scene, "interaction in range" is defined by the ship/puzzle zones,
    * NOT actual polygon edges.
-   *
-   * We ignore the actual edge and just say:
-   *   "There's an interaction whenever you're in ship OR puzzle range".
    */
   protected isNearEdge(
     _player: { x: number; y: number },
@@ -243,7 +213,7 @@ export default class FaceTopScene extends FaceBase {
   }
 
   // ---------------------------
-  // Decorations / visuals (unchanged)
+  // Decorations / visuals
   // ---------------------------
 
   private addGrassyGroundTexture(cx: number, cy: number, radius: number) {

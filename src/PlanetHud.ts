@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import { PlayerController } from "./PlanetPlayer";
-import type { Edge } from "./scenes/_FaceBase";
 import { toggleControlsMode } from "./ControlsMode";
 
 type V2Like = { x: number; y: number };
@@ -15,6 +14,8 @@ type HudOptions = {
   getPlayer: () => V2Like;
   isDesktop: boolean;
   onEscape?: () => void;
+  getEnergy?: () => number;
+  maxEnergy?: number;
 };
 
 const INTERACT_KEY = "E";
@@ -27,6 +28,10 @@ export class Hud {
   private controlsText?: Phaser.GameObjects.Text;
   private portalHint!: Phaser.GameObjects.Text;
 
+  // Energy UI
+  private energyBar?: Phaser.GameObjects.Graphics;
+  private energyContainer?: Phaser.GameObjects.Container;
+
   private interactions: Interaction[] = [];
   private interactKey?: Phaser.Input.Keyboard.Key;
 
@@ -36,6 +41,8 @@ export class Hud {
     private opts: HudOptions
   ) {
     this.createControlsUI();
+    this.createEnergyUI();
+
     if (!opts.isDesktop) {
       this.createTouchControls();
     }
@@ -81,6 +88,11 @@ export class Hud {
     this.portalHint?.destroy();
     this.joystickBase?.destroy();
     this.joystickKnob?.destroy();
+    this.energyBar?.destroy();
+    this.energyContainer?.destroy();
+
+    // Unsubscribe from events
+    this.scene.events.off("energyChanged", this.handleEnergyChanged, this);
     // You can also remove input listeners here if you want to be extra clean.
   }
 
@@ -115,6 +127,40 @@ export class Hud {
       .setAlpha(0);
   }
 
+  // Energy bar UI (top-right)
+  private createEnergyUI() {
+    if (!this.opts.getEnergy) return; // HUD can be used without energy
+
+    const max = this.opts.maxEnergy ?? 100;
+    const initialEnergy = Phaser.Math.Clamp(this.opts.getEnergy(), 0, max);
+
+    const energyBg = this.scene.add.graphics();
+    energyBg.fillStyle(0x222222, 0.7);
+    energyBg.fillRect(0, 0, 104, 24);
+
+    this.energyBar = this.scene.add.graphics();
+    this.energyBar.fillStyle(0x00ff00, 1);
+    this.energyBar.fillRect(2, 2, Math.min(initialEnergy, max), 20);
+
+    this.energyContainer = this.scene.add
+      .container(this.scene.scale.width - 120, 28, [energyBg, this.energyBar])
+      .setScrollFactor(0)
+      .setDepth(20);
+
+    this.scene.events.on("energyChanged", this.handleEnergyChanged, this);
+  }
+
+  private handleEnergyChanged = (newEnergy: number) => {
+    if (!this.energyBar) return;
+
+    const max = this.opts.maxEnergy ?? 100;
+    const clamped = Phaser.Math.Clamp(newEnergy, 0, max);
+
+    this.energyBar.clear();
+    this.energyBar.fillStyle(0x00ff00, 1);
+    this.energyBar.fillRect(2, 2, Math.min(clamped, max), 20);
+  };
+
   private bindEscape() {
     if (!this.opts.onEscape) return;
     this.scene.input.keyboard?.on("keydown-ESC", this.opts.onEscape);
@@ -143,38 +189,41 @@ export class Hud {
     const knobRadius = 24;
 
     // Joystick base (bottom-left)
-    this.joystickBase = this.scene.add.circle(
-      90,
-      this.scene.scale.height - 90,
-      radius,
-      0x000000,
-      0.25
-    )
+    this.joystickBase = this.scene.add
+      .circle(
+        90,
+        this.scene.scale.height - 90,
+        radius,
+        0x000000,
+        0.25
+      )
       .setScrollFactor(0)
       .setDepth(100);
 
     // Joystick knob
-    this.joystickKnob = this.scene.add.circle(
-      this.joystickBase.x,
-      this.joystickBase.y,
-      knobRadius,
-      0xffffff,
-      0.7
-    )
+    this.joystickKnob = this.scene.add
+      .circle(
+        this.joystickBase.x,
+        this.joystickBase.y,
+        knobRadius,
+        0xffffff,
+        0.7
+      )
       .setScrollFactor(0)
       .setDepth(101);
 
     // --- INTERACTION BUTTON (tap) bottom-right ---
     const btnSize = 64;
 
-    const btn = this.scene.add.rectangle(
-      this.scene.scale.width - 90,
-      this.scene.scale.height - 90,
-      btnSize,
-      btnSize,
-      0xffffff, // solid white square
-      1
-    )
+    const btn = this.scene.add
+      .rectangle(
+        this.scene.scale.width - 90,
+        this.scene.scale.height - 90,
+        btnSize,
+        btnSize,
+        0xffffff, // solid white square
+        1
+      )
       .setScrollFactor(0)
       .setDepth(100)
       .setInteractive({ useHandCursor: true });
