@@ -1,0 +1,306 @@
+import Phaser from "phaser";
+import { PlayerController } from "./PlanetPlayer";
+import type { Edge } from "./scenes/_FaceBase";
+import { toggleControlsMode } from "./ControlsMode";
+
+type V2Like = { x: number; y: number };
+
+type Interaction = {
+  // For now, everything is still driven by edges,
+  // but this can later be generalized to other triggers.
+  edge: Edge;
+  hintText?: string;
+  onUse: () => void;
+};
+
+type HudOptions = {
+  getPlayer: () => V2Like;
+  isDesktop: boolean;
+  edgeProximity: (player: V2Like, edge: Edge) => boolean;
+  onEscape?: () => void;
+};
+
+const INTERACT_KEY = "E";
+
+export class Hud {
+  private joystickBase?: Phaser.GameObjects.Arc;
+  private joystickKnob?: Phaser.GameObjects.Arc;
+  private joystickPointerId: number | null = null;
+
+  private controlsText?: Phaser.GameObjects.Text;
+  private portalHint!: Phaser.GameObjects.Text;
+
+  private interactions: Interaction[] = [];
+  private interactKey?: Phaser.Input.Keyboard.Key;
+
+  constructor(
+    private scene: Phaser.Scene,
+    private playerController: PlayerController,
+    private opts: HudOptions
+  ) {
+    this.createControlsUI();
+
+    // Touch / mobile HUD
+    if (!opts.isDesktop) {
+      this.createTouchControls();
+    }
+
+    this.bindEscape();
+    this.bindModeToggle();
+  }
+
+  // ---------------------------
+  // Public API
+  // ---------------------------
+
+  /**
+   * General interaction registration.
+   * For now, this is still edge-based, but you could expand this
+   * later to other interaction types.
+   */
+  registerInteraction(interaction: Interaction) {
+    this.interactions.push(interaction);
+
+    // Desktop: bind the single interaction key once.
+    if (!this.interactKey && this.opts.isDesktop) {
+      this.interactKey = this.scene.input.keyboard?.addKey(INTERACT_KEY);
+      this.scene.input.keyboard?.on(`keydown-${INTERACT_KEY}`, () => {
+        const player = this.opts.getPlayer();
+        const active = this.getActiveInteraction(player);
+        if (active) active.onUse();
+      });
+    }
+  }
+
+  /**
+   * Convenience helper for edge-based interactions (old behaviour).
+   */
+  registerEdgeInteraction(
+    edge: Edge,
+    onUse: () => void,
+    options?: { hintText?: string }
+  ) {
+    this.registerInteraction({
+      edge,
+      onUse,
+      hintText: options?.hintText,
+    });
+  }
+
+  /** Call once per frame from the Scene’s update. */
+  update() {
+    // Movement + animation
+    this.playerController.update();
+
+    // Edge / interaction hint logic
+    const player = this.opts.getPlayer();
+    const active = this.getActiveInteraction(player);
+
+    if (active) {
+      const defaultHint = this.opts.isDesktop
+        ? "Interact: press E"
+        : "Interact: tap";
+      const hint = active.hintText ?? defaultHint;
+      this.portalHint.setText(hint).setAlpha(1);
+    } else {
+      this.portalHint.setAlpha(0);
+    }
+  }
+
+  destroy() {
+    this.controlsText?.destroy();
+    this.portalHint?.destroy();
+    this.joystickBase?.destroy();
+    this.joystickKnob?.destroy();
+    // You can also remove input listeners here if you want to be extra clean.
+  }
+
+  // ---------------------------
+  // Internal helpers
+  // ---------------------------
+
+  private getActiveInteraction(player: V2Like): Interaction | undefined {
+    return this.interactions.find((i) =>
+      this.opts.edgeProximity(player, i.edge)
+    );
+  }
+
+  private createControlsUI() {
+    // Bottom-right controls hint ONLY on desktop
+    if (this.opts.isDesktop) {
+      this.controlsText = this.scene.add
+        .text(
+          this.scene.scale.width - 12,
+          this.scene.scale.height - 10,
+          "Lopen: WASD / Pijltjes   |  E:  Interactie   |  ESC: Titel Scherm",
+          { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
+        )
+        .setScrollFactor(0)
+        .setOrigin(1, 1)
+        .setAlpha(0.9);
+    }
+
+    // Portal / interaction hint (desktop + mobile)
+    this.portalHint = this.scene.add
+      .text(this.scene.scale.width / 2, 28, "", {
+        fontFamily: "sans-serif",
+        fontSize: "16px",
+        color: "#cfe8ff",
+      })
+      .setScrollFactor(0)
+      .setOrigin(0.5)
+      .setAlpha(0);
+  }
+
+  private bindEscape() {
+    if (!this.opts.onEscape) return;
+    this.scene.input.keyboard?.on("keydown-ESC", this.opts.onEscape);
+  }
+
+  private bindModeToggle() {
+    // Secret dev key: backtick (`) toggles control mode and restarts the scene.
+    this.scene.input.keyboard?.on("keydown-BACKTICK", () => {
+      const isNowDesktop = toggleControlsMode(this.scene);
+
+      console.log(
+        `[Hud] Restarting scene in ${isNowDesktop ? "DESKTOP" : "TOUCH"} mode`
+      );
+
+      // Restart the current scene so everything is rebuilt with the new mode.
+      this.scene.scene.restart();
+    });
+  }
+
+  // ---------------------------
+  // Touch / joystick handling
+  // ---------------------------
+
+  private createTouchControls() {
+    const radius = 60;
+    const knobRadius = 24;
+
+    // Joystick base (bottom-left)
+    this.joystickBase = this.scene.add.circle(
+      90,
+      this.scene.scale.height - 90,
+      radius,
+      0x000000,
+      0.25
+    )
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    // Joystick knob
+    this.joystickKnob = this.scene.add.circle(
+      this.joystickBase.x,
+      this.joystickBase.y,
+      knobRadius,
+      0xffffff,
+      0.7
+    )
+      .setScrollFactor(0)
+      .setDepth(101);
+
+    // --- INTERACTION BUTTON (tap) bottom-right ---
+    const btnSize = 64;
+
+    const btn = this.scene.add.rectangle(
+      this.scene.scale.width - 90,
+      this.scene.scale.height - 90,
+      btnSize,
+      btnSize,
+      0xffffff, // solid white square
+      1
+    )
+      .setScrollFactor(0)
+      .setDepth(100)
+      .setInteractive({ useHandCursor: true });
+
+    this.scene.add
+      .text(btn.x, btn.y, "I", {
+        fontFamily: "sans-serif",
+        fontSize: "32px",
+        color: "#000000", // black "I" on white square
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(101);
+
+    // Tap on the button = interaction
+    btn.on("pointerdown", () => {
+      const player = this.opts.getPlayer();
+      const active = this.getActiveInteraction(player);
+      if (active) active.onUse();
+    });
+
+    // Pointer events for joystick ONLY (left half)
+    this.scene.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.x < this.scene.scale.width / 2) {
+        if (this.joystickPointerId === null) {
+          this.joystickPointerId = pointer.id;
+          this.updateJoystick(pointer);
+        }
+      }
+    });
+
+    this.scene.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === this.joystickPointerId) {
+        this.updateJoystick(pointer);
+      }
+    });
+
+    this.scene.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.id === this.joystickPointerId) {
+        this.joystickPointerId = null;
+
+        if (this.joystickBase && this.joystickKnob) {
+          this.joystickKnob.setPosition(
+            this.joystickBase.x,
+            this.joystickBase.y
+          );
+        }
+
+        // Clear touch input on release
+        this.playerController.setTouchInput(null);
+      }
+    });
+  }
+
+  private updateJoystick(pointer: Phaser.Input.Pointer) {
+    if (!this.joystickBase || !this.joystickKnob) return;
+
+    const base = this.joystickBase;
+    const knob = this.joystickKnob;
+
+    const dx = pointer.x - base.x;
+    const dy = pointer.y - base.y;
+
+    const maxDist = base.radius;
+    let dist = Math.sqrt(dx * dx + dy * dy);
+
+    let nx = 0;
+    let ny = 0;
+
+    if (dist > 0) {
+      const k = Math.min(dist, maxDist) / dist;
+      const clampedX = base.x + dx * k;
+      const clampedY = base.y + dy * k;
+      knob.setPosition(clampedX, clampedY);
+
+      nx = dx / maxDist; // approx [-1, 1]
+      ny = dy / maxDist;
+    } else {
+      knob.setPosition(base.x, base.y);
+    }
+
+    const DEAD = 0.25;
+    const input = {
+      left: nx < -DEAD,
+      right: nx > DEAD,
+      up: ny < -DEAD,
+      down: ny > DEAD,
+    };
+
+    this.playerController.setTouchInput(input);
+  }
+}

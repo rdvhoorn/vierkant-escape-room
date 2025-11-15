@@ -4,7 +4,10 @@ import {
   PlayerController,
   DEFAULT_IDLE_FRAMES,
   DEFAULT_MOVE_FRAMES,
-} from "../player/player";
+} from "../PlanetPlayer";
+
+import { Hud } from "../PlanetHud";
+import { getIsDesktop } from "../ControlsMode";
 
 export type Edge = { a: Phaser.Math.Vector2; b: Phaser.Math.Vector2 };
 
@@ -16,30 +19,16 @@ const RAD = Math.PI / 180;
 // Regular dodecahedron dihedral angle ~= 116.565051°
 const DIHEDRAL = 116.565051 * RAD;
 
-type EdgeAction = {
-  edge: Edge;
-  hintText?: string;
-  key?: string;
-  onUse: () => void;
-};
-
 export default abstract class FaceBase extends Phaser.Scene {
   protected world!: Phaser.GameObjects.Container;
   private worldBounds!: Phaser.Geom.Rectangle;
 
   protected playerController!: PlayerController;
-  private joystickBase?: Phaser.GameObjects.Arc;
-  private joystickKnob?: Phaser.GameObjects.Arc;
-  private joystickPointerId: number | null = null;
+  protected hud!: Hud;
 
   // Gameplay geometry
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
-
-  // Portal hint & edge actions
-  protected portalHint!: Phaser.GameObjects.Text;
-  private edgeActions: EdgeAction[] = [];
-  private edgeKey?: Phaser.Input.Keyboard.Key;
 
   // ---- CAMERA for pseudo-3D preview ----
   private camZ = 1800;  // camera position on +Z
@@ -82,7 +71,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   // ---------------------------
   // Player: creation & controls (all generic)
   // ---------------------------
-    protected createPlayerAt(x: number, y: number) {
+  protected createPlayerAt(x: number, y: number) {
     if (!this.poly) {
       throw new Error(
         "createPlayerAt() called before renderFaceAndNeighbors(). 'poly' is not set."
@@ -97,224 +86,33 @@ export default abstract class FaceBase extends Phaser.Scene {
       moveFrames: DEFAULT_MOVE_FRAMES,
     });
 
-    this.setupControlsUI();
+    const isDesktop = getIsDesktop(this);
+
+    this.hud = new Hud(this, this.playerController, {
+      getPlayer: () => this.player,
+      isDesktop,
+      edgeProximity: (p, edge) => this.isNearEdge(p, edge),
+      onEscape: () => this.scene.start("TitleScene"),
+    });
+
     this.setCameraToPlayerBounds();
 
-    if (!this.sys.game.device.os.desktop) {
-      this.createTouchControls();
-    }
-
-    this.events.on("update", this.basePerFrameUpdate, this);
-  }
-
-  private createTouchControls() {
-    const radius = 60;
-    const knobRadius = 24;
-
-    // Joystick base (bottom-left)
-    this.joystickBase = this.add.circle(
-      90,
-      this.scale.height - 90,
-      radius,
-      0x000000,
-      0.25
-    )
-      .setScrollFactor(0)
-      .setDepth(100);
-
-    // Joystick knob
-    this.joystickKnob = this.add.circle(
-      this.joystickBase.x,
-      this.joystickBase.y,
-      knobRadius,
-      0xffffff,
-      0.7
-    )
-      .setScrollFactor(0)
-      .setDepth(101);
-
-    // Action button ("E") bottom-right
-    const btn = this.add.circle(
-      this.scale.width - 90,
-      this.scale.height - 90,
-      45,
-      0x000000,
-      0.25
-    )
-      .setScrollFactor(0)
-      .setDepth(100);
-
-    this.add
-      .text(btn.x, btn.y, "E", {
-        fontFamily: "sans-serif",
-        fontSize: "28px",
-        color: "#ffffff",
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(101);
-
-    // Pointer events
-    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      // Left half: joystick
-      if (pointer.x < this.scale.width / 2) {
-        if (this.joystickPointerId === null) {
-          this.joystickPointerId = pointer.id;
-          this.updateJoystick(pointer);
-        }
-      } else {
-        // Right half: treat as "E" tap
-        this.triggerEdgeActionIfAny();
-      }
-    });
-
-    this.input.on("pointermove", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === this.joystickPointerId) {
-        this.updateJoystick(pointer);
-      }
-    });
-
-    this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-      if (pointer.id === this.joystickPointerId) {
-        this.joystickPointerId = null;
-
-        if (this.joystickBase && this.joystickKnob) {
-          this.joystickKnob.setPosition(
-            this.joystickBase.x,
-            this.joystickBase.y
-          );
-        }
-
-        // Clear touch input on release
-        if (this.playerController) {
-          this.playerController.setTouchInput(null);
-        }
-      }
+    this.events.on("update", () => {
+      this.hud.update();
     });
   }
 
-  private updateJoystick(pointer: Phaser.Input.Pointer) {
-    if (!this.joystickBase || !this.joystickKnob || !this.playerController) {
-      return;
-    }
-
-    const base = this.joystickBase;
-    const knob = this.joystickKnob;
-
-    const dx = pointer.x - base.x;
-    const dy = pointer.y - base.y;
-
-    const maxDist = base.radius;
-    let dist = Math.sqrt(dx * dx + dy * dy);
-
-    let nx = 0;
-    let ny = 0;
-
-    if (dist > 0) {
-      const k = Math.min(dist, maxDist) / dist;
-      const clampedX = base.x + dx * k;
-      const clampedY = base.y + dy * k;
-      knob.setPosition(clampedX, clampedY);
-
-      nx = dx / maxDist; // approx [-1, 1]
-      ny = dy / maxDist;
-    } else {
-      knob.setPosition(base.x, base.y);
-    }
-
-    const DEAD = 0.25;
-    const input = {
-      left: nx < -DEAD,
-      right: nx > DEAD,
-      up: ny < -DEAD,
-      down: ny > DEAD,
-    };
-
-    this.playerController.setTouchInput(input);
-  }
-
-  private triggerEdgeActionIfAny() {
-    if (!this.playerController) return;
-    const active = this.edgeActions.find((a) =>
-      this.isNearEdge(this.player, a.edge)
-    );
-    if (active) {
-      active.onUse();
-    }
-  }
-
-  private setupControlsUI() {
-    this.add
-      .text(
-        this.scale.width - 12,
-        this.scale.height - 10,
-        "Lopen: WASD / Pijltjes   |  E:  Actie   |  ESC: Titel Scherm",
-        { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
-      )
-      .setScrollFactor(0)
-      .setOrigin(1, 1)
-      .setAlpha(0.9);
-
-    this.portalHint = this.add
-      .text(this.scale.width / 2, 28, "", {
-        fontFamily: "sans-serif",
-        fontSize: "16px",
-        color: "#cfe8ff",
-      })
-      .setScrollFactor(0)
-      .setOrigin(0.5)
-      .setAlpha(0);
-
-    // ESC: go back to Title (generic)
-    this.input.keyboard?.on("keydown-ESC", () =>
-      this.scene.start("TitleScene")
-    );
-  }
-
-  private basePerFrameUpdate() {
-    if (!this.playerController) return;
-
-    // All movement + orientation + animation handled by the controller
-    this.playerController.update();
-
-    // Edge hint + E-to-use still managed by FaceBase,
-    // but uses the player getter (which returns the sprite)
-    const active = this.edgeActions.find((a) =>
-      this.isNearEdge(this.player, a.edge)
-    );
-
-    if (active) {
-      const hint = active.hintText ?? "Edge access: press E";
-      this.portalHint.setText(hint).setAlpha(1);
-    } else {
-      this.portalHint.setAlpha(0);
-    }
-  }
-
-  // Public helper to register an actionable edge (e.g., “descend”/“ascend”).
   protected registerEdgeAction(
     edge: Edge,
     onUse: () => void,
     options?: { hintText?: string; key?: string }
   ) {
-    this.edgeActions.push({
-      edge,
-      onUse,
-      hintText: options?.hintText,
-      key: (options?.key ?? "E").toUpperCase(),
-    });
-
-    // Bind key once (first registration wins)
-    const useKey = (options?.key ?? "E").toUpperCase();
-    if (!this.edgeKey) {
-      this.edgeKey = this.input.keyboard?.addKey(useKey);
-      this.input.keyboard?.on(`keydown-${useKey}`, () => {
-        const active = this.edgeActions.find((a) =>
-          this.isNearEdge(this.player, a.edge)
-        );
-        if (active) active.onUse();
-      });
+    if (!this.hud) {
+      throw new Error(
+        "registerEdgeAction() called before HUD was created. Did you call createPlayerAt()?"
+      );
     }
+    this.hud.registerEdgeInteraction(edge, onUse, options);
   }
 
   // ---------------------------
