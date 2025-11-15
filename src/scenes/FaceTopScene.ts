@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
 import { TwinklingStars } from "../utils/TwinklingStars";
+import { getIsDesktop } from "../ControlsMode";
 
 export default class FaceTopScene extends FaceBase {
   constructor() {
@@ -161,6 +162,8 @@ export default class FaceTopScene extends FaceBase {
     // ---- HUD: single generic interaction (ship OR puzzle)
     // We use edges[0] as a dummy; isNearEdge is overridden below
     // to use `inShipRange || inPuzzleRange` instead of real edges.
+    const isDesktop = getIsDesktop(this);
+    const hintText = "Interactie: " + (isDesktop ? "E (pc)" : "I (touch)");
     this.registerEdgeAction(
       this.edges[0],
       () => {
@@ -177,7 +180,7 @@ export default class FaceTopScene extends FaceBase {
       },
       {
         // Shown by the shared HUD when interaction is possible
-        hintText: "Interactie: E (pc) / I (touch)",
+        hintText,
       }
     );
 
