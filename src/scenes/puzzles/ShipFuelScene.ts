@@ -516,51 +516,6 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.redrawPaths();
   }
 
-  private drawElectricityFlow() {
-    const g = this.flowGfx!;
-    g.clear();
-
-    // Only draw flow on locked/complete cables
-    for (const color of this.lockedColors) {
-      const cells = this.paths.get(color);
-      if (!cells || cells.length < 2) continue;
-
-      const lineWidth = this.cell * 0.15;
-
-      // Draw animated dashed line to simulate electricity flow
-      g.lineStyle(lineWidth, 0xffffff, 0.7);
-
-      for (let i = 0; i < cells.length - 1; i++) {
-        const start = this.toWorld(cells[i]);
-        const end = this.toWorld(cells[i + 1]);
-
-        // Calculate dash pattern
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const steps = Math.ceil(dist / 10);
-
-        for (let j = 0; j < steps; j++) {
-          const t1 = (j / steps) + (this.flowOffset / 20);
-          const t2 = ((j + 0.5) / steps) + (this.flowOffset / 20);
-
-          // Only draw every other segment (creates dashed effect)
-          if (Math.floor(t1 * 2) % 2 === 0) {
-            const x1 = start.x + dx * (t1 % 1);
-            const y1 = start.y + dy * (t1 % 1);
-            const x2 = start.x + dx * (t2 % 1);
-            const y2 = start.y + dy * (t2 % 1);
-
-            g.beginPath();
-            g.moveTo(x1, y1);
-            g.lineTo(x2, y2);
-            g.strokePath();
-          }
-        }
-      }
-    }
-  }
-
   private drawShortCircuitFlow() {
     const g = this.flowGfx!;
 
