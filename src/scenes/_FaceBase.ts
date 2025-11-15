@@ -91,7 +91,6 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.hud = new Hud(this, this.playerController, {
       getPlayer: () => this.player,
       isDesktop,
-      edgeProximity: (p, edge) => this.isNearEdge(p, edge),
       onEscape: () => this.scene.start("TitleScene"),
     });
 
@@ -102,17 +101,19 @@ export default abstract class FaceBase extends Phaser.Scene {
     });
   }
 
-  protected registerEdgeAction(
-    edge: Edge,
+  protected registerInteraction(
+    isInRange: (player: { x: number; y: number }) => boolean,
     onUse: () => void,
-    options?: { hintText?: string; key?: string }
+    options?: { hintText?: string }
   ) {
     if (!this.hud) {
-      throw new Error(
-        "registerEdgeAction() called before HUD was created. Did you call createPlayerAt()?"
-      );
+      throw new Error("HUD not created yet, call createPlayerAt() first.");
     }
-    this.hud.registerEdgeInteraction(edge, onUse, options);
+    this.hud.registerInteraction({
+      isInRange,
+      onUse,
+      hintText: options?.hintText,
+    });
   }
 
   // ---------------------------

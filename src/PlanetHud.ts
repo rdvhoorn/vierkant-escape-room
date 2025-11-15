@@ -6,9 +6,7 @@ import { toggleControlsMode } from "./ControlsMode";
 type V2Like = { x: number; y: number };
 
 type Interaction = {
-  // For now, everything is still driven by edges,
-  // but this can later be generalized to other triggers.
-  edge: Edge;
+  isInRange: (player: V2Like) => boolean;
   hintText?: string;
   onUse: () => void;
 };
@@ -16,7 +14,6 @@ type Interaction = {
 type HudOptions = {
   getPlayer: () => V2Like;
   isDesktop: boolean;
-  edgeProximity: (player: V2Like, edge: Edge) => boolean;
   onEscape?: () => void;
 };
 
@@ -39,29 +36,16 @@ export class Hud {
     private opts: HudOptions
   ) {
     this.createControlsUI();
-
-    // Touch / mobile HUD
     if (!opts.isDesktop) {
       this.createTouchControls();
     }
-
     this.bindEscape();
     this.bindModeToggle();
   }
 
-  // ---------------------------
-  // Public API
-  // ---------------------------
-
-  /**
-   * General interaction registration.
-   * For now, this is still edge-based, but you could expand this
-   * later to other interaction types.
-   */
   registerInteraction(interaction: Interaction) {
     this.interactions.push(interaction);
 
-    // Desktop: bind the single interaction key once.
     if (!this.interactKey && this.opts.isDesktop) {
       this.interactKey = this.scene.input.keyboard?.addKey(INTERACT_KEY);
       this.scene.input.keyboard?.on(`keydown-${INTERACT_KEY}`, () => {
@@ -72,27 +56,12 @@ export class Hud {
     }
   }
 
-  /**
-   * Convenience helper for edge-based interactions (old behaviour).
-   */
-  registerEdgeInteraction(
-    edge: Edge,
-    onUse: () => void,
-    options?: { hintText?: string }
-  ) {
-    this.registerInteraction({
-      edge,
-      onUse,
-      hintText: options?.hintText,
-    });
+  private getActiveInteraction(player: V2Like): Interaction | undefined {
+    return this.interactions.find((i) => i.isInRange(player));
   }
 
-  /** Call once per frame from the Scene’s update. */
   update() {
-    // Movement + animation
     this.playerController.update();
-
-    // Edge / interaction hint logic
     const player = this.opts.getPlayer();
     const active = this.getActiveInteraction(player);
 
@@ -118,12 +87,6 @@ export class Hud {
   // ---------------------------
   // Internal helpers
   // ---------------------------
-
-  private getActiveInteraction(player: V2Like): Interaction | undefined {
-    return this.interactions.find((i) =>
-      this.opts.edgeProximity(player, i.edge)
-    );
-  }
 
   private createControlsUI() {
     // Bottom-right controls hint ONLY on desktop

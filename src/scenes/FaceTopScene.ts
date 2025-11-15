@@ -159,15 +159,12 @@ export default class FaceTopScene extends FaceBase {
     this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
     this.layer.actors?.add(puzzleImage);
 
-    // ---- HUD: single generic interaction (ship OR puzzle)
-    // We use edges[0] as a dummy; isNearEdge is overridden below
-    // to use `inShipRange || inPuzzleRange` instead of real edges.
     const isDesktop = getIsDesktop(this);
-    const hintText = "Interactie: " + (isDesktop ? "E (pc)" : "I (touch)");
-    this.registerEdgeAction(
-      this.edges[0],
+    const hintText = "Interactie: " + (isDesktop ? "E" : "I");
+
+    this.registerInteraction(
+      () => this.inShipRange || this.inPuzzleRange,
       () => {
-        // Decide what to do depending on which zone we're in
         if (this.inShipRange) {
           this.scene.start("ShipFuelScene");
         } else if (this.inPuzzleRange) {
@@ -178,10 +175,7 @@ export default class FaceTopScene extends FaceBase {
           }
         }
       },
-      {
-        // Shown by the shared HUD when interaction is possible
-        hintText,
-      }
+      { hintText }
     );
 
     // ---- Energy bar in top-right corner
