@@ -38,6 +38,11 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset state when scene restarts
+    this.i = 0;
+    this.blockAdvance = false;
+    this.puzzleActive = false;
+
     const { width, height } = this.scale;
 
     // Background & twinkling stars
@@ -58,7 +63,7 @@ export default class ShipFuelScene extends Phaser.Scene {
         wordWrap: { width: box.width - 40, useAdvancedWrap: true },
       }
     ).setOrigin(0, 0);
-    
+
     this.advanceHint = this.add.text(width - 30, height - 18, "Click / Space →",
       { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" })
       .setOrigin(1, 1).setAlpha(0.85);
@@ -66,8 +71,8 @@ export default class ShipFuelScene extends Phaser.Scene {
     // Lines to click through
     this.lines = [
       "Impact detected. Hull stable. Navigation nominal.",
-      "Fuel’s low, but we’ll figure it out planetside.",
-      "Let’s get moving…",
+      "Fuel's low, but we'll figure it out planetside.",
+      "Let's get moving…",
       "DOOO PUZZLE HERE!!!"
     ];
     this.show(this.lines[this.i]);
