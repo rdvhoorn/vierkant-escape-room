@@ -32,6 +32,10 @@ export class Hud {
   private energyBar?: Phaser.GameObjects.Graphics;
   private energyContainer?: Phaser.GameObjects.Container;
 
+  // Mobile interaction button (+ glow)
+  private interactButton?: Phaser.GameObjects.Rectangle;
+  private interactButtonGlow?: Phaser.GameObjects.Rectangle;
+
   private interactions: Interaction[] = [];
   private interactKey?: Phaser.Input.Keyboard.Key;
 
@@ -81,6 +85,9 @@ export class Hud {
     } else {
       this.portalHint.setAlpha(0);
     }
+
+    // Update mobile interaction button glow
+    this.updateInteractButtonHighlight(!!active);
   }
 
   destroy() {
@@ -90,6 +97,8 @@ export class Hud {
     this.joystickKnob?.destroy();
     this.energyBar?.destroy();
     this.energyContainer?.destroy();
+    this.interactButton?.destroy();
+    this.interactButtonGlow?.destroy();
 
     // Unsubscribe from events
     this.scene.events.off("energyChanged", this.handleEnergyChanged, this);
@@ -214,22 +223,25 @@ export class Hud {
 
     // --- INTERACTION BUTTON (tap) bottom-right ---
     const btnSize = 64;
+    const btnX = this.scene.scale.width - 90;
+    const btnY = this.scene.scale.height - 90;
 
-    const btn = this.scene.add
-      .rectangle(
-        this.scene.scale.width - 90,
-        this.scene.scale.height - 90,
-        btnSize,
-        btnSize,
-        0xffffff, // solid white square
-        1
-      )
+    // Green "glow" behind the button (initially invisible)
+    this.interactButtonGlow = this.scene.add
+      .rectangle(btnX, btnY, btnSize + 16, btnSize + 16, 0x00ff00, 0.4)
+      .setScrollFactor(0)
+      .setDepth(99)
+      .setAlpha(0);
+
+    // Actual interaction button
+    this.interactButton = this.scene.add
+      .rectangle(btnX, btnY, btnSize, btnSize, 0xffffff, 1)
       .setScrollFactor(0)
       .setDepth(100)
       .setInteractive({ useHandCursor: true });
 
     this.scene.add
-      .text(btn.x, btn.y, "I", {
+      .text(btnX, btnY, "I", {
         fontFamily: "sans-serif",
         fontSize: "32px",
         color: "#000000", // black "I" on white square
@@ -239,7 +251,7 @@ export class Hud {
       .setDepth(101);
 
     // Tap on the button = interaction
-    btn.on("pointerdown", () => {
+    this.interactButton.on("pointerdown", () => {
       const player = this.opts.getPlayer();
       const active = this.getActiveInteraction(player);
       if (active) active.onUse();
@@ -314,5 +326,23 @@ export class Hud {
     };
 
     this.playerController.setTouchInput(input);
+  }
+
+  // ---------------------------
+  // Mobile interaction button highlight
+  // ---------------------------
+
+  private updateInteractButtonHighlight(hasInteraction: boolean) {
+    if (this.opts.isDesktop || !this.interactButton) return;
+
+    if (hasInteraction) {
+      // Slightly green-ish button + visible glow behind it
+      this.interactButton.setFillStyle(0xc8ffc8, 1);
+      this.interactButtonGlow?.setAlpha(0.7);
+    } else {
+      // Default plain white button, no glow
+      this.interactButton.setFillStyle(0xffffff, 1);
+      this.interactButtonGlow?.setAlpha(0);
+    }
   }
 }
