@@ -515,7 +515,6 @@ export default class ShipFuelScene extends Phaser.Scene {
     if (this.drawingColor === color) this.drawingColor = undefined;
     this.redrawPaths();
   }
-<<<<<<< HEAD
 
   private drawElectricityFlow() {
     const g = this.flowGfx!;
@@ -791,7 +790,4 @@ export default class ShipFuelScene extends Phaser.Scene {
     // End puzzle after celebration
     this.time.delayedCall(1200, () => this.endPuzzle());
   }
-=======
-  
->>>>>>> daniel_test
 }

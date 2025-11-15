@@ -25,14 +25,11 @@ export default class FaceTopScene extends FaceBase {
   private interactKey!: Phaser.Input.Keyboard.Key;              // E key
   private hudHint!: Phaser.GameObjects.Container;               // top-of-screen hint
   private inShipRange = false;                                  // current proximity state
-<<<<<<< HEAD
   private twinklingStars?: TwinklingStars;
-=======
   private puzzleZone!: Phaser.GameObjects.Zone; //tweede zone
   private puzzleHighlight!: Phaser.GameObjects.Graphics; //tweede zone highlighter
   private inPuzzleRange = false;
 
->>>>>>> daniel_test
 
   create() {
     const { width, height } = this.scale;
@@ -45,12 +42,10 @@ export default class FaceTopScene extends FaceBase {
     this.layer.actors = this.add.container(0, 0).setDepth(30);
     this.layer.fx = this.add.container(0, 0).setDepth(40);
     this.layer.ui = this.add.container(0, 0).setDepth(1000);
-<<<<<<< HEAD
 
     // ---- Twinkling stars (screen space)
     this.twinklingStars = new TwinklingStars(this, 220, width, height);
     this.layer.bg.add(this.twinklingStars.graphics);
-=======
     if (this.registry.get("energy") == null) {
       this.registry.set("energy", 0); // start at 0
     }
@@ -61,7 +56,6 @@ export default class FaceTopScene extends FaceBase {
       stars.fillRect(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height), 2, 2);
     }
     this.layer.bg.add(stars);
->>>>>>> daniel_test
 
     const radius = 180;
     const neighborsByEdge: (string | null)[] = [
@@ -185,28 +179,13 @@ export default class FaceTopScene extends FaceBase {
     this.decorateCrashSite(radius);
   }
 
-<<<<<<< HEAD
   update(_time: number, delta: number) {
     this.twinklingStars?.update(delta);
-
-    // Check real overlap state each frame (overlap callback fires continuously; this reconfirms & handles exit)
-    const isOverlapping = this.physics.world.overlap(this.player, this.shipZone);
-
-    if (isOverlapping && !this.inShipRange) {
-      this.inShipRange = true;
-    } else if (!isOverlapping && this.inShipRange) {
-      this.inShipRange = false;
-    }
-
-    // Toggle visuals/HUD based on proximity
-    this.hudHint.setVisible(this.inShipRange);
-=======
-  update() {
+    
     // ---- Ship overlap
     const isOverlappingShip = this.physics.world.overlap(this.player, this.shipZone);
     if (isOverlappingShip && !this.inShipRange) this.inShipRange = true;
     else if (!isOverlappingShip && this.inShipRange) this.inShipRange = false;
->>>>>>> daniel_test
     this.shipHighlight.setVisible(this.inShipRange);
 
     // ---- Puzzle overlap
@@ -232,21 +211,6 @@ export default class FaceTopScene extends FaceBase {
     }
     
   }
-
-<<<<<<< HEAD
-
-  // ---------------------------
-  // Face-specific helpers (kept here)
-  // ---------------------------
-
-  // private midpoint(e: Edge) {
-  //   return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);
-  // }
-=======
-  private midpoint(e: Edge) {
-    return new Phaser.Math.Vector2((e.a.x + e.b.x) / 2, (e.a.y + e.b.y) / 2);
-  }
->>>>>>> daniel_test
 
   private addGrassyGroundTexture(cx: number, cy: number, radius: number) {
     const key = "grassTexFaceTop";
