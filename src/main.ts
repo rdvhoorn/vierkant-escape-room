@@ -4,6 +4,17 @@ import PreloadScene from "./scenes/PreloadScene";
 import TitleScene from "./scenes/TitleScene";
 import IntroScene from "./scenes/IntroScene";
 import FaceTopScene from "./scenes/FaceTopScene";
+import Face2Scene from "./scenes/Face2Scene";
+import Face3Scene from "./scenes/Face3Scene";
+import Face4Scene from "./scenes/Face4Scene";
+import Face5Scene from "./scenes/Face5Scene";
+import Face6Scene from "./scenes/Face6Scene";
+import Face7Scene from "./scenes/Face7Scene";
+import Face8Scene from "./scenes/Face8Scene";
+import Face9Scene from "./scenes/Face9Scene";
+import Face10Scene from "./scenes/Face10Scene";
+import Face11Scene from "./scenes/Face11Scene";
+import Face12Scene from "./scenes/Face12Scene";
 // import FaceBottomScene from "./scenes/Later_FaceBottomScene";
 
 // Puzzle scenes
@@ -30,7 +41,28 @@ const config: Phaser.Types.Core.GameConfig = {
   arcade: { gravity: { x: 0, y: 0 }, debug: false },
 },
 
-  scene: [PreloadScene, ShipFuelScene, FaceTopScene, BootScene, TitleScene, IntroScene, MoreToComeScene, PuzzleLogicOneScene, PuzzleLogicTwoScene],
+  scene: [
+  PreloadScene,
+  ShipFuelScene,
+  FaceTopScene,
+  Face2Scene,
+  Face3Scene,
+  Face4Scene,
+  Face5Scene,
+  Face6Scene,
+  Face7Scene,
+  Face8Scene,
+  Face9Scene,
+  Face10Scene,
+  Face11Scene,
+  Face12Scene,
+  BootScene,
+  TitleScene,
+  IntroScene,
+  MoreToComeScene,
+  PuzzleLogicOneScene,
+  PuzzleLogicTwoScene
+],
 };
 
 new Phaser.Game(config);
