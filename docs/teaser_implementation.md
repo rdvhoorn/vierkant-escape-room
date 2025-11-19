@@ -1,158 +1,177 @@
-# Teaser Implementation Plan
+# Teaser Implementation - Current State
 
-**Goal:** Playable teaser for escape room game
-**Scope:** Intro → Cable puzzle → Cliffhanger
-**Target:** Keep it simple, focus on story beats
+**Status:** ✅ Complete and functional
+
+**Flow:** Crash → Wake up → Repair puzzle → Fuel check → Explore planet → End message
 
 ---
 
-## Scene Flow
+## Complete Scene Flow
 
 ```
 TitleScene (exists)
-   ↓
-CrashIntroScene (NEW)
-   ↓
-WakeUpScene (NEW)
-   ↓
-ShipFuelScene (exists, adapt dialog)
-   ↓
-TeaserOutroScene (NEW)
+   ↓ "Start"
+CrashIntroScene ✅
+   ↓ auto (2-3 sec)
+WakeUpScene ✅
+   ↓ 4 dialogs
+ShipFuelScene ✅ (puzzle, no intro dialog)
+   ↓ puzzle solved
+TeaserOutroScene ✅ (cockpit, fuel check)
+   ↓ 3 dialogs
+FaceTopScene ✅ (teaser mode, explore planet)
+   ↓ after 5 sec
+[Teaser End Overlay] ✅
+   ↓ "Sluiten"
+FaceTopScene (stay on planet, keep exploring)
 ```
 
 ---
 
-## Scene 1: CrashIntroScene (NEW)
+## Scene 1: CrashIntroScene ✅
 
 **What happens:**
-- Background: Inside rocket/capsule interior
-- Animation: Shaking/rumbling effect (camera shake)
-- Sound: Alarm, crash sound
-- Visual: Screen fades to black
+- Rocket interior with windows showing stars
+- "APPROACHING DESTINATION..." → "⚠️ WARNING: COLLISION DETECTED"
+- Camera shake + flash effect
+- Fade to black → WakeUpScene
 
 **Implementation:**
-- Static background image (rocket interior)
-- Camera shake tween (200-400ms)
-- Flash/fade to black
-- Duration: ~3-5 seconds
-- Auto-advance to WakeUpScene
-
-**Assets needed:**
-- [ ] Rocket interior background image
-- [ ] Optional: alarm sound
+- ✅ Placeholder graphics (rectangles, text, stars)
+- ✅ Camera shake (800ms)
+- ✅ Flash effect (200ms)
+- ✅ Auto-advance after 2 seconds
+- ✅ Dev: Scene name visible
 
 ---
 
-## Scene 2: WakeUpScene (NEW)
+## Scene 2: WakeUpScene ✅
 
 **What happens:**
-- Black screen → fade in to rocket interior (dusty/damaged)
-- Dialog boxes with robot's thoughts:
+- Fade in from black to damaged cockpit (dust particles floating)
+- 4 dialog lines (click/space to advance):
   1. "Waar ben ik? Wat is er gebeurd? Waar is iedereen?"
   2. "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond..."
   3. "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben."
-  4. Click to examine panel → transition to ShipFuelScene
+  4. "Wacht... het paneel! Alle draden zijn los!"
+- Fade to ShipFuelScene
 
 **Implementation:**
-- Reuse dialog system from ShipFuelScene (click/space to advance)
-- Static background (same as CrashIntroScene but maybe different filter/dust overlay?)
-- Simple text boxes
-- Last dialog: "Het paneel! De draden zijn los..." → fade to ShipFuelScene
-
-**Assets needed:**
-- [ ] Damaged rocket interior background (or reuse previous with overlay)
-
-**Questions:**
-- How many dialog lines? (Keep it short for teaser?)
-- Eye-opening effect: Skip for now or simple fade-in?
+- ✅ Cockpit interior with dust overlay (0.3 alpha)
+- ✅ Floating dust particles (tweened circles)
+- ✅ Red "SYSTEM ERROR" on damaged panel
+- ✅ Dialog system (reused from ShipFuelScene)
+- ✅ Fade in (1000ms) then delayed dialog start (1500ms)
+- ✅ Dev: Scene name visible
 
 ---
 
-## Scene 3: ShipFuelScene (EXISTS - ADAPT)
+## Scene 3: ShipFuelScene ✅
 
-**Changes needed:**
-- Update dialog text to match story:
-  - "O nee, alle draden zijn los! Dit moet ik repareren."
-  - "Elke draad had zijn eigen kleur. Dus ik moet dezelfde kleur draden met elkaar verbinden."
-  - "Draden die elkaar kruisen zijn gevaarlijk!"
-  - After solving: "Yes, gelukt! De capsule werkt weer... maar geen energie meer."
+**Teaser adaptations:**
+- ✅ No intro dialog - puzzle starts immediately
+- ✅ ESC disabled (can't exit to planet)
+- ✅ No energy check after completion
+- ✅ After victory → TeaserOutroScene
 
-- Remove ESC to exit (or keep it?)
-- After puzzle solved → TeaserOutroScene (instead of MoreToComeScene)
+**Puzzle mechanics:**
+- ✅ 6x6 grid, 6 colored cable pairs
+- ✅ Connect same colors, no overlaps, fill all cells
+- ✅ Short circuit on wrong connection (wild electricity + explosions)
+- ✅ Victory confetti animation
 
-**Current state:**
-- Puzzle works ✅
-- Dialog system works ✅
-- Just needs text updates
+**Dev helpers:**
+- ✅ SPACE to instantly solve puzzle (hardcoded solution)
+- ✅ Scene name visible
 
 ---
 
-## Scene 4: TeaserOutroScene (NEW)
+## Scene 4: TeaserOutroScene ✅
 
 **What happens:**
-- Background: Outside the capsule on alien planet
-- Robot stands outside capsule
-- Dialog:
-  1. "Ik moet uitstappen om te onderzoeken waar ik ben."
-  2. "He, wat zie ik daar? Het lijkt wel of iemand deze kant op komt lopen..."
-  3. **"Wil je meer zien? Het volledige spel komt binnenkort!"**
-  4. Button: "Speel opnieuw" → TitleScene
+- Back in cockpit (clean, working)
+- Green light: "SYSTEMS" (online)
+- Red fuel bar: 0% with tiny red indicator
+- 3 dialog lines:
+  1. "Yes! De systemen werken weer!"
+  2. "Maar... de brandstof is helemaal op. Ik kan niet meer verder vliegen."
+  3. "Ik moet uitstappen en onderzoeken waar ik ben."
+- Sets `registry.set("isTeaser", true)`
+- Fade to FaceTopScene
 
 **Implementation:**
-- Static background (exterior planet/capsule)
-- Robot sprite visible
-- Dialog boxes (same system)
-- Simple button/text for replay
-
-**Assets needed:**
-- [ ] Exterior capsule/planet background
-- [ ] Robot sprite (standing)
-
-**Alternative (SIMPLER):**
-- Skip "walking around capsule" part
-- Just show: outside → sees something → cliffhanger
-- No player movement needed
+- ✅ Cockpit interior (clean version)
+- ✅ Visual fuel gauge (empty red bar)
+- ✅ Green systems indicator
+- ✅ Dialog system
+- ✅ Sets teaser flag for FaceTopScene
+- ✅ Dev: Scene name visible
 
 ---
 
-## Simplified Alternative (If time is limited)
+## Scene 5: FaceTopScene ✅
 
-**Ultra-minimal teaser:**
+**Teaser mode behavior:**
+- Checks `registry.get("isTeaser")` flag
+- **If true (teaser mode):**
+  - ✅ Ship interaction disabled
+  - ✅ Puzzle interactions disabled
+  - ✅ After 5 seconds → Show teaser end overlay
+- **If false:** Normal gameplay with all interactions
 
-1. **TitleScene** → "Start"
-2. **Simple crash screen** (text only: "CRASH! You wake up in your capsule...")
-3. **ShipFuelScene** (with updated story text)
-4. **End screen** ("Thanks for playing! Full game coming soon. Replay?")
+**Teaser end overlay:**
+- Dark overlay (80% opacity)
+- Message box with border
+- Title: "✨ EINDE VAN DE TEASER ✨" (gold)
+- Text: "Het volledige spel komt binnenkort.\nDan kun je verder op de planeet verkennen\nen meer puzzels oplossen!"
+- Green button: "Sluiten"
+- Click/Space/Enter → Overlay closes, **stay on planet**
 
-This skips custom intro scenes and focuses on the working puzzle.
-
----
-
-## Questions for Implementation
-
-### Story:
-1. **Robot walking around capsule** - Skip this for teaser? (Complex to implement)
-2. **Who is walking towards robot?** - Show silhouette or just text hint?
-3. **Panel zoom effect** - Fade transition or skip (direct to puzzle)?
-
-### Technical:
-4. **Background images** - Do you have these ready? Or placeholder colored rectangles?
-5. **Robot sprite** - Do you have this? Or just text-based for teaser?
-6. **Dialog system** - Keep simple (click to advance) or add auto-advance timer?
-
-### Scope:
-7. **Target time** - How much time do you have for implementation?
-8. **Which scenes are MUST-HAVE** vs nice-to-have?
-9. **Testing** - Will verhaalmakers test before launch?
+**Implementation:**
+- ✅ Conditional interaction system
+- ✅ Overlay with fade-in animation
+- ✅ Hover effects on button
+- ✅ Keyboard shortcuts (Space/Enter)
+- ✅ Overlay destroys on close (no scene change)
+- ✅ Dev: Scene name visible
 
 ---
 
-## Next Steps
+## Development Helpers
 
-1. Decide on scope (full vs simplified)
-2. List required assets
-3. Implement scenes in order
-4. Test flow
-5. Deploy teaser-release branch
+**Scene name display:**
+- ✅ All scenes show name in top-left (green text on black background)
+- ✅ Helper function: `showSceneName(scene)` from `utils/devHelpers.ts`
 
-**Recommendation:** Start with simplified version, add polish if time permits.
+**Puzzle skip:**
+- ✅ Press SPACE during ShipFuelScene puzzle → Instant victory
+- ✅ Uses hardcoded solution for 6x6 grid
+- ✅ Console log: "[DEV] Instantly solving puzzle..."
+
+---
+
+## Graphics
+
+**Current state:** All placeholder graphics (shapes, text, emojis)
+
+**For production, consider:**
+- Cockpit interior background (can use DALL-E prompt from project notes)
+- Damaged cockpit variant
+- Planet exterior background
+- Robot sprite (currently using 🤖 emoji)
+
+**Placeholder is functional** - teaser works without custom assets!
+
+---
+
+## Known Issues / Notes
+
+- ✅ State resets correctly when re-entering scenes
+- ✅ No memory leaks (overlays properly destroyed)
+- ✅ Teaser flag properly managed via registry
+- ✅ All scenes tested with keyboard + mouse
+
+**Next steps for full game:**
+- Merge teaser-release branch when ready to extend
+- Remove `isTeaser` flag checks to enable full gameplay
+- Add more puzzles and planet exploration features

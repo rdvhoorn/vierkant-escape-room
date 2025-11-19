@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../utils/TwinklingStars";
+import { showSceneName } from "../utils/devHelpers";
 
 export default class TitleScene extends Phaser.Scene {
   private pulseTween?: Phaser.Tweens.Tween;
@@ -11,6 +12,9 @@ export default class TitleScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+
+    // DEV: Show scene name
+    showSceneName(this);
 
     this.twinklingStars = new TwinklingStars(this, 140, width, height);
 
@@ -64,7 +68,8 @@ export default class TitleScene extends Phaser.Scene {
   private startGame() {
     this.pulseTween?.stop();
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("IntroScene");
+      // TEASER: Start with CrashIntroScene instead of IntroScene
+      if (p === 1) this.scene.start("CrashIntroScene");
     });
   }
 }

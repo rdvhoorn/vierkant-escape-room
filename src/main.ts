@@ -12,6 +12,11 @@ import MoreToComeScene from "./scenes/MoreToComeScene";
 import PuzzleLogicOneScene from "./scenes/puzzles/PuzzleLogicOneScene";
 import PuzzleLogicTwoScene from "./scenes/puzzles/PuzzleLogicTwoScene";
 
+// Teaser scenes
+import CrashIntroScene from "./scenes/teaser/CrashIntroScene";
+import WakeUpScene from "./scenes/teaser/WakeUpScene";
+import TeaserOutroScene from "./scenes/teaser/TeaserOutroScene";
+
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
 
@@ -30,7 +35,20 @@ const config: Phaser.Types.Core.GameConfig = {
   arcade: { gravity: { x: 0, y: 0 }, debug: false },
 },
 
-  scene: [PreloadScene, ShipFuelScene, FaceTopScene, BootScene, TitleScene, IntroScene, MoreToComeScene, PuzzleLogicOneScene, PuzzleLogicTwoScene],
+  scene: [
+    PreloadScene,
+    BootScene,
+    TitleScene,
+    IntroScene,
+    FaceTopScene,
+    ShipFuelScene,
+    MoreToComeScene,
+    PuzzleLogicOneScene,
+    PuzzleLogicTwoScene,
+    CrashIntroScene,
+    WakeUpScene,
+    TeaserOutroScene
+  ],
 };
 
 new Phaser.Game(config);

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
 import { TwinklingStars } from "../utils/TwinklingStars";
 import { getIsDesktop } from "../ControlsMode";
+import { showSceneName } from "../utils/devHelpers";
 
 export default class FaceTopScene extends FaceBase {
   constructor() {
@@ -32,6 +33,9 @@ export default class FaceTopScene extends FaceBase {
   create() {
     const { width, height } = this.scale;
     this.cameras.main.setBackgroundColor("#0b1020");
+
+    // DEV: Show scene name
+    showSceneName(this);
 
     // Shared energy initialization for this face
     this.ensureEnergyInitialized(0);
@@ -157,24 +161,34 @@ export default class FaceTopScene extends FaceBase {
     this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
     this.layer.actors?.add(puzzleImage);
 
-    const isDesktop = getIsDesktop(this);
-    const hintText = "Interactie: " + (isDesktop ? "E" : "I");
+    // TEASER: Disable interactions if in teaser mode
+    const isTeaser = this.registry.get("isTeaser") === true;
 
-    this.registerInteraction(
-      () => this.inShipRange || this.inPuzzleRange,
-      () => {
-        if (this.inShipRange) {
-          this.scene.start("ShipFuelScene");
-        } else if (this.inPuzzleRange) {
-          if (this.registry.get("logic1Solved")) {
-            this.scene.start("PuzzleLogicTwoScene");
-          } else {
-            this.scene.start("PuzzleLogicOneScene");
+    if (!isTeaser) {
+      const isDesktop = getIsDesktop(this);
+      const hintText = "Interactie: " + (isDesktop ? "E" : "I");
+
+      this.registerInteraction(
+        () => this.inShipRange || this.inPuzzleRange,
+        () => {
+          if (this.inShipRange) {
+            this.scene.start("ShipFuelScene");
+          } else if (this.inPuzzleRange) {
+            if (this.registry.get("logic1Solved")) {
+              this.scene.start("PuzzleLogicTwoScene");
+            } else {
+              this.scene.start("PuzzleLogicOneScene");
+            }
           }
-        }
-      },
-      { hintText }
-    );
+        },
+        { hintText }
+      );
+    } else {
+      // Teaser mode: Show end message after exploring
+      this.time.delayedCall(5000, () => {
+        this.showTeaserEndOverlay();
+      });
+    }
 
     // Decorations etc.
     this.decorateCrashSite(radius);
@@ -321,5 +335,112 @@ export default class FaceTopScene extends FaceBase {
         return new Phaser.Math.Vector2(x, y);
     }
     return center.clone();
+  }
+
+  // ---------------------------
+  // Teaser end overlay
+  // ---------------------------
+  private showTeaserEndOverlay() {
+    const { width, height } = this.scale;
+
+    // Semi-transparent overlay
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.8)
+      .setOrigin(0)
+      .setDepth(2000)
+      .setScrollFactor(0);
+
+    // Message box
+    const box = this.add.rectangle(width / 2, height / 2, 600, 300, 0x1b2748, 1)
+      .setStrokeStyle(3, 0x3c5a99)
+      .setDepth(2001)
+      .setScrollFactor(0);
+
+    const title = this.add.text(width / 2, height / 2 - 80, "✨ EINDE VAN DE TEASER ✨", {
+      fontFamily: "sans-serif",
+      fontSize: "28px",
+      color: "#ffd700",
+      fontStyle: "bold"
+    })
+    .setOrigin(0.5)
+    .setDepth(2002)
+    .setScrollFactor(0);
+
+    const message = this.add.text(width / 2, height / 2 - 20,
+      "Het volledige spel komt binnenkort.\nDan kun je verder op de planeet verkennen\nen meer puzzels oplossen!",
+      {
+        fontFamily: "sans-serif",
+        fontSize: "18px",
+        color: "#e7f3ff",
+        align: "center",
+        lineSpacing: 8
+      }
+    )
+    .setOrigin(0.5)
+    .setDepth(2002)
+    .setScrollFactor(0);
+
+    // Button to close overlay (stay on planet)
+    const button = this.add.text(width / 2, height / 2 + 100, "Sluiten", {
+      fontFamily: "sans-serif",
+      fontSize: "24px",
+      color: "#ffffff",
+      backgroundColor: "#2ecc71",
+      padding: { x: 30, y: 15 }
+    })
+    .setOrigin(0.5)
+    .setDepth(2002)
+    .setScrollFactor(0)
+    .setInteractive({ useHandCursor: true });
+
+    // Hover effect
+    button.on("pointerover", () => {
+      button.setScale(1.1);
+      button.setBackgroundColor("#27ae60");
+    });
+
+    button.on("pointerout", () => {
+      button.setScale(1);
+      button.setBackgroundColor("#2ecc71");
+    });
+
+    // Click to close overlay (stay on planet)
+    button.on("pointerdown", () => {
+      overlay.destroy();
+      box.destroy();
+      title.destroy();
+      message.destroy();
+      button.destroy();
+    });
+
+    // Also allow Space/Enter to close
+    this.input.keyboard?.once("keydown-SPACE", () => {
+      overlay.destroy();
+      box.destroy();
+      title.destroy();
+      message.destroy();
+      button.destroy();
+    });
+
+    this.input.keyboard?.once("keydown-ENTER", () => {
+      overlay.destroy();
+      box.destroy();
+      title.destroy();
+      message.destroy();
+      button.destroy();
+    });
+
+    // Fade in overlay
+    overlay.setAlpha(0);
+    box.setAlpha(0);
+    title.setAlpha(0);
+    message.setAlpha(0);
+    button.setAlpha(0);
+
+    this.tweens.add({
+      targets: [overlay, box, title, message, button],
+      alpha: 1,
+      duration: 500,
+      ease: "sine.out"
+    });
   }
 }

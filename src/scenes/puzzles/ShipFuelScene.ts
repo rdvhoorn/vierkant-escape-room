@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../../utils/TwinklingStars";
+import { showSceneName } from "../../utils/devHelpers";
 
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
@@ -45,6 +46,9 @@ export default class ShipFuelScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
 
+    // DEV: Show scene name
+    showSceneName(this);
+
     // Background & twinkling stars
     this.add.rectangle(0, 0, width, height, 0x0f1630).setOrigin(0);
     this.twinklingStars = new TwinklingStars(this, 150, width, height);
@@ -69,23 +73,23 @@ export default class ShipFuelScene extends Phaser.Scene {
       .setOrigin(1, 1).setAlpha(0.85);
 
     // Lines to click through
+    // TEASER: No intro dialog, puzzle starts immediately (story is in WakeUpScene)
     this.lines = [
-      "Impact detected. Hull stable. Navigation nominal.",
-      "Fuel's low, but we'll figure it out planetside.",
-      "Let's get moving…",
       "DOOO PUZZLE HERE!!!"
     ];
-    this.show(this.lines[this.i]);
+    // Don't show first line, go directly to puzzle
+    this.startPuzzle();
 
     // Input for dialog advance (disabled while puzzle is active)
     this.input.on("pointerdown", () => this.advance());
     this.input.keyboard?.on("keydown-SPACE", () => this.advance());
 
     //terug met escape (rondlopen)
-    this.input.keyboard?.on("keydown-ESC", () => {
-      this.scene.stop(this.scene.key);
-      this.scene.start("FaceTopScene");
-    });
+    // TEASER: Disabled - no going back to planet in teaser
+    // this.input.keyboard?.on("keydown-ESC", () => {
+    //   this.scene.stop(this.scene.key);
+    //   this.scene.start("FaceTopScene");
+    // });
   }
 
   update(_time: number, delta: number) {
@@ -127,22 +131,9 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
-    const currentEnergy = this.registry.get("energy") || 0;
-
-    if (currentEnergy < 5) {
-      // Not enough energy — show warning message
-      this.tweens.killTweensOf(this.dialogText);
-      this.dialogText.setAlpha(1).setText("Vind minstens 5 energie voor je mag vertrekken! (druk ESCAPE)");
-      this.advanceHint.setVisible(false);
-
-      // Optional: after a short time, show the hint again
-      this.time.delayedCall(3000, () => this.advanceHint.setVisible(true));
-      return;
-    }
-
-    // Enough energy — proceed normally
+    // TEASER: No energy check - go directly to outro
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("MoreToComeScene");
+      if (p === 1) this.scene.start("TeaserOutroScene");
     });
   }
 
@@ -208,6 +199,12 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.input.on("pointerdown", this.onPointerDown, this);
     this.input.on("pointermove", this.onPointerMove, this);
     this.input.on("pointerup", this.onPointerUp, this);
+
+    // DEV: Space to instantly solve puzzle
+    this.input.keyboard?.once("keydown-SPACE", () => {
+      if (!this.puzzleActive) return;
+      this.devSolvePuzzle();
+    });
   }
 
   private endPuzzle() {
@@ -749,5 +746,70 @@ export default class ShipFuelScene extends Phaser.Scene {
 
     // End puzzle after celebration
     this.time.delayedCall(1200, () => this.endPuzzle());
+  }
+
+  // =======================
+  //    DEV HELPER
+  // =======================
+  private devSolvePuzzle() {
+    console.log("[DEV] Instantly solving puzzle...");
+
+    // Hardcoded solution for the current 6x6 puzzle
+    // This fills all cells with valid paths
+    const solution: { color: number; path: Cell[] }[] = [
+      {
+        color: 0x9b59b6, // Purple
+        path: [
+          { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }, { x: 0, y: 4 }
+        ]
+      },
+      {
+        color: 0xf0c419, // Yellow
+        path: [
+          { x: 2, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 },
+          { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 5 }, { x: 0, y: 5 }
+        ]
+      },
+      {
+        color: 0xe74c3c, // Red
+        path: [
+          { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 4, y: 1 }, { x: 5, y: 1 }, { x: 5, y: 2 }
+        ]
+      },
+      {
+        color: 0x29abe2, // Blue
+        path: [
+          { x: 4, y: 1 }, { x: 4, y: 2 }, { x: 4, y: 3 }
+        ]
+      },
+      {
+        color: 0x2ecc71, // Green
+        path: [
+          { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 }
+        ]
+      },
+      {
+        color: 0xe67e22, // Orange
+        path: [
+          { x: 4, y: 2 }, { x: 3, y: 2 }, { x: 2, y: 2 }, { x: 2, y: 1 },
+          { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 2, y: 4 }, { x: 2, y: 5 },
+          { x: 3, y: 5 }, { x: 3, y: 4 }
+        ]
+      }
+    ];
+
+    // Apply solution
+    this.paths.clear();
+    this.lockedColors.clear();
+
+    for (const sol of solution) {
+      this.paths.set(sol.color, sol.path);
+      this.lockedColors.add(sol.color);
+    }
+
+    this.redrawPaths();
+
+    // Trigger victory
+    this.time.delayedCall(100, () => this.triggerVictory());
   }
 }
