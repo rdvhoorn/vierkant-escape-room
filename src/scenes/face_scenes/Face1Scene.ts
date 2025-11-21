@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
 import { getIsDesktop } from "../../ControlsMode";
+import { resolveFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
 export default class Face1Scene extends FaceBase {
   constructor() {
@@ -33,40 +34,20 @@ export default class Face1Scene extends FaceBase {
     // Shared energy initialization for this face
     this.ensureEnergyInitialized(0);
 
-    const radius = 180;
+    // --- Pull config from faceConfig.ts ---
+    const cfg = resolveFaceConfig("Face1Scene");
+    const { radius, neighbors, visuals } = cfg;
+    const colorMap = buildNeighborColorMap(neighbors);
 
-    const faceTravelTargets = [
-      "Face2Scene",
-      "Face3Scene",
-      "Face4Scene",
-      "Face5Scene",
-      "Face6Scene",
-    ];
-
-    // For drawing colored neighbor pentagons (keeps visuals consistent)
-    const colorMap: Record<string, number> = {
-      Face2Scene: 0x311111,
-      Face3Scene: 0x311111,
-      Face4Scene: 0x311111,
-      Face5Scene: 0x311111,
-      Face6Scene: 0x311111,
-    };
-
-    // Use the new helper on FaceBase to set up:
-    // - background color
-    // - layers
-    // - starfield
-    // - central + neighbor pentagons
-    // - player spawn
-    // - edge travel zones + interaction
     this.initStandardFace({
       radius,
-      faceTravelTargets,
-      mainFill: 0x311111,
-      neighborFill: 0x311111,
+      faceTravelTargets: neighbors,
+      mainFill: visuals.mainFill,
+      neighborFill: visuals.neighborFill,
       colorMap,
-      edgeTriggerScale: 0.4,
-      showLabel: false,
+      edgeTriggerScale: visuals.edgeTriggerScale,
+      backgroundColor: visuals.backgroundColor,
+      showLabel: visuals.showLabel, // false for Face1 in config
     });
 
     // Grab the created layers from FaceBase and map them to our local layer object
@@ -165,10 +146,6 @@ export default class Face1Scene extends FaceBase {
   }
 
   update(_time: number, delta: number) {
-    // Let FaceBase handle:
-    // - TwinklingStars update
-    // - edge travel zone highlighting
-    // - activeTravelEdge bookkeeping
     this.baseFaceUpdate(delta);
 
     // ---- Ship overlap
@@ -189,7 +166,7 @@ export default class Face1Scene extends FaceBase {
    */
   protected isNearEdge(_player: { x: number; y: number }, _e: Edge): boolean {
     // `activeTravelEdge` is managed by baseFaceUpdate() in FaceBase
-    return this.inShipRange || this.inPuzzleRange || this["activeTravelEdge"] !== null;
+    return this.inShipRange || this.inPuzzleRange || this.activeTravelEdge !== null;
   }
 
   // ---------------------------

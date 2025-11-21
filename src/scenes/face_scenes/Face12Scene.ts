@@ -1,4 +1,5 @@
 import FaceBase from "./_FaceBase";
+import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
 export default class Face12Scene extends FaceBase {
   constructor() {
@@ -8,33 +9,21 @@ export default class Face12Scene extends FaceBase {
   create() {
     console.log("[ENTER]", this.scene.key);
     this.ensureEnergyInitialized(0);
-  
-    const faceTravelTargets = [
-      "Face7Scene",
-      "Face8Scene",
-      "Face9Scene",
-      "Face10Scene",
-      "Face11Scene",
-    ];
 
-    const colorMap: Record<string, number> = {
-      Face7Scene: 0x311111,
-      Face8Scene: 0x311111,
-      Face9Scene: 0x311111,
-      Face10Scene: 0x311111,
-      Face11Scene: 0x311111,
-    };
+    const cfg = getFaceConfig("Face12Scene");
+    const { radius, neighbors, visuals } = cfg;
+    const colorMap = buildNeighborColorMap(neighbors);
 
     this.initStandardFace({
-      radius: 180,
-      faceTravelTargets,
-      mainFill: 0x311111,
-      neighborFill: 0x311111,
+      radius,
+      faceTravelTargets: neighbors,
+      mainFill: visuals.mainFill,
+      neighborFill: visuals.neighborFill ?? visuals.mainFill,
       colorMap,
-      edgeTriggerScale: 0.4,
-      showLabel: true,
+      edgeTriggerScale: visuals.edgeTriggerScale,
+      backgroundColor: visuals.backgroundColor,
+      showLabel: visuals.showLabel ?? true,
     });
-
   }
 
   update(_time: number, delta: number) {
