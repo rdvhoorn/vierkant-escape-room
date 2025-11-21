@@ -84,7 +84,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     //terug met escape (rondlopen)
     this.input.keyboard?.on("keydown-ESC", () => {
       this.scene.stop(this.scene.key);
-      this.scene.start("FaceTopScene");
+      this.scene.start("Face1Scene");
     });
   }
 

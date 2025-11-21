@@ -135,7 +135,7 @@ create() {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
-      this.scene.start("FaceTopScene");
+      this.scene.start("Face1Scene");
     }
   }
 }

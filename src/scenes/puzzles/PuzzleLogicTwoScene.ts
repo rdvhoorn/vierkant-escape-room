@@ -138,7 +138,7 @@ export default class PuzzleLogicTwoScene extends Phaser.Scene {
       this.registry.set("logic2Solved", true);
       this.registry.set("energy", (this.registry.get("energy") ?? 0) + 10); 
       this.events.emit("updateEnergy", this.registry.get("energy")); // dit is nog jank
-      this.time.delayedCall(1000, () => this.scene.start("FaceTopScene"));
+      this.time.delayedCall(1000, () => this.scene.start("Face1Scene"));
 
     } else {
       this.add.text(this.scale.width / 2, this.scale.height / 2 + 120, "Try again!", {
@@ -150,7 +150,7 @@ export default class PuzzleLogicTwoScene extends Phaser.Scene {
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
-      this.scene.start("FaceTopScene");
+      this.scene.start("Face1Scene");
     }
   }
 }

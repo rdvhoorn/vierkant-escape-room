@@ -65,7 +65,7 @@ export default class IntroScene extends Phaser.Scene {
     this.i++;
     if (this.i < this.lines.length) this.show(this.lines[this.i]);
     else this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("FaceTopScene");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 }

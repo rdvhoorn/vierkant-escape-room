@@ -3,7 +3,7 @@ import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import TitleScene from "./scenes/TitleScene";
 import IntroScene from "./scenes/IntroScene";
-import FaceTopScene from "./scenes/FaceTopScene";
+import Face1Scene from "./scenes/Face1Scene";
 import Face2Scene from "./scenes/Face2Scene";
 import Face3Scene from "./scenes/Face3Scene";
 import Face4Scene from "./scenes/Face4Scene";
@@ -44,7 +44,7 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [
   PreloadScene,
   ShipFuelScene,
-  FaceTopScene,
+  Face1Scene,
   Face2Scene,
   Face3Scene,
   Face4Scene,

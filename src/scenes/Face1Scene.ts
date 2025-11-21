@@ -3,9 +3,9 @@ import FaceBase, { Edge } from "./_FaceBase";
 import { TwinklingStars } from "../utils/TwinklingStars";
 import { getIsDesktop } from "../ControlsMode";
 
-export default class FaceTopScene extends FaceBase {
+export default class Face1Scene extends FaceBase {
   constructor() {
-    super("FaceTopScene");
+    super("Face1Scene");
   }
 
   // Layers (optional; purely visual organization for this face)

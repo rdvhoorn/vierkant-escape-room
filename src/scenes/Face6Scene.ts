@@ -71,7 +71,7 @@ export default class Face6Scene extends FaceBase {
     // face geometry
     const radius = 180;
     const faceTravelTargets = [
-      "FaceTopScene", // Face1
+      "Face1Scene",
       "Face5Scene",
       "Face8Scene",
       "Face2Scene",
@@ -79,7 +79,7 @@ export default class Face6Scene extends FaceBase {
     ];
 
     const colorMap: Record<string, number> = {
-      FaceTopScene: 0x311111,
+      Face1Scene: 0x311111,
       Face5Scene: 0x311111,
       Face8Scene: 0x311111,
       Face2Scene: 0x311111,
