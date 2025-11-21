@@ -4,10 +4,11 @@ import {
   PlayerController,
   DEFAULT_IDLE_FRAMES,
   DEFAULT_MOVE_FRAMES,
-} from "../PlanetPlayer";
+} from "../../PlanetPlayer";
 
-import { Hud } from "../PlanetHud";
-import { getIsDesktop } from "../ControlsMode";
+import { Hud } from "../../PlanetHud";
+import { getIsDesktop } from "../../ControlsMode";
+import { TwinklingStars } from "../../utils/TwinklingStars";
 
 export type Edge = { a: Phaser.Math.Vector2; b: Phaser.Math.Vector2 };
 
@@ -18,6 +19,44 @@ type V3 = Phaser.Math.Vector3;
 const RAD = Math.PI / 180;
 // Regular dodecahedron dihedral angle ~= 116.565051°
 const DIHEDRAL = 116.565051 * RAD;
+
+// ---------- New helper types for “standard faces” ----------
+type FaceLayers = {
+  bg: Phaser.GameObjects.Container;
+  ground: Phaser.GameObjects.Container;
+  deco: Phaser.GameObjects.Container;
+  actors: Phaser.GameObjects.Container;
+  fx: Phaser.GameObjects.Container;
+  ui: Phaser.GameObjects.Container;
+};
+
+type EdgeMeta = {
+  start: Phaser.Math.Vector2;
+  end: Phaser.Math.Vector2;
+  mid: Phaser.Math.Vector2;
+  length: number;
+};
+
+type TravelEdgeZone = {
+  zone: Phaser.GameObjects.Zone;
+  target: string;
+  gfx: Phaser.GameObjects.Graphics;
+  width: number;
+  height: number;
+};
+
+type StandardFaceConfig = {
+  radius: number;
+  faceTravelTargets: (string | null)[]; // for the 5 edges, null = no travel
+
+  mainFill?: number;
+  neighborFill?: number;
+  colorMap?: Record<string, number>;
+
+  edgeTriggerScale?: number;
+  backgroundColor?: string;
+  showLabel?: boolean;
+};
 
 export default abstract class FaceBase extends Phaser.Scene {
   protected world!: Phaser.GameObjects.Container;
@@ -42,6 +81,15 @@ export default abstract class FaceBase extends Phaser.Scene {
   private gMain!: Phaser.GameObjects.Graphics;      // central face
   private gNeighbors!: Phaser.GameObjects.Graphics; // neighbors ring (behind)
 
+  // ---------- New shared-but-optional helpers ----------
+  protected faceLayers?: FaceLayers;
+  protected twinklingStars?: TwinklingStars;
+  protected travelEdgeZones: TravelEdgeZone[] = [];
+  protected activeTravelEdge: string | null = null;
+
+  // ------------------------------------
+  // ENERGY helpers
+  // ------------------------------------
   /**
    * Ensure energy exists in the registry.
    * Call this in your face `create()` if you want this scene to use energy.
@@ -108,7 +156,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   // ---------------------------
-  // Player: creation & controls (all generic)
+  // Player: creation & controls
   // ---------------------------
   protected createPlayerAt(x: number, y: number) {
     if (!this.poly) {
@@ -386,7 +434,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   // ---------------------------
-  // Visual util moved to base (no layer coupling)
+  // Visual util
   // ---------------------------
   protected addSoftShadowBelow(
     obj: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
@@ -413,5 +461,254 @@ export default abstract class FaceBase extends Phaser.Scene {
       g.setPosition(obj.x, obj.y + (obj.displayHeight ?? 0) * 0.35);
       g.setDepth((obj.depth ?? 0) - 1);
     });
+  }
+
+  /** Create standard bg/ground/deco/actors/fx/ui layer containers. */
+  protected createStandardLayers(): FaceLayers {
+    return {
+      bg: this.add.container(0, 0).setDepth(0),
+      ground: this.add.container(0, 0).setDepth(10),
+      deco: this.add.container(0, 0).setDepth(20),
+      actors: this.add.container(0, 0).setDepth(30),
+      fx: this.add.container(0, 0).setDepth(40),
+      ui: this.add.container(0, 0).setDepth(1000),
+    };
+  }
+
+  /** Convenience accessor if you want to add stuff to layers in subclasses. */
+  protected getFaceLayers(): FaceLayers {
+    if (!this.faceLayers) {
+      throw new Error("getFaceLayers() called before initStandardFace().");
+    }
+    return this.faceLayers;
+  }
+
+  /** Adds TwinklingStars + static dots to bg layer (if faceLayers exists). */
+  protected createSpaceBackground(width: number, height: number) {
+    if (!this.faceLayers) return;
+
+    this.twinklingStars = new TwinklingStars(this, 220, width, height);
+    this.faceLayers.bg.add(this.twinklingStars.graphics);
+
+    const stars = this.add.graphics();
+    for (let i = 0; i < 200; i++) {
+      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.15, 0.8));
+      stars.fillRect(
+        Phaser.Math.Between(0, width),
+        Phaser.Math.Between(0, height),
+        2,
+        2
+      );
+    }
+    this.faceLayers.bg.add(stars);
+  }
+
+  /** Edge metadata incl. midpoints + lengths (used by edge-trigger system). */
+  protected getEdgesWithMeta(): EdgeMeta[] {
+    const pts = this.poly.points as Phaser.Geom.Point[];
+    const edges: EdgeMeta[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p1 = pts[i];
+      const p2 = pts[(i + 1) % pts.length];
+      const start = new Phaser.Math.Vector2(p1.x, p1.y);
+      const end = new Phaser.Math.Vector2(p2.x, p2.y);
+      const mid = new Phaser.Math.Vector2(
+        (start.x + end.x) / 2,
+        (start.y + end.y) / 2
+      );
+      const length = Phaser.Math.Distance.Between(
+        start.x,
+        start.y,
+        end.x,
+        end.y
+      );
+      edges.push({ start, end, mid, length });
+    }
+    return edges;
+  }
+
+  /** Create edge-trigger zones & register "travel" interaction. */
+  protected setupEdgeTravel(
+    faceTravelTargets: (string | null)[],
+    EDGE_TRIGGER_SCALE: number = 0.4
+  ) {
+    if (!this.faceLayers) {
+      throw new Error("setupEdgeTravel() requires faceLayers (call initStandardFace()).");
+    }
+
+    const edges = this.getEdgesWithMeta();
+    this.travelEdgeZones = [];
+
+    for (let i = 0; i < edges.length; i++) {
+      const e = edges[i];
+      const target = faceTravelTargets[i];
+      if (!target) continue;
+
+      const hitWidth = e.length * EDGE_TRIGGER_SCALE;
+      const hitHeight = 40 * EDGE_TRIGGER_SCALE;
+
+      const zone = this.add
+        .zone(e.mid.x, e.mid.y, hitWidth, hitHeight)
+        .setOrigin(0.5);
+      this.physics.add.existing(zone, true);
+
+      const gfx = this.add.graphics().setDepth(60);
+      gfx.fillStyle(0x4b7ad1, 0.16);
+      gfx.lineStyle(2, 0x4b7ad1, 0.9);
+      const corner = Math.max(6, Math.round(hitHeight / 2));
+      gfx.fillRoundedRect(-hitWidth / 2, -hitHeight / 2, hitWidth, hitHeight, corner);
+      gfx.strokeRoundedRect(
+        -hitWidth / 2,
+        -hitHeight / 2,
+        hitWidth,
+        hitHeight,
+        corner
+      );
+      gfx.setPosition(e.mid.x, e.mid.y);
+      gfx.setRotation(
+        Phaser.Math.Angle.Between(e.start.x, e.start.y, e.end.x, e.end.y)
+      );
+
+      this.faceLayers.fx.add(gfx);
+
+      this.travelEdgeZones.push({
+        zone,
+        target,
+        gfx,
+        width: hitWidth,
+        height: hitHeight,
+      });
+    }
+
+    const isDesktop = getIsDesktop(this);
+    const edgeHint = "Ga naar volgende vlak: " + (isDesktop ? "E" : "I");
+
+    this.registerInteraction(
+      () => this.activeTravelEdge !== null,
+      () => {
+        if (this.activeTravelEdge) {
+          console.log(`[TRANSITION] ${this.scene.key} → ${this.activeTravelEdge}`);
+          this.scene.start(this.activeTravelEdge);
+        }
+      },
+      { hintText: edgeHint }
+    );
+  }
+
+  /**
+   * One-shot setup for a “standard” planet face:
+   * - sets background color
+   * - creates layers
+   * - starfield
+   * - render central + neighbor pentagons
+   * - spawns player
+   * - builds edge travel zones + interaction
+   */
+  protected initStandardFace(config: StandardFaceConfig) {
+    const { width, height } = this.scale;
+
+    const bgColor = config.backgroundColor ?? "#0b1020";
+    this.cameras.main.setBackgroundColor(bgColor);
+
+    if (config.showLabel) {
+      this.add
+        .text(width / 2, 20, this.scene.key, {
+          fontFamily: "Arial",
+          fontSize: "28px",
+          color: "#ffffff",
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(2000);
+    }
+
+    // Layers + background
+    this.faceLayers = this.createStandardLayers();
+    this.createSpaceBackground(width, height);
+
+    // Face geometry
+    const mainFill = config.mainFill ?? 0x311111;
+    const neighborFill = config.neighborFill ?? mainFill;
+
+    const neighborStyles = config.faceTravelTargets.map((key) => {
+      if (!key) return undefined;
+      const color =
+        config.colorMap && config.colorMap[key] !== undefined
+          ? config.colorMap[key]!
+          : neighborFill;
+      return { fill: color, stroke: 0x4b7ad1, alpha: 0.95 };
+    });
+
+    this.renderFaceAndNeighbors({
+      cx: width / 2,
+      cy: height / 2,
+      radius: config.radius,
+      fill: mainFill,
+      neighborFill,
+      neighborStyles,
+    });
+
+    // Spawn player
+    const spawnX = (this.data.get("spawnX") as number) ?? width / 2;
+    const spawnY = (this.data.get("spawnY") as number) ?? height / 2 - 20;
+    this.createPlayerAt(spawnX, spawnY);
+
+    // Edge travel
+    this.setupEdgeTravel(
+      config.faceTravelTargets,
+      config.edgeTriggerScale ?? 0.4
+    );
+  }
+
+  /**
+   * Base update for simple faces that only need:
+   * - starfield ticking
+   * - edge-zone highlighting + activeTravelEdge bookkeeping
+   */
+  protected baseFaceUpdate(delta: number) {
+    this.twinklingStars?.update(delta);
+
+    this.activeTravelEdge = null;
+    for (const ez of this.travelEdgeZones) {
+      if (this.physics.world.overlap(this.player, ez.zone)) {
+        this.activeTravelEdge = ez.target;
+        ez.gfx.clear();
+        ez.gfx.fillStyle(0x4b7ad1, 0.26);
+        ez.gfx.lineStyle(2, 0x4b7ad1, 1.0);
+        const corner = Math.max(6, Math.round(ez.height / 2));
+        ez.gfx.fillRoundedRect(
+          -ez.width / 2,
+          -ez.height / 2,
+          ez.width,
+          ez.height,
+          corner
+        );
+        ez.gfx.strokeRoundedRect(
+          -ez.width / 2,
+          -ez.height / 2,
+          ez.width,
+          ez.height,
+          corner
+        );
+      } else {
+        ez.gfx.clear();
+        ez.gfx.fillStyle(0x4b7ad1, 0.16);
+        ez.gfx.lineStyle(2, 0x4b7ad1, 0.9);
+        const corner = Math.max(6, Math.round(ez.height / 2));
+        ez.gfx.fillRoundedRect(
+          -ez.width / 2,
+          -ez.height / 2,
+          ez.width,
+          ez.height,
+          corner
+        );
+        ez.gfx.strokeRoundedRect(
+          -ez.width / 2,
+          -ez.height / 2,
+          ez.width,
+          ez.height,
+          corner
+        );
+      }
+    }
   }
 }

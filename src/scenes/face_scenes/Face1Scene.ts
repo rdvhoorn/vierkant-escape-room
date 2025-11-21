@@ -1,14 +1,13 @@
 import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
-import { TwinklingStars } from "../utils/TwinklingStars";
-import { getIsDesktop } from "../ControlsMode";
+import { getIsDesktop } from "../../ControlsMode";
 
 export default class Face1Scene extends FaceBase {
   constructor() {
     super("Face1Scene");
   }
 
-  // Layers (optional; purely visual organization for this face)
+  // Local alias for layers (we fill this from FaceBase.getFaceLayers())
   private layer = {
     bg: null as Phaser.GameObjects.Container | null,
     ground: null as Phaser.GameObjects.Container | null,
@@ -27,54 +26,13 @@ export default class Face1Scene extends FaceBase {
   private inShipRange = false;
   private inPuzzleRange = false;
 
-  // Edge triggers: store zone, target scene name and highlight graphic
-  private edgeZones: {
-    zone: Phaser.GameObjects.Zone;
-    target: string;
-    gfx: Phaser.GameObjects.Graphics;
-  }[] = [];
-  private activeEdge: string | null = null;
-
-  private twinklingStars?: TwinklingStars;
-
   create() {
     console.log("[ENTER]", this.scene.key);
     const { width, height } = this.scale;
-    this.cameras.main.setBackgroundColor("#0b1020");
-
-    // Tweak this single value to scale both the hitbox and the visual highlight:
-    // 0.4 tot 0.6 is prima
-    const EDGE_TRIGGER_SCALE = 0.4;
 
     // Shared energy initialization for this face
     this.ensureEnergyInitialized(0);
 
-    // ---- Scene layers
-    this.layer.bg = this.add.container(0, 0).setDepth(0);
-    this.layer.ground = this.add.container(0, 0).setDepth(10);
-    this.layer.deco = this.add.container(0, 0).setDepth(20);
-    this.layer.actors = this.add.container(0, 0).setDepth(30);
-    this.layer.fx = this.add.container(0, 0).setDepth(40);
-    this.layer.ui = this.add.container(0, 0).setDepth(1000);
-
-    // ---- Twinkling stars (screen space)
-    this.twinklingStars = new TwinklingStars(this, 220, width, height);
-    this.layer.bg.add(this.twinklingStars.graphics);
-
-    // ---- Static starfield background
-    const stars = this.add.graphics();
-    for (let i = 0; i < 200; i++) {
-      stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.15, 0.8));
-      stars.fillRect(
-        Phaser.Math.Between(0, width),
-        Phaser.Math.Between(0, height),
-        2,
-        2
-      );
-    }
-    this.layer.bg.add(stars);
-
-    // ---- Planet face geometry
     const radius = 180;
 
     const faceTravelTargets = [
@@ -94,89 +52,34 @@ export default class Face1Scene extends FaceBase {
       Face6Scene: 0x311111,
     };
 
-    const neighborStyles = faceTravelTargets.map((key) =>
-      key ? { fill: colorMap[key], stroke: 0x4b7ad1, alpha: 0.95 } : undefined
-    );
-
-    this.renderFaceAndNeighbors({
-      cx: width / 2,
-      cy: height / 2,
+    // Use the new helper on FaceBase to set up:
+    // - background color
+    // - layers
+    // - starfield
+    // - central + neighbor pentagons
+    // - player spawn
+    // - edge travel zones + interaction
+    this.initStandardFace({
       radius,
-      fill: 0x311111,
+      faceTravelTargets,
+      mainFill: 0x311111,
       neighborFill: 0x311111,
-      neighborStyles,
+      colorMap,
+      edgeTriggerScale: 0.4,
+      showLabel: false,
     });
 
+    // Grab the created layers from FaceBase and map them to our local layer object
+    const baseLayers = this.getFaceLayers();
+    this.layer.bg = baseLayers.bg;
+    this.layer.ground = baseLayers.ground;
+    this.layer.deco = baseLayers.deco;
+    this.layer.actors = baseLayers.actors;
+    this.layer.fx = baseLayers.fx;
+    this.layer.ui = baseLayers.ui;
+
+    // Ground texture on the main face
     this.addGrassyGroundTexture(width / 2, height / 2, radius);
-
-    // ---- Player
-    const spawnX = (this.data.get("spawnX") as number) ?? width / 2;
-    const spawnY = (this.data.get("spawnY") as number) ?? height / 2 - 20;
-    this.createPlayerAt(spawnX, spawnY);
-
-    // ----------------------------------------------------
-    // EDGE TRANSITION SYSTEM (uses single EDGE_TRIGGER_SCALE)
-    // ----------------------------------------------------
-    const neighborsByEdge = [
-      "Face2Scene",
-      "Face3Scene",
-      "Face4Scene",
-      "Face5Scene",
-      "Face6Scene",
-    ];
-
-    // Build zones + graphics from polygon edges
-    const edges = this.getEdges();
-
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
-      const target = neighborsByEdge[i];
-
-      if (!target) continue;
-
-      // computed hitbox size (axis-aligned zone)
-      const hitWidth = e.length * EDGE_TRIGGER_SCALE;
-      const hitHeight = 40 * EDGE_TRIGGER_SCALE;
-
-      const zone = this.add.zone(e.mid.x, e.mid.y, hitWidth, hitHeight).setOrigin(0.5);
-      this.physics.add.existing(zone, true); // static
-      // Visual highlight (rotated to match edge)
-      const gfx = this.add.graphics().setDepth(60);
-      gfx.fillStyle(0x4b7ad1, 0.18);
-      gfx.lineStyle(2, 0x4b7ad1, 0.9);
-      // draw rounded rect centered on (0,0) and then position/rotate the gfx
-      const w = hitWidth;
-      const h = hitHeight;
-      const corner = Math.max(6, Math.min(12, Math.round(h / 2)));
-      gfx.fillRoundedRect(-w / 2, -h / 2, w, h, corner);
-      gfx.strokeRoundedRect(-w / 2, -h / 2, w, h, corner);
-
-      // set position & rotation
-      const angleRad = Phaser.Math.Angle.Between(e.start.x, e.start.y, e.end.x, e.end.y);
-      gfx.setPosition(e.mid.x, e.mid.y);
-      gfx.setRotation(angleRad);
-
-      // add to layer for cleanup/organization
-      this.layer.fx?.add(gfx);
-
-      this.edgeZones.push({ zone, target, gfx });
-    }
-
-    // Desktop/mobile hint for edge travel (we declare once and reuse)
-    const isDesktop = getIsDesktop(this);
-    const edgeHint = "Ga naar volgende vlak: " + (isDesktop ? "E" : "I");
-
-    // Edge interaction
-    this.registerInteraction(
-      () => this.activeEdge !== null,
-      () => {
-        if (this.activeEdge) {
-          console.log(`[TRANSITION] ${this.scene.key} → ${this.activeEdge}`);
-          this.scene.start(this.activeEdge);
-        }
-      },
-      { hintText: edgeHint }
-    );
 
     // ---- Crash site / ship
     const center = this.getPolygonCenter(this.poly);
@@ -189,6 +92,7 @@ export default class Face1Scene extends FaceBase {
       .setDepth(50);
     ship.setAngle(-18);
     this.addSoftShadowBelow(ship, 22, 0x000000, 0.28);
+    this.layer.actors?.add(ship);
 
     const shipBlock = this.add.zone(shipPos.x, shipPos.y, 44, 28);
     this.physics.add.existing(shipBlock, true);
@@ -236,8 +140,10 @@ export default class Face1Scene extends FaceBase {
     this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
     this.layer.actors?.add(puzzleImage);
 
+    const isDesktop = getIsDesktop(this);
     const hintText = "Interactie: " + (isDesktop ? "E" : "I");
 
+    // Interaction for ship/puzzle logic
     this.registerInteraction(
       () => this.inShipRange || this.inPuzzleRange,
       () => {
@@ -258,61 +164,12 @@ export default class Face1Scene extends FaceBase {
     this.decorateCrashSite(radius);
   }
 
-  private getEdges(): {
-    start: Phaser.Math.Vector2;
-    end: Phaser.Math.Vector2;
-    mid: Phaser.Math.Vector2;
-    length: number;
-  }[] {
-    const pts = this.poly.points as Phaser.Geom.Point[];
-
-    const edges: {
-      start: Phaser.Math.Vector2;
-      end: Phaser.Math.Vector2;
-      mid: Phaser.Math.Vector2;
-      length: number;
-    }[] = [];
-    for (let i = 0; i < pts.length; i++) {
-      const p1 = pts[i];
-      const p2 = pts[(i + 1) % pts.length]; // wrap around
-
-      const start = new Phaser.Math.Vector2(p1.x, p1.y);
-      const end = new Phaser.Math.Vector2(p2.x, p2.y);
-
-      const mid = new Phaser.Math.Vector2((start.x + end.x) / 2, (start.y + end.y) / 2);
-
-      const length = Phaser.Math.Distance.Between(start.x, start.y, end.x, end.y);
-
-      edges.push({ start, end, mid, length });
-    }
-
-    return edges;
-  }
-
   update(_time: number, delta: number) {
-    this.twinklingStars?.update(delta);
-
-    // -------------------------
-    // EDGE OVERLAP DETECTION
-    // -------------------------
-    this.activeEdge = null;
-    for (const ez of this.edgeZones) {
-      if (this.physics.world.overlap(this.player, ez.zone)) {
-        this.activeEdge = ez.target;
-        // brighten the active highlight
-        ez.gfx.clear();
-        // We don't rely on width from the zone (different arcade versions), so recompute from gfx bounds
-        // Instead, simply redraw brighter version using the same transformation:
-        // (we'll re-draw using the gfx' stored transform)
-        ez.gfx.fillStyle(0x4b7ad1, 0.35);
-        ez.gfx.lineStyle(2, 0x4b7ad1, 1.0);
-        // To redraw, we need w/h: derive from the current gfx transforms by measuring its local bounds.
-        // Simpler: store width/height in a closure would be ideal; but to keep patch minimal, we simply
-        // add a second overlay rectangle centered on gfx position with slightly larger alpha:
-        ez.gfx.fillRoundedRect(-20, -8, 40, 16, 6); // small glow overlay (visual boost)
-        break;
-      }
-    }
+    // Let FaceBase handle:
+    // - TwinklingStars update
+    // - edge travel zone highlighting
+    // - activeTravelEdge bookkeeping
+    this.baseFaceUpdate(delta);
 
     // ---- Ship overlap
     const isOverlappingShip = this.physics.world.overlap(this.player, this.shipZone);
@@ -328,10 +185,11 @@ export default class Face1Scene extends FaceBase {
   /**
    * Override FaceBase's edge-based proximity:
    * For this scene, "interaction in range" is defined by the ship/puzzle zones,
-   * NOT actual polygon edges.
+   * OR a travel edge being active.
    */
   protected isNearEdge(_player: { x: number; y: number }, _e: Edge): boolean {
-    return this.inShipRange || this.inPuzzleRange || this.activeEdge !== null;
+    // `activeTravelEdge` is managed by baseFaceUpdate() in FaceBase
+    return this.inShipRange || this.inPuzzleRange || this["activeTravelEdge"] !== null;
   }
 
   // ---------------------------
@@ -385,7 +243,9 @@ export default class Face1Scene extends FaceBase {
     const maskGfx = this.add.graphics();
     maskGfx.fillStyle(0xffffff, 1);
     maskGfx.beginPath();
-    const pts = (this.poly.points as Phaser.Geom.Point[]).map((p) => new Phaser.Math.Vector2(p.x, p.y));
+    const pts = (this.poly.points as Phaser.Geom.Point[]).map(
+      (p) => new Phaser.Math.Vector2(p.x, p.y)
+    );
     maskGfx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) maskGfx.lineTo(pts[i].x, pts[i].y);
     maskGfx.closePath();
@@ -407,11 +267,15 @@ export default class Face1Scene extends FaceBase {
 
   private decorateCrashSite(radius: number) {
     const center = this.getPolygonCenter(this.poly);
-    const candidates = ["rock", "tuft1", "tuft2", "debris1", "debris2"].filter((k) => this.textures.exists(k));
+    const candidates = ["rock", "tuft1", "tuft2", "debris1", "debris2"].filter((k) =>
+      this.textures.exists(k)
+    );
     const count = Phaser.Math.Between(6, 10);
     for (let i = 0; i < count; i++) {
       const p = this.randomPointInPolygon(this.poly, center, radius * 0.75);
-      const key = candidates.length ? Phaser.Utils.Array.GetRandom(candidates) : null;
+      const key = candidates.length
+        ? Phaser.Utils.Array.GetRandom(candidates)
+        : null;
       if (!key) break;
 
       const s = this.add.image(p.x, p.y, key);
@@ -423,13 +287,18 @@ export default class Face1Scene extends FaceBase {
     }
   }
 
-  private randomPointInPolygon(poly: Phaser.Geom.Polygon, center: Phaser.Math.Vector2, maxR: number) {
+  private randomPointInPolygon(
+    poly: Phaser.Geom.Polygon,
+    center: Phaser.Math.Vector2,
+    maxR: number
+  ) {
     for (let tries = 0; tries < 200; tries++) {
       const r = Phaser.Math.FloatBetween(maxR * 0.2, maxR);
       const a = Phaser.Math.FloatBetween(0, Math.PI * 2);
       const x = center.x + Math.cos(a) * r;
       const y = center.y + Math.sin(a) * r;
-      if (Phaser.Geom.Polygon.Contains(poly, x, y)) return new Phaser.Math.Vector2(x, y);
+      if (Phaser.Geom.Polygon.Contains(poly, x, y))
+        return new Phaser.Math.Vector2(x, y);
     }
     return center.clone();
   }
