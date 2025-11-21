@@ -21,17 +21,17 @@ export default class ShipFuelScene extends Phaser.Scene {
   private gridGfx?: Phaser.GameObjects.Graphics;
   private pathGfx?: Phaser.GameObjects.Graphics;
   private dotGfx?: Phaser.GameObjects.Graphics;
-  private flowGfx?: Phaser.GameObjects.Graphics; // for animated electricity flow
+  private flowGfx?: Phaser.GameObjects.Graphics;
   private pairs: Pair[] = [];
-  private paths = new Map<number, Cell[]>(); // color -> path cells
-  private lockedColors = new Set<number>();   // finished pairs
+  private paths = new Map<number, Cell[]>();
+  private lockedColors = new Set<number>();
   private drawingColor?: number;
   private advanceHint!: Phaser.GameObjects.Text;
   private restartBtn?: Phaser.GameObjects.Text;
-  private flowOffset = 0; // for animating electricity flow
-  private pulseTime = 0; // for terminal pulsing
-  private isShortCircuiting = false; // prevent input during explosion
-  private shortCircuitingColors = new Set<number>(); // colors currently short-circuiting
+  private flowOffset = 0;
+  private pulseTime = 0;
+  private isShortCircuiting = false;
+  private shortCircuitingColors = new Set<number>();
 
   constructor() {
     super("ShipFuelScene");
