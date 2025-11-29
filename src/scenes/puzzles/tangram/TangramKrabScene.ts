@@ -1,13 +1,13 @@
 // TangramSchildpadScene.ts
 import { BaseTangramScene, TangramPieceConfig } from "./BaseTangramPuzzle";
 
-export default class TangramKikkerScene extends BaseTangramScene {
+export default class TangramKrabScene extends BaseTangramScene {
   constructor() {
-    super("TangramKikkerScene");
+    super("TangramKrabScene");
   }
 
   protected getTitleText(): string {
-    return "Tangram: Kikker";
+    return "Tangram: Krab";
   }
 
   protected getSubtitleText(): string {
@@ -16,12 +16,12 @@ export default class TangramKikkerScene extends BaseTangramScene {
 
   protected onPuzzleSolved(): void {
     // Mark this puzzle solved in the registry
-    this.registry.set("tangram_kikker_solved", true);
+    this.registry.set("tangram_krab_solved", true);
 
     // Return to the selection scene
     this.scene.start("TangramSelectScene");
   }
-
+  
   protected getPieceConfigs(
     width: number,
     height: number

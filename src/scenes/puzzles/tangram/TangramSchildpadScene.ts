@@ -14,6 +14,14 @@ export default class TangramSchildpadScene extends BaseTangramScene {
     return "Sleep de stukken op de schaduw. Selecteer en roteer per 45°. Druk op 'Check'.";
   }
 
+  protected onPuzzleSolved(): void {
+    // Mark this puzzle solved in the registry
+    this.registry.set("tangram_schildpad_solved", true);
+
+    // Return to the selection scene
+    this.scene.start("TangramSelectScene");
+  }
+
   protected getPieceConfigs(
     width: number,
     height: number

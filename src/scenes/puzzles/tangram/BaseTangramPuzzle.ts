@@ -48,15 +48,16 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   protected selectedPiece: TangramPieceInstance | null = null;
 
   protected rotateButton!: Phaser.GameObjects.Text;
-  protected checkButton!: Phaser.GameObjects.Text;
   protected resultText!: Phaser.GameObjects.Text;
   protected escKey!: Phaser.Input.Keyboard.Key;
 
-  // Precomputed silhouette geometry
   protected silhouettePolygons: Phaser.Geom.Polygon[] = [];
   protected silhouetteBounds:
     | { minX: number; minY: number; maxX: number; maxY: number }
     | null = null;
+
+  // NEW: track if we already solved this puzzle
+  protected isSolved = false;
 
   constructor(sceneKey: string) {
     super(sceneKey);
@@ -64,23 +65,15 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
   // ---- Hooks for subclasses ----------------------------------------
 
-  /** Main title text shown at top */
   protected abstract getTitleText(): string;
-
-  /** Subtitle/instructions text shown under title */
   protected abstract getSubtitleText(): string;
-
-  /**
-   * Subclasses describe their layout by returning the piece configs.
-   * targetX/Y/rotation are used to build the silhouette.
-   *
-   * startX/startY/startRotation are optional and will be filled in by
-   * BaseTangramScene with a default layout if omitted.
-   */
   protected abstract getPieceConfigs(
     width: number,
     height: number
   ): TangramPieceConfig[];
+
+  // NEW: subclasses decide what to do when solved (e.g. this.scene.start("NextScene"))
+  protected abstract onPuzzleSolved(): void;
 
   /** Background color of the scene */
   protected getBackgroundColor(): string | number {
@@ -226,7 +219,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
         _pointer: Phaser.Input.Pointer,
         _gameObject: Phaser.GameObjects.Image
       ) => {
-        // Intentionally empty
+        this.updateCoverageStatus();
       }
     );
 
@@ -268,28 +261,13 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       }
     });
 
-    // Check button
-    this.checkButton = this.add
-      .text(width * 0.4, height - 60, "Check", {
-        fontSize: "20px",
-        backgroundColor: "#444444",
-        color: "#ffffff",
-        padding: { x: 16, y: 6 },
-      })
-      .setOrigin(0.5)
-      .setInteractive();
-
-    this.checkButton.on("pointerdown", () => {
-      const coverage = this.computeCoveragePercentage();
-      this.resultText.setText(`Coverage: ${coverage.toFixed(1)}%`);
-      console.log("Coverage:", coverage);
-    });
-
-    // Result text
+    // NEW: feedback text (replaces the old Check button)
     this.resultText = this.add
-      .text(width * 0.7, height - 60, "Coverage: 0.0%", {
+      .text(width * 0.5, height - 60, "", {
         fontSize: "20px",
         color: "#ffffff",
+        backgroundColor: "#000000",
+        padding: { x: 10, y: 6 },
       })
       .setOrigin(0.5);
   }
@@ -562,6 +540,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     if (!this.selectedPiece) return;
     const sp = this.selectedPiece.sprite;
     sp.angle = Phaser.Math.Angle.WrapDegrees(sp.angle + 45);
+
+    this.updateCoverageStatus();
   }
 
   // --- COVERAGE COMPUTATION ----------------------------------------
@@ -624,5 +604,28 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     if (silhouetteCount === 0) return 0;
     return (coveredCount / silhouetteCount) * 100;
+  }
+
+  private updateCoverageStatus() {
+  if (this.isSolved) {
+    // already solved, don't re-trigger
+    return;
+  }
+
+  const coverage = this.computeCoveragePercentage();
+    // console.log("Coverage:", coverage); // optional debug
+
+    if (coverage >= 95) {
+      // Solved: you can show a message if you like (optional)
+      this.resultText.setText("Goed gedaan!");
+      this.isSolved = true;
+      this.onPuzzleSolved();
+    } else if (coverage >= 90) {
+      // Almost solved
+      this.resultText.setText("Bijna goed!");
+    } else {
+      // Below 90%: no message
+      this.resultText.setText("");
+    }
   }
 }
