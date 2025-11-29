@@ -38,6 +38,7 @@ export class PlayerController {
   private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd: Record<"W" | "A" | "S" | "D", Phaser.Input.Keyboard.Key>;
   private touchInput: PlayerInputState | null = null;
+  private inputEnabled = true;
 
   // movement tuning
   private readonly accel = 900;
@@ -97,12 +98,24 @@ export class PlayerController {
 
   // Called each frame from the Scene
   update() {
-    this.updateMovement();
-    this.updateOrientationAndAnimation();
+    if (this.inputEnabled) {
+      this.updateMovement();
+      this.updateOrientationAndAnimation();
+    }
   }
 
   public setTouchInput(state: PlayerInputState | null) {
     this.touchInput = state;
+  }
+
+  public setInputEnabled(enabled: boolean) {
+    this.inputEnabled = enabled;
+
+    // Optional: immediately stop movement when disabling
+    if (!enabled) {
+      this.sprite.setVelocity(0, 0);
+      this.sprite.anims.play("idle", true); // or whatever your idle anim is
+    }
   }
 
   // --------- internal helpers ----------

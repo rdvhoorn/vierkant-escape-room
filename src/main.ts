@@ -15,7 +15,11 @@ import Face9Scene from "./scenes/face_scenes/Face9Scene";
 import Face10Scene from "./scenes/face_scenes/Face10Scene";
 import Face11Scene from "./scenes/face_scenes/Face11Scene";
 import Face12Scene from "./scenes/face_scenes/Face12Scene";
-// import FaceBottomScene from "./scenes/Later_FaceBottomScene";
+
+import TangramKikkerScene from "./scenes/puzzles/tangram/TangramKikkerScene";
+import TangramKrabScene from "./scenes/puzzles/tangram/TangramKrabScene";
+import TangramSchildpadScene from "./scenes/puzzles/tangram/TangramSchildpadScene";
+import TangramSelectScene from "./scenes/puzzles/tangram/TangramSelectScene";
 
 // Puzzle scenes
 import ShipFuelScene from "./scenes/puzzles/ShipFuelScene";
@@ -61,7 +65,11 @@ const config: Phaser.Types.Core.GameConfig = {
   IntroScene,
   MoreToComeScene,
   PuzzleLogicOneScene,
-  PuzzleLogicTwoScene
+  PuzzleLogicTwoScene,
+  TangramKikkerScene,
+  TangramKrabScene,
+  TangramSchildpadScene,
+  TangramSelectScene,
 ],
 };
 

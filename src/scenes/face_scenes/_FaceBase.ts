@@ -15,6 +15,9 @@ export type Edge = { a: Phaser.Math.Vector2; b: Phaser.Math.Vector2 };
 // Type aliases are TYPES only; do not construct them at runtime.
 type V2 = Phaser.Math.Vector2;
 type V3 = Phaser.Math.Vector3;
+type WithBounds = Phaser.GameObjects.GameObject &
+  Phaser.GameObjects.Components.GetBounds;
+
 
 const RAD = Math.PI / 180;
 // Regular dodecahedron dihedral angle ~= 116.565051°
@@ -80,12 +83,25 @@ export default abstract class FaceBase extends Phaser.Scene {
   // drawing caches
   private gMain!: Phaser.GameObjects.Graphics;      // central face
   private gNeighbors!: Phaser.GameObjects.Graphics; // neighbors ring (behind)
-
-  // ---------- New shared-but-optional helpers ----------
   protected faceLayers?: FaceLayers;
   protected twinklingStars?: TwinklingStars;
   protected travelEdgeZones: TravelEdgeZone[] = [];
   protected activeTravelEdge: string | null = null;
+
+  // ---- Interaction highlights ----
+  private interactableHighlights: {
+    getCenter: () => Phaser.Math.Vector2;
+    radius: number;
+    highlight: Phaser.GameObjects.Graphics;
+  }[] = [];
+
+  // ---- Shared dialog system ----
+  private dialogBox?: Phaser.GameObjects.Rectangle;
+  private dialogText?: Phaser.GameObjects.Text;
+  private dialogLines: string[] = [];
+  private dialogIndex = 0;
+  private dialogActive = false;
+  private dialogOnComplete?: () => void;
 
   // ------------------------------------
   // ENERGY helpers
@@ -433,6 +449,217 @@ export default abstract class FaceBase extends Phaser.Scene {
     );
   }
 
+  // ------------------------------------
+  // Dialog helpers (shared across faces)
+  // ------------------------------------
+
+    /**
+   * Convenience: attach a dialog sequence to an object.
+   *
+   * - E/tap near object = starts dialog if not active
+   * - E/tap during dialog = advances dialog
+   */
+    /**
+   * Convenience: attach a dialog sequence to an object.
+   *
+   * - E/tap near object = starts dialog if not active
+   * - E/tap during dialog = advances dialog
+   *
+   * Returns a small handle so you can start the dialog from code
+   * (e.g. after coming back from a puzzle).
+   */
+  protected createDialogInteraction(
+    target: WithBounds,
+    config: {
+      hitRadius?: number;
+      hintText?: string;
+      paddingX?: number;
+      paddingY?: number;
+      buildLines: () => string[];      // called each time you start talking
+      onComplete?: () => void;         // called after dialog finishes
+    }
+  ): { start: () => void } {
+    const start = () => {
+      if (this.dialogActive) return; // already in a dialog, ignore
+      const lines = config.buildLines();
+      this.startDialog(lines, config.onComplete);
+    };
+
+    this.makeObjectInteractable(target, {
+      hitRadius: config.hitRadius,
+      hintText: config.hintText,
+      paddingX: config.paddingX,
+      paddingY: config.paddingY,
+      onUse: () => {
+        if (this.dialogActive) {
+          this.advanceDialog();
+        } else {
+          start();
+        }
+      },
+    });
+
+    return { start };
+  }
+
+
+    /**
+   * Make a game object interactable:
+   * - draws a highlight around it
+   * - registers a proximity-based HUD interaction
+   */
+  protected makeObjectInteractable(
+    target: WithBounds,
+    config: {
+      hitRadius?: number;
+      hintText?: string;
+      paddingX?: number;
+      paddingY?: number;
+      onUse: () => void;
+    }
+  ) {
+    const layers = this.getFaceLayers(); // ensures initStandardFace() was called
+
+    const bounds = target.getBounds();
+    const padX = config.paddingX ?? 15;
+    const padY = config.paddingY ?? 15;
+
+    // Highlight graphics
+    const highlight = this.add.graphics().setDepth(51).setVisible(false);
+    highlight.lineStyle(2, 0xffffff, 0.6);
+    highlight.strokeRoundedRect(
+      bounds.x - padX,
+      bounds.y - padY,
+      bounds.width + padX * 2,
+      bounds.height + padY * 2,
+      6
+    );
+    highlight.setAlpha(0.8);
+
+    layers.fx.add(highlight);
+
+    const getCenter = () => {
+      const b = target.getBounds();
+      return new Phaser.Math.Vector2(b.centerX, b.centerY);
+    };
+
+    const hitRadius =
+      config.hitRadius ??
+      Math.max(bounds.width, bounds.height) * 0.75;
+
+    // Track highlight so baseFaceUpdate can toggle visibility
+    this.interactableHighlights.push({
+      getCenter,
+      radius: hitRadius,
+      highlight,
+    });
+
+    // HUD interaction
+    this.registerInteraction(
+      (player) => {
+        const c = getCenter();
+        const dist = Phaser.Math.Distance.Between(
+          player.x,
+          player.y,
+          c.x,
+          c.y
+        );
+        return dist < hitRadius;
+      },
+      config.onUse,
+      { hintText: config.hintText }
+    );
+  }
+
+
+  protected isDialogActive(): boolean {
+    return this.dialogActive;
+  }
+
+  private ensureDialogUi() {
+    if (this.dialogText && this.dialogText.scene && this.dialogText.active) {
+      return;
+    }
+
+    const { width, height } = this.scale;
+
+    this.dialogBox?.destroy();
+    this.dialogText?.destroy();
+
+    this.dialogBox = this.add
+      .rectangle(width / 2 + 100, height - 80, width - 100, 100, 0x1b2748, 0.9)
+      .setStrokeStyle(2, 0x3c5a99)
+      .setDepth(999);
+
+    this.dialogText = this.add
+      .text(
+        this.dialogBox.x - this.dialogBox.width / 2 + 20,
+        this.dialogBox.y - 40,
+        "",
+        {
+          fontFamily: "sans-serif",
+          fontSize: "18px",
+          color: "#e7f3ff",
+          wordWrap: {
+            width: this.dialogBox.width - 40,
+            useAdvancedWrap: true,
+          },
+        }
+      )
+      .setDepth(1000);
+
+    this.dialogBox.setVisible(false);
+    this.dialogText.setVisible(false);
+  }
+
+  protected startDialog(lines: string[], onComplete?: () => void) {
+    if (!lines.length) return;
+
+    this.ensureDialogUi();
+    this.playerController.setInputEnabled(false);
+
+    this.dialogLines = lines;
+    this.dialogIndex = 0;
+    this.dialogOnComplete = onComplete;
+    this.dialogActive = true;
+
+    this.showCurrentDialogLine();
+  }
+
+  protected advanceDialog() {
+    if (!this.dialogActive) return;
+
+    this.dialogIndex++;
+    if (this.dialogIndex >= this.dialogLines.length) {
+      this.endDialog();
+    } else {
+      this.showCurrentDialogLine();
+    }
+  }
+
+  protected endDialog() {
+    if (!this.dialogActive) return;
+
+    this.dialogActive = false;
+    this.playerController.setInputEnabled(true);
+
+    if (this.dialogBox) this.dialogBox.setVisible(false);
+    if (this.dialogText) this.dialogText.setVisible(false);
+
+    const cb = this.dialogOnComplete;
+    this.dialogOnComplete = undefined;
+    cb?.();
+  }
+
+  private showCurrentDialogLine() {
+    if (!this.dialogBox || !this.dialogText) return;
+
+    this.dialogBox.setVisible(true);
+    this.dialogText.setVisible(true);
+    this.dialogText.setText(this.dialogLines[this.dialogIndex] ?? "");
+  }
+
+
   // ---------------------------
   // Visual util
   // ---------------------------
@@ -663,10 +890,12 @@ export default abstract class FaceBase extends Phaser.Scene {
    * Base update for simple faces that only need:
    * - starfield ticking
    * - edge-zone highlighting + activeTravelEdge bookkeeping
+   * - interactable object highlighting
    */
   protected baseFaceUpdate(delta: number) {
     this.twinklingStars?.update(delta);
 
+    // ----- Edge travel highlighting -----
     this.activeTravelEdge = null;
     for (const ez of this.travelEdgeZones) {
       if (this.physics.world.overlap(this.player, ez.zone)) {
@@ -710,5 +939,17 @@ export default abstract class FaceBase extends Phaser.Scene {
         );
       }
     }
+
+    // ----- Interactable object highlight -----
+    const player = this.player;
+    for (const h of this.interactableHighlights) {
+      const c = h.getCenter();
+      const dist = Phaser.Math.Distance.Between(player.x, player.y, c.x, c.y);
+      const inRange = dist < h.radius;
+
+      // Simple on/off; you can add fancier effects later
+      h.highlight.setVisible(inRange && !this.dialogActive);
+    }
   }
+
 }
