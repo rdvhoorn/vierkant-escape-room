@@ -3,8 +3,15 @@ import FaceBase from "./_FaceBase";
 import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
 export default class Face2Scene extends FaceBase {
+  private entry_from_puzzle: boolean = false;
+  private travelerDialogHandle?: { start: () => void };
+
   constructor() {
     super("Face2Scene");
+  }
+
+  init(data: { entry_from_puzzle?: boolean }) {
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   create() {
@@ -33,7 +40,6 @@ export default class Face2Scene extends FaceBase {
   }
 
   // ---------------- NPC + dialog using helpers ----------------
-
   private addPlaceholderNpc() {
     const { width, height } = this.scale;
     const layers = this.getFaceLayers();
@@ -47,7 +53,7 @@ export default class Face2Scene extends FaceBase {
 
     layers.actors.add(npc);
 
-    this.createDialogInteraction(npc, {
+    const handle = this.createDialogInteraction(npc, {
       hitRadius: 50,
       hintText: "Praat met reiziger: E",
       buildLines: () => {
@@ -75,5 +81,16 @@ export default class Face2Scene extends FaceBase {
         }
       },
     });
+
+    this.travelerDialogHandle = handle;
+
+    // 👉 If we just came back from the puzzle, immediately resume dialog
+    if (this.entry_from_puzzle) {
+      // small delay so HUD/player/etc are fully ready
+      this.time.delayedCall(50, () => {
+        this.travelerDialogHandle?.start();
+      });
+    }
   }
+
 }

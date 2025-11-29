@@ -108,16 +108,15 @@ export default class TangramSelectScene extends Phaser.Scene {
     );
 
     if (allSolved) {
-      // Set your global flag
       this.registry.set("tangram_puzzle_solved", true);
 
-      // Small delay just so the player sees that everything is green for a moment
       this.time.delayedCall(400, () => {
-        // Go back to the planet scene
-        this.scene.start("Face2Scene");
+        // 👇 pass the "came from puzzle" flag
+        this.scene.start("Face2Scene", { entry_from_puzzle: true });
       });
     }
   }
+
 
   shutdown() {
     this.events.off(Phaser.Scenes.Events.WAKE, this.updateLevelStates, this);

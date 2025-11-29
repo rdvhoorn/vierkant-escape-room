@@ -459,6 +459,15 @@ export default abstract class FaceBase extends Phaser.Scene {
    * - E/tap near object = starts dialog if not active
    * - E/tap during dialog = advances dialog
    */
+    /**
+   * Convenience: attach a dialog sequence to an object.
+   *
+   * - E/tap near object = starts dialog if not active
+   * - E/tap during dialog = advances dialog
+   *
+   * Returns a small handle so you can start the dialog from code
+   * (e.g. after coming back from a puzzle).
+   */
   protected createDialogInteraction(
     target: WithBounds,
     config: {
@@ -469,7 +478,13 @@ export default abstract class FaceBase extends Phaser.Scene {
       buildLines: () => string[];      // called each time you start talking
       onComplete?: () => void;         // called after dialog finishes
     }
-  ) {
+  ): { start: () => void } {
+    const start = () => {
+      if (this.dialogActive) return; // already in a dialog, ignore
+      const lines = config.buildLines();
+      this.startDialog(lines, config.onComplete);
+    };
+
     this.makeObjectInteractable(target, {
       hitRadius: config.hitRadius,
       hintText: config.hintText,
@@ -479,12 +494,14 @@ export default abstract class FaceBase extends Phaser.Scene {
         if (this.dialogActive) {
           this.advanceDialog();
         } else {
-          const lines = config.buildLines();
-          this.startDialog(lines, config.onComplete);
+          start();
         }
       },
     });
+
+    return { start };
   }
+
 
     /**
    * Make a game object interactable:
