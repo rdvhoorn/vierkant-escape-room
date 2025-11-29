@@ -12,11 +12,23 @@ export type TangramPieceType =
 export interface TangramPieceConfig {
   type: TangramPieceType;
   textureKey: string;
-  startX: number;
-  startY: number;
+
+  /**
+   * Optional starting placement.
+   * If omitted, BaseTangramScene will assign a default starting layout.
+   */
+  startX?: number;
+  startY?: number;
+  startRotation?: number;
+
+  /**
+   * Target placement used to build the silhouette and to check coverage.
+   */
   targetX: number;
   targetY: number;
   targetRotation: number;
+
+  /** Tint color for the sprite */
   color: number;
 }
 
@@ -61,6 +73,9 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   /**
    * Subclasses describe their layout by returning the piece configs.
    * targetX/Y/rotation are used to build the silhouette.
+   *
+   * startX/startY/startRotation are optional and will be filled in by
+   * BaseTangramScene with a default layout if omitted.
    */
   protected abstract getPieceConfigs(
     width: number,
@@ -75,6 +90,68 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   /** Fill color of the silhouette shape */
   protected getSilhouetteColor(): { color: number; alpha: number } {
     return { color: 0x333333, alpha: 0.7 };
+  }
+
+  /**
+   * Default starting layout for the standard 7 tangram pieces.
+   * Each entry corresponds to the piece at the same index in getPieceConfigs.
+   *
+   * This is where you can construct your “original tangram square” layout.
+   * You define each startX/startY/startRotation individually here.
+   */
+  protected getDefaultStartLayout(
+    width: number,
+    height: number
+  ): { startX: number; startY: number; startRotation: number }[] {
+    const squareCenterX = width * 0.1;
+    const squareCenterY = height * 0.35;
+
+    // One entry per piece (in order).
+    // Adjust these values to form your canonical starting tangram square.
+    return [
+      // 0: largeTri
+      {
+        startX: squareCenterX,
+        startY: squareCenterY + 200,
+        startRotation: 225,
+      },
+      // 1: largeTri2
+      {
+        startX: squareCenterX,
+        startY: squareCenterY,
+        startRotation: 360-45,
+      },
+      // 2: square
+      {
+        startX: squareCenterX+150,
+        startY: squareCenterY+50,
+        startRotation: 45,
+      },
+      // 3: smallTri2
+      {
+        startX: squareCenterX+200,
+        startY: squareCenterY,
+        startRotation: 45,
+      },
+      // 4: smallTri1
+      {
+        startX: squareCenterX+150,
+        startY: squareCenterY+151,
+        startRotation: 135,
+      },
+      // 5: mediumTri
+      {
+        startX: squareCenterX+102,
+        startY: squareCenterY+200,
+        startRotation: 6*45,
+      },
+      // 6: parallelogram
+      {
+        startX: squareCenterX+1,
+        startY: squareCenterY+151,
+        startRotation: 0,
+      },
+    ];
   }
 
   // ---- Phaser lifecycle --------------------------------------------
@@ -109,8 +186,15 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     // Create tangram piece textures once
     this.ensureTangramTextures();
 
-    // Let the subclass define positions
-    const pieceConfigs = this.getPieceConfigs(width, height);
+    // Let the subclass define target positions
+    const rawPieceConfigs = this.getPieceConfigs(width, height);
+
+    // Fill in default starting positions & rotations if missing
+    const pieceConfigs = this.applyDefaultStartLayout(
+      rawPieceConfigs,
+      width,
+      height
+    );
 
     // Build & draw silhouette based on target placements
     this.buildSilhouetteGeometry(pieceConfigs);
@@ -219,12 +303,26 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   // --- TEXTURES ----------------------------------------------------
 
   private ensureTangramTextures() {
+    // Base size for the small triangle leg
+    const SMALL = 70;
+    const MEDIUM = Math.round(SMALL * Math.SQRT2); // ≈ 99
+    const LARGE = SMALL * 2;                        // = 140
+    const SQUARE = SMALL;                           // same as small-triangle leg
+
+    // Parallelogram constructed with sides MEDIUM and SMALL, angle 45°
+    const PARA_SKEW = SMALL / Math.SQRT2;           // horizontal/vertical offset of slanted side
+    const PARA_W = MEDIUM;                          // horizontal length of top/bottom edge
+    const PARA_H = PARA_SKEW;                       // vertical height of the shape
+
+    const PARA_TEX_W = Math.ceil(PARA_W + PARA_SKEW);
+    const PARA_TEX_H = Math.ceil(PARA_H);
+
     if (!this.textures.exists("tan_largeTri")) {
       const gfx = this.add.graphics({ x: 0, y: 0 });
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillTriangle(0, 140, 140, 140, 0, 0);
-      gfx.generateTexture("tan_largeTri", 140, 140);
+      gfx.fillTriangle(0, LARGE, LARGE, LARGE, 0, 0);
+      gfx.generateTexture("tan_largeTri", LARGE, LARGE);
       gfx.destroy();
     }
 
@@ -232,8 +330,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       const gfx = this.add.graphics({ x: 0, y: 0 });
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillTriangle(0, 100, 100, 100, 0, 0);
-      gfx.generateTexture("tan_mediumTri", 100, 100);
+      gfx.fillTriangle(0, MEDIUM, MEDIUM, MEDIUM, 0, 0);
+      gfx.generateTexture("tan_mediumTri", MEDIUM, MEDIUM);
       gfx.destroy();
     }
 
@@ -241,8 +339,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       const gfx = this.add.graphics({ x: 0, y: 0 });
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillTriangle(0, 70, 70, 70, 0, 0);
-      gfx.generateTexture("tan_smallTri", 70, 70);
+      gfx.fillTriangle(0, SMALL, SMALL, SMALL, 0, 0);
+      gfx.generateTexture("tan_smallTri", SMALL, SMALL);
       gfx.destroy();
     }
 
@@ -250,8 +348,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       const gfx = this.add.graphics({ x: 0, y: 0 });
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
-      gfx.fillRect(0, 0, 80, 80);
-      gfx.generateTexture("tan_square", 80, 80);
+      gfx.fillRect(0, 0, SQUARE, SQUARE);
+      gfx.generateTexture("tan_square", SQUARE, SQUARE);
       gfx.destroy();
     }
 
@@ -259,66 +357,104 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       const gfx = this.add.graphics({ x: 0, y: 0 });
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
-      const w = 100;
-      const h = 60;
-      const skew = 25;
+
+      // Coordinates chosen so the sides are:
+      // - top/bottom edges: length MEDIUM
+      // - left/right slanted edges: length SMALL
       gfx.beginPath();
-      gfx.moveTo(skew, 0);
-      gfx.lineTo(skew + w, 0);
-      gfx.lineTo(w, h);
-      gfx.lineTo(0, h);
+      gfx.moveTo(PARA_SKEW, 0);                 // top-left
+      gfx.lineTo(PARA_SKEW + PARA_W, 0);        // top-right
+      gfx.lineTo(PARA_W, PARA_H);               // bottom-right
+      gfx.lineTo(0, PARA_H);                    // bottom-left
       gfx.closePath();
       gfx.fillPath();
-      gfx.generateTexture("tan_parallelogram", w + skew, h);
+
+      gfx.generateTexture("tan_parallelogram", PARA_TEX_W, PARA_TEX_H);
       gfx.destroy();
     }
+  }
+
+
+  // --- DEFAULT START LAYOUT MERGE ----------------------------------
+
+  private applyDefaultStartLayout(
+    configs: TangramPieceConfig[],
+    width: number,
+    height: number
+  ): TangramPieceConfig[] {
+    const defaults = this.getDefaultStartLayout(width, height);
+
+    return configs.map((cfg, idx) => {
+      const def = defaults[idx];
+
+      const startX = cfg.startX ?? def?.startX ?? 0;
+      const startY = cfg.startY ?? def?.startY ?? 0;
+      const startRotation = cfg.startRotation ?? def?.startRotation ?? 0;
+
+      return {
+        ...cfg,
+        startX,
+        startY,
+        startRotation,
+      };
+    });
   }
 
   // --- GEOMETRY HELPERS --------------------------------------------
 
   // Base shapes in local coordinates (matching how textures & silhouette are drawn)
+  
   private getBasePolygonPoints(type: TangramPieceType): Phaser.Geom.Point[] {
+    const SMALL = 70;
+    const MEDIUM = Math.round(SMALL * Math.SQRT2); // ≈ 99
+    const LARGE = SMALL * 2;                        // = 140
+
+    const PARA_SKEW = SMALL / Math.SQRT2;
+    const PARA_W = MEDIUM;
+    const PARA_H = PARA_SKEW;
+
     switch (type) {
       case "largeTri":
       case "largeTri2":
         return [
-          new Phaser.Geom.Point(0, 140),
-          new Phaser.Geom.Point(140, 140),
+          new Phaser.Geom.Point(0, LARGE),
+          new Phaser.Geom.Point(LARGE, LARGE),
           new Phaser.Geom.Point(0, 0),
         ];
+
       case "mediumTri":
         return [
-          new Phaser.Geom.Point(0, 100),
-          new Phaser.Geom.Point(100, 100),
+          new Phaser.Geom.Point(0, MEDIUM),
+          new Phaser.Geom.Point(MEDIUM, MEDIUM),
           new Phaser.Geom.Point(0, 0),
         ];
+
       case "smallTri1":
       case "smallTri2":
         return [
-          new Phaser.Geom.Point(0, 70),
-          new Phaser.Geom.Point(70, 70),
+          new Phaser.Geom.Point(0, SMALL),
+          new Phaser.Geom.Point(SMALL, SMALL),
           new Phaser.Geom.Point(0, 0),
         ];
+
       case "square":
         return [
           new Phaser.Geom.Point(0, 0),
-          new Phaser.Geom.Point(80, 0),
-          new Phaser.Geom.Point(80, 80),
-          new Phaser.Geom.Point(0, 80),
+          new Phaser.Geom.Point(SMALL, 0),
+          new Phaser.Geom.Point(SMALL, SMALL),
+          new Phaser.Geom.Point(0, SMALL),
         ];
-      case "parallelogram": {
-        const w = 100;
-        const h = 60;
-        const skew = 25;
+
+      case "parallelogram":
         return [
-          new Phaser.Geom.Point(skew, 0),
-          new Phaser.Geom.Point(skew + w, 0),
-          new Phaser.Geom.Point(w, h),
-          new Phaser.Geom.Point(0, h),
+          new Phaser.Geom.Point(PARA_SKEW, 0),
+          new Phaser.Geom.Point(PARA_SKEW + PARA_W, 0),
+          new Phaser.Geom.Point(PARA_W, PARA_H),
+          new Phaser.Geom.Point(0, PARA_H),
         ];
-      }
     }
   }
+
 
   private transformPoints(
     points: Phaser.Geom.Point[],
@@ -391,12 +527,17 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   // --- PIECES ------------------------------------------------------
 
   private createPieceInstance(cfg: TangramPieceConfig): TangramPieceInstance {
+    const startX = cfg.startX ?? 0;
+    const startY = cfg.startY ?? 0;
+    const startRotation = cfg.startRotation ?? 0;
+
     const sprite = this.add
-      .image(cfg.startX, cfg.startY, cfg.textureKey)
+      .image(startX, startY, cfg.textureKey)
       .setInteractive({ draggable: true })
       .setTint(cfg.color);
 
     sprite.setOrigin(0.0, 0.0);
+    sprite.angle = startRotation;
 
     return {
       config: cfg,

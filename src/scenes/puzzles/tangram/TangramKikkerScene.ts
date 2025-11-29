@@ -1,13 +1,13 @@
 // TangramSchildpadScene.ts
 import { BaseTangramScene, TangramPieceConfig } from "./BaseTangramPuzzle";
 
-export default class TangramSchildpadScene extends BaseTangramScene {
+export default class TangramKikkerScene extends BaseTangramScene {
   constructor() {
-    super("TangramSchildpadScene");
+    super("TangramKikkerScene");
   }
 
   protected getTitleText(): string {
-    return "Tangram: Schildpad";
+    return "Tangram: Kikker";
   }
 
   protected getSubtitleText(): string {
@@ -18,7 +18,7 @@ export default class TangramSchildpadScene extends BaseTangramScene {
     width: number,
     height: number
   ): TangramPieceConfig[] {
-    // Position the turtle a bit to the right & up
+    // Position the frog a bit to the right & up
     const puzzleCenterX = width * 0.6;
     const puzzleCenterY = height * 0.35;
 
@@ -29,9 +29,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "largeTri",
         textureKey: "tan_largeTri",
-        targetX: puzzleCenterX,
-        targetY: puzzleCenterY,
-        targetRotation: 45,
+        targetX: puzzleCenterX+200,
+        targetY: puzzleCenterY+200,
+        targetRotation: 3 * 45,
         color: 0xc97a2b,
       },
 
@@ -39,9 +39,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "largeTri2",
         textureKey: "tan_largeTri",
-        targetX: puzzleCenterX,
-        targetY: puzzleCenterY + 200,
-        targetRotation: 225,
+        targetX: puzzleCenterX-46,
+        targetY: puzzleCenterY+50,
+        targetRotation: 7*45,
         color: 0x8a4b14,
       },
 
@@ -50,9 +50,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "square",
         textureKey: "tan_square",
-        targetX: puzzleCenterX + 150,
-        targetY: puzzleCenterY + 50,
-        targetRotation: 45, // diamond like in the picture
+        targetX: puzzleCenterX+90,
+        targetY: puzzleCenterY-50,
+        targetRotation: 0,
         color: 0x8a4b14,
       },
 
@@ -61,9 +61,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "smallTri2",
         textureKey: "tan_smallTri",
-        targetX: puzzleCenterX - 60,
-        targetY: puzzleCenterY + 60,
-        targetRotation: 135, // pointing back/left
+        targetX: puzzleCenterX+10,
+        targetY: puzzleCenterY+20,
+        targetRotation: 180,
         color: 0xf4a634,
       },
 
@@ -72,9 +72,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "smallTri1",
         textureKey: "tan_smallTri",
-        targetX: puzzleCenterX - 155,
-        targetY: puzzleCenterY + 140,
-        targetRotation: 315, // pointing down/left
+        targetX: puzzleCenterX-60,
+        targetY: puzzleCenterY-50,
+        targetRotation: 0,
         color: 0xf4a634,
       },
 
@@ -83,9 +83,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "mediumTri",
         textureKey: "tan_mediumTri",
-        targetX: puzzleCenterX + 40,
-        targetY: puzzleCenterY + 300,
-        targetRotation: 225,
+        targetX: puzzleCenterX+120,
+        targetY: puzzleCenterY+50,
+        targetRotation: 3*45,
         color: 0xf4a634,
       },
 
@@ -94,9 +94,9 @@ export default class TangramSchildpadScene extends BaseTangramScene {
       {
         type: "parallelogram",
         textureKey: "tan_parallelogram",
-        targetX: puzzleCenterX + 150,
-        targetY: puzzleCenterY - 55,
-        targetRotation: 135, // leaning up/right
+        targetX: puzzleCenterX+155,
+        targetY: puzzleCenterY+249,
+        targetRotation: 180,
         color: 0xf4a634,
       },
     ];
