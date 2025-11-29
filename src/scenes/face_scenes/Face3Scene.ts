@@ -38,15 +38,16 @@ export default class Face3Scene extends FaceBase {
 
     const npcWidth = 22;
     const npcHeight = 34;
-    const door = this.add.rectangle(width / 2 + 40, height / 2, npcWidth, npcHeight, 0x88ff88).setStrokeStyle(2, 0x1f3a1f);
+    const door = this.add.rectangle(width / 2 , height / 2+80, npcWidth, npcHeight, 0x88ff88).setStrokeStyle(2, 0x1f3a1f);
+    //positieve width is naar rechts, positive height is omlaag
     layers.actors.add(door);
 
     const handle = this.createDialogInteraction(door, {
-      hitRadius: 50,
-      hintText: "Ga door het hekje: E",
+      hitRadius: 30,
+      hintText: "Ga door het deurtje: E",
       buildLines: () => {
         const solved = !!this.registry.get("streak_maze_solved");
-        if (solved) return ["Het hekje staat open. Je bent hier al geweest."];
+        if (solved) return ["Het deurtje staat open. Je bent hier al geweest."];
         return [
           "Je staat voor een klein deurtje in de hoge heg.",
           "Het lijkt op slot… of misschien toch niet?",
