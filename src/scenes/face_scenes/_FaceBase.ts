@@ -72,6 +72,11 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected poly!: Phaser.Geom.Polygon;
   protected edges: Edge[] = [];
 
+  // ---- SPAWN DATA (from scene transitions) ----
+  protected incomingSpawnX?: number;
+  protected incomingSpawnY?: number;
+  protected cameFromScene?: string;
+
   // ---- ENERGY (shared across faces) ----
   private static readonly ENERGY_KEY = "energy";
   protected maxEnergy = 100;
@@ -102,6 +107,20 @@ export default abstract class FaceBase extends Phaser.Scene {
   private dialogIndex = 0;
   private dialogActive = false;
   private dialogOnComplete?: () => void;
+
+  // ------------------------------------
+  // Lifecycle
+  // ------------------------------------
+
+  /**
+   * Capture spawn data from scene transitions.
+   * Subclasses can override this but should call super.init(data).
+   */
+  init(data?: { spawnX?: number; spawnY?: number; cameFromScene?: string; [key: string]: any }) {
+    this.incomingSpawnX = data?.spawnX;
+    this.incomingSpawnY = data?.spawnY;
+    this.cameFromScene = data?.cameFromScene;
+  }
 
   // ------------------------------------
   // ENERGY helpers
@@ -754,13 +773,13 @@ export default abstract class FaceBase extends Phaser.Scene {
     return edges;
   }
 
-  /** Create edge-trigger zones & register "travel" interaction. */
-  protected setupEdgeTravel(
+  /** Create edge-trigger zones (visual only, no interaction yet). */
+  protected createEdgeZones(
     faceTravelTargets: (string | null)[],
     EDGE_TRIGGER_SCALE: number = 0.4
   ) {
     if (!this.faceLayers) {
-      throw new Error("setupEdgeTravel() requires faceLayers (call initStandardFace()).");
+      throw new Error("createEdgeZones() requires faceLayers.");
     }
 
     const edges = this.getEdgesWithMeta();
@@ -798,6 +817,32 @@ export default abstract class FaceBase extends Phaser.Scene {
 
       this.faceLayers.fx.add(gfx);
 
+      // DEV: Add label showing target scene name
+      // Calculate offset direction from pentagon center to edge
+      const center = this.getPolygonCenter(this.poly);
+      const dx = e.mid.x - center.x;
+      const dy = e.mid.y - center.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Push label outward from center, beyond the edge
+      const pushDistance = 25;
+      const labelX = e.mid.x + (dx / dist) * pushDistance;
+      const labelY = e.mid.y + (dy / dist) * pushDistance;
+
+      // Remove "Scene" suffix from label
+      const labelText = target.replace("Scene", "");
+
+      const label = this.add.text(labelX, labelY, labelText, {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: "#00ff00",
+        backgroundColor: "#000000",
+        padding: { x: 4, y: 2 }
+      })
+      .setOrigin(0.5)
+      .setDepth(61);
+      this.faceLayers.ui.add(label);
+
       this.travelEdgeZones.push({
         zone,
         target,
@@ -806,7 +851,10 @@ export default abstract class FaceBase extends Phaser.Scene {
         height: hitHeight,
       });
     }
+  }
 
+  /** Register edge travel interaction (call AFTER createPlayerAt). */
+  protected registerEdgeTravelInteraction() {
     const isDesktop = getIsDesktop(this);
     const edgeHint = "Ga naar volgende vlak: " + (isDesktop ? "E" : "I");
 
@@ -814,8 +862,10 @@ export default abstract class FaceBase extends Phaser.Scene {
       () => this.activeTravelEdge !== null,
       () => {
         if (this.activeTravelEdge) {
-          console.log(`[TRANSITION] ${this.scene.key} → ${this.activeTravelEdge}`);
-          this.scene.start(this.activeTravelEdge);
+          // Pass which scene we came FROM, so the target can spawn near the correct edge
+          this.scene.start(this.activeTravelEdge, {
+            cameFromScene: this.scene.key
+          });
         }
       },
       { hintText: edgeHint }
@@ -874,16 +924,37 @@ export default abstract class FaceBase extends Phaser.Scene {
       neighborStyles,
     });
 
-    // Spawn player
-    const spawnX = (this.data.get("spawnX") as number) ?? width / 2;
-    const spawnY = (this.data.get("spawnY") as number) ?? height / 2 - 20;
+    // Create edge zones first (without interaction) to determine spawn position
+    this.createEdgeZones(config.faceTravelTargets, config.edgeTriggerScale ?? 0.4);
+
+    // Spawn player - default to center
+    let spawnX = this.incomingSpawnX ?? width / 2;
+    let spawnY = this.incomingSpawnY ?? (height / 2 - 20);
+
+    // If we came from another scene via edge travel, spawn near the edge that leads back
+    if (this.cameFromScene && !this.incomingSpawnX) {
+      // Find the edge zone that points back to where we came from
+      const returnEdgeZone = this.travelEdgeZones.find(ez => ez.target === this.cameFromScene);
+      if (returnEdgeZone) {
+        // Move spawn point INWARD from edge toward center, so it's inside the pentagon
+        const center = this.getPolygonCenter(this.poly);
+        const edgeX = returnEdgeZone.zone.x;
+        const edgeY = returnEdgeZone.zone.y;
+        const dx = center.x - edgeX;
+        const dy = center.y - edgeY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Move 15% of the way from edge to center (closer to edge)
+        const inwardRatio = 0.15;
+        spawnX = edgeX + (dx / dist) * dist * inwardRatio;
+        spawnY = edgeY + (dy / dist) * dist * inwardRatio;
+      }
+    }
+
     this.createPlayerAt(spawnX, spawnY);
 
-    // Edge travel
-    this.setupEdgeTravel(
-      config.faceTravelTargets,
-      config.edgeTriggerScale ?? 0.4
-    );
+    // Now register edge travel interaction (requires HUD to exist)
+    this.registerEdgeTravelInteraction();
   }
 
   /**

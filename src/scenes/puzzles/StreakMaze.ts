@@ -202,7 +202,13 @@ export default class StreakMaze extends Phaser.Scene {
       this.clueText.setText("Je hebt het doolhof opgelost!");
       //Forceer eind-dialoog
       this.addNpcDialog(false, () => {
-        this.scene.start("Face3Scene", { entry_from_puzzle: true });
+        // Spawn near door in Face3Scene (door is at center + 80 down)
+        const { width, height } = this.scale;
+        this.scene.start("Face3Scene", {
+          entry_from_puzzle: true,
+          spawnX: width / 2,
+          spawnY: height / 2 + 80 - 30  // Just above the door
+        });
       });
       return;
     }

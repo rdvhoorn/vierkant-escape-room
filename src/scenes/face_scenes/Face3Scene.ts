@@ -8,7 +8,10 @@ export default class Face3Scene extends FaceBase {
 
   constructor() { super("Face3Scene"); }
 
-  init(data: { entry_from_puzzle?: boolean }) { this.entry_from_puzzle = !!data?.entry_from_puzzle; }
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
+  }
 
   create() {
     console.log("[ENTER]", this.scene.key);
