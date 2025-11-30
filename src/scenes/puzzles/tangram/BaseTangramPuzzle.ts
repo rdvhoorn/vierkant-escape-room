@@ -269,7 +269,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
         backgroundColor: "#000000",
         padding: { x: 10, y: 6 },
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setVisible(false); // Hide initially since text is empty
   }
 
   update() {
@@ -323,7 +324,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     }
 
     if (!this.textures.exists("tan_square")) {
-      const gfx = this.add.graphics({ x: 0, y: 0 });
+      const gfx = this.add.graphics();
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
       gfx.fillRect(0, 0, SQUARE, SQUARE);
@@ -617,15 +618,15 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     if (coverage >= 95) {
       // Solved: you can show a message if you like (optional)
-      this.resultText.setText("Goed gedaan!");
+      this.resultText.setText("Goed gedaan!").setVisible(true);
       this.isSolved = true;
       this.onPuzzleSolved();
     } else if (coverage >= 90) {
       // Almost solved
-      this.resultText.setText("Bijna goed!");
+      this.resultText.setText("Bijna goed!").setVisible(true);
     } else {
       // Below 90%: no message
-      this.resultText.setText("");
+      this.resultText.setText("").setVisible(false);
     }
   }
 }
