@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../../utils/BackButton";
 
 export type TangramPieceType =
   | "largeTri"
@@ -154,6 +155,9 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     // Background
     this.cameras.main.setBackgroundColor(this.getBackgroundColor());
+
+    // Back button
+    createBackButton(this, "TangramSelectScene");
 
     // Title & subtitle
     this.add
