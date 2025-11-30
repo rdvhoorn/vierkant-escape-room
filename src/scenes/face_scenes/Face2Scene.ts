@@ -1,4 +1,3 @@
-import Phaser from "phaser";
 import FaceBase from "./_FaceBase";
 import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
@@ -10,7 +9,8 @@ export default class Face2Scene extends FaceBase {
     super("Face2Scene");
   }
 
-  init(data: { entry_from_puzzle?: boolean }) {
+  init(data?: any) {
+    super.init(data);
     this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
