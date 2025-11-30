@@ -38,9 +38,6 @@ export default class TangramSelectScene extends Phaser.Scene {
     // 🔧 IMPORTANT: reset the stored text objects when the scene (re)starts
     this.levelTextObjects = [];
 
-    this.registry.set("tangram_schildpad_solved", true);
-    this.registry.set("tangram_krab_solved", true);
-
     this.add
         .text(width / 2, height * 0.2, "Kun jij de dieren terugvinden?", {
         fontFamily: "sans-serif",
