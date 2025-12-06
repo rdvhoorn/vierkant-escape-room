@@ -68,14 +68,8 @@ export default class ShipFuelScene extends Phaser.Scene {
       { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" })
       .setOrigin(1, 1).setAlpha(0.85);
 
-    // Lines to click through
-    this.lines = [
-      "Impact detected. Hull stable. Navigation nominal.",
-      "Fuel's low, but we'll figure it out planetside.",
-      "Let's get moving…",
-      "DOOO PUZZLE HERE!!!"
-    ];
-    this.show(this.lines[this.i]);
+    // Start puzzle immediately
+    this.startPuzzle();
 
     // Input for dialog advance (disabled while puzzle is active)
     this.input.on("pointerdown", () => this.advance());
@@ -84,7 +78,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     //terug met escape (rondlopen)
     this.input.keyboard?.on("keydown-ESC", () => {
       this.scene.stop(this.scene.key);
-      this.scene.start("Face1Scene");
+      this.scene.start("CockpitScene");
     });
   }
 
@@ -127,22 +121,10 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
-    const currentEnergy = this.registry.get("energy") || 0;
-
-    if (currentEnergy < 5) {
-      // Not enough energy — show warning message
-      this.tweens.killTweensOf(this.dialogText);
-      this.dialogText.setAlpha(1).setText("Vind minstens 5 energie voor je mag vertrekken! (druk ESCAPE)");
-      this.advanceHint.setVisible(false);
-
-      // Optional: after a short time, show the hint again
-      this.time.delayedCall(3000, () => this.advanceHint.setVisible(true));
-      return;
-    }
-
-    // Enough energy — proceed normally
+    // Set flag that electricity puzzle is solved, then go to planet
+    this.registry.set("electricitySolved", true);
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("MoreToComeScene");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 

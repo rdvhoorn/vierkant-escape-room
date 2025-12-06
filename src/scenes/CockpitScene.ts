@@ -15,13 +15,13 @@ export default class CockpitScene extends Phaser.Scene {
   };
 
   // Navigation
-  private destinations: string[] = ["DEZONIA", "CALCULON", "MATHORIA", "AARDE", "PROXIMA 7", "HEINO"];
+  private destinations: string[] = ["DEZONIA", "CALCULON", "MATHORIA", "AARDE", "LUNTEREN", "HEINO"];
   private distances: Record<string, number> = {
     "DEZONIA": 0,        // HIER - gestrand bij deze planeet
     "CALCULON": 850,     // Dichtbij wiskunde-planeet
     "MATHORIA": 2400,    // Nabije planeet met puzzels
     "AARDE": 785000,     // Ver van huis!
-    "PROXIMA 7": 450000, // Ergens halverwege
+    "LUNTEREN": 450000, // Ergens halverwege
     "HEINO": 785042,     // Op aarde, dus net zo ver + 42 ;)
   };
   private selectedDestination: number = 0;
@@ -44,7 +44,9 @@ export default class CockpitScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#050510");
 
     // Starfield visible through windows
-    this.stars = new TwinklingStars(this, 150, width, height);
+    const windowTop = 80;
+    const windowBottom = height * 0.5;
+    this.stars = new TwinklingStars(this, 150, width, windowBottom - windowTop, windowTop);
     // Set stars to back layer (depth 0)
     this.stars.graphics.setDepth(0);
     console.log("[CockpitScene] stars created");
@@ -59,6 +61,8 @@ export default class CockpitScene extends Phaser.Scene {
     this.drawInstruments(width, height);
     console.log("[CockpitScene] drawing stick control");
     this.drawStickControl(width, height);
+    console.log("[CockpitScene] drawing hatch");
+    this.drawElectricityHatch(width, height);
     console.log("[CockpitScene] create() complete");
 
     // Test: Press SPACE to toggle warning lamp
@@ -99,30 +103,72 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private drawCockpitWindows(width: number, height: number) {
-    const gfx = this.add.graphics();
-    gfx.setDepth(1); // Above stars (depth 0)
-
-    // Main viewport window (trapezoid shape)
     const windowTop = 80;
     const windowBottom = height * 0.5;
+    const bgColor = 0x16213e; // Same as dashboard background
 
-    // Panel dividers (semi-transparent dark lines over stars)
-    gfx.lineStyle(4, 0x1a1a2e, 0.8);
-    gfx.lineBetween(width * 0.33, windowTop, width * 0.3, windowBottom);
-    gfx.lineBetween(width * 0.66, windowTop, width * 0.7, windowBottom);
+    // Trapezium corners
+    const topLeft = width * 0.12;
+    const topRight = width * 0.88;
+    const bottomLeft = width * 0.02;
+    const bottomRight = width * 0.98;
 
-    // Horizontal bar
-    gfx.lineBetween(width * 0.05, windowBottom - 30, width * 0.95, windowBottom - 30);
+    // Mask outside the window (cover stars outside trapezium)
+    const mask = this.add.graphics();
+    mask.setDepth(1);
+    mask.fillStyle(bgColor, 1);
 
-    // Frame edges (thicker, more prominent)
-    gfx.lineStyle(6, 0x2d2d44, 1);
-    gfx.beginPath();
-    gfx.moveTo(width * 0.15, windowTop);
-    gfx.lineTo(width * 0.85, windowTop);
-    gfx.lineTo(width * 0.95, windowBottom);
-    gfx.lineTo(width * 0.05, windowBottom);
-    gfx.closePath();
-    gfx.strokePath();
+    // Top area (above window)
+    mask.fillRect(0, 0, width, windowTop);
+
+    // Left triangle
+    mask.beginPath();
+    mask.moveTo(0, windowTop);
+    mask.lineTo(topLeft, windowTop);
+    mask.lineTo(bottomLeft, windowBottom);
+    mask.lineTo(0, windowBottom);
+    mask.closePath();
+    mask.fillPath();
+
+    // Right triangle
+    mask.beginPath();
+    mask.moveTo(width, windowTop);
+    mask.lineTo(topRight, windowTop);
+    mask.lineTo(bottomRight, windowBottom);
+    mask.lineTo(width, windowBottom);
+    mask.closePath();
+    mask.fillPath();
+
+    // Window frame (thick metallic border)
+    const frame = this.add.graphics();
+    frame.setDepth(2);
+    frame.lineStyle(12, 0x3d4f6f, 1);
+    frame.beginPath();
+    frame.moveTo(topLeft, windowTop);
+    frame.lineTo(topRight, windowTop);
+    frame.lineTo(bottomRight, windowBottom);
+    frame.lineTo(bottomLeft, windowBottom);
+    frame.closePath();
+    frame.strokePath();
+
+    // Inner frame highlight
+    frame.lineStyle(2, 0x5a7a9a, 0.6);
+    frame.beginPath();
+    frame.moveTo(topLeft + 8, windowTop + 6);
+    frame.lineTo(topRight - 8, windowTop + 6);
+    frame.lineTo(bottomRight - 8, windowBottom - 6);
+    frame.lineTo(bottomLeft + 8, windowBottom - 6);
+    frame.closePath();
+    frame.strokePath();
+
+    // Panel dividers (window struts)
+    frame.lineStyle(6, 0x3d4f6f, 1);
+    const divider1Top = width * 0.35;
+    const divider1Bottom = width * 0.33;
+    const divider2Top = width * 0.65;
+    const divider2Bottom = width * 0.67;
+    frame.lineBetween(divider1Top, windowTop, divider1Bottom, windowBottom);
+    frame.lineBetween(divider2Top, windowTop, divider2Bottom, windowBottom);
   }
 
   private drawDashboard(width: number, height: number) {
@@ -269,20 +315,6 @@ export default class CockpitScene extends Phaser.Scene {
       }
     });
 
-    // "SET COURSE" button at bottom
-    const buttonY = y + h - 25;
-    const buttonBg = this.add.graphics();
-    buttonBg.setDepth(3);
-    buttonBg.fillStyle(0x00ff88, 0.2);
-    buttonBg.fillRoundedRect(x + 20, buttonY - 10, w - 40, 25, 5);
-    buttonBg.lineStyle(2, 0x00ff88, 1);
-    buttonBg.strokeRoundedRect(x + 20, buttonY - 10, w - 40, 25, 5);
-
-    this.add.text(x + w / 2, buttonY + 2, "STEL KOERS IN", {
-      fontSize: "13px",
-      color: "#00ff88",
-      fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(3);
   }
 
   private drawEnergyMeter(x: number, y: number, maxWidth: number) {
@@ -507,7 +539,151 @@ export default class CockpitScene extends Phaser.Scene {
 
   }
 
-  update() {
-    this.stars?.update();
+  private drawElectricityHatch(width: number, height: number) {
+    const hatchWidth = 80;
+    const hatchHeight = 50;
+    const hatchX = width * 0.25 - hatchWidth / 2; // Left of center
+    const hatchY = height - hatchHeight - 20;
+
+    // Hatch panel (metallic)
+    const hatch = this.add.graphics();
+    hatch.setDepth(3);
+
+    // Main panel
+    hatch.fillStyle(0x3d4a5c, 1);
+    hatch.fillRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+
+    // Beveled edge effect
+    hatch.lineStyle(2, 0x5a6a7a, 1);
+    hatch.strokeRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+    hatch.lineStyle(1, 0x2a3a4a, 1);
+    hatch.strokeRoundedRect(hatchX + 2, hatchY + 2, hatchWidth - 4, hatchHeight - 4, 3);
+
+    // Screws in corners
+    const screwOffset = 8;
+    const screwPositions = [
+      { x: hatchX + screwOffset, y: hatchY + screwOffset },
+      { x: hatchX + hatchWidth - screwOffset, y: hatchY + screwOffset },
+      { x: hatchX + screwOffset, y: hatchY + hatchHeight - screwOffset },
+      { x: hatchX + hatchWidth - screwOffset, y: hatchY + hatchHeight - screwOffset },
+    ];
+
+    screwPositions.forEach((pos) => {
+      hatch.fillStyle(0x2a3a4a, 1);
+      hatch.fillCircle(pos.x, pos.y, 4);
+      hatch.lineStyle(1, 0x1a2a3a, 1);
+      hatch.strokeCircle(pos.x, pos.y, 4);
+      // Screw slot
+      hatch.lineStyle(1, 0x1a2a3a, 1);
+      hatch.lineBetween(pos.x - 2, pos.y, pos.x + 2, pos.y);
+    });
+
+    // Warning stripes (yellow/black) at top
+    const stripeHeight = 6;
+    for (let i = 0; i < 8; i++) {
+      hatch.fillStyle(i % 2 === 0 ? 0xf0c000 : 0x222222, 1);
+      hatch.fillRect(hatchX + 6 + i * 8.5, hatchY + 6, 8, stripeHeight);
+    }
+
+    // Label
+    this.add.text(hatchX + hatchWidth / 2, hatchY + hatchHeight / 2 + 5, "ELEKTRA", {
+      fontSize: "10px",
+      color: "#aabbcc",
+      fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(3);
+
+    // Lightning bolt icon
+    this.add.text(hatchX + hatchWidth / 2, hatchY + hatchHeight / 2 - 8, "⚡", {
+      fontSize: "14px",
+    }).setOrigin(0.5).setDepth(3);
+
+    // Interactive zone
+    const hitArea = this.add.rectangle(
+      hatchX + hatchWidth / 2,
+      hatchY + hatchHeight / 2,
+      hatchWidth,
+      hatchHeight,
+      0xffffff,
+      0
+    );
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.setDepth(4);
+
+    // Hover effect
+    hitArea.on("pointerover", () => {
+      hatch.clear();
+      // Redraw with highlight
+      hatch.fillStyle(0x4d5a6c, 1);
+      hatch.fillRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+      hatch.lineStyle(2, 0x00ffff, 0.8);
+      hatch.strokeRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+      hatch.lineStyle(1, 0x2a3a4a, 1);
+      hatch.strokeRoundedRect(hatchX + 2, hatchY + 2, hatchWidth - 4, hatchHeight - 4, 3);
+
+      // Redraw screws
+      screwPositions.forEach((pos) => {
+        hatch.fillStyle(0x2a3a4a, 1);
+        hatch.fillCircle(pos.x, pos.y, 4);
+        hatch.lineStyle(1, 0x1a2a3a, 1);
+        hatch.strokeCircle(pos.x, pos.y, 4);
+        hatch.lineBetween(pos.x - 2, pos.y, pos.x + 2, pos.y);
+      });
+
+      // Redraw stripes
+      for (let i = 0; i < 8; i++) {
+        hatch.fillStyle(i % 2 === 0 ? 0xf0c000 : 0x222222, 1);
+        hatch.fillRect(hatchX + 6 + i * 8.5, hatchY + 6, 8, stripeHeight);
+      }
+    });
+
+    hitArea.on("pointerout", () => {
+      hatch.clear();
+      // Redraw normal
+      hatch.fillStyle(0x3d4a5c, 1);
+      hatch.fillRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+      hatch.lineStyle(2, 0x5a6a7a, 1);
+      hatch.strokeRoundedRect(hatchX, hatchY, hatchWidth, hatchHeight, 4);
+      hatch.lineStyle(1, 0x2a3a4a, 1);
+      hatch.strokeRoundedRect(hatchX + 2, hatchY + 2, hatchWidth - 4, hatchHeight - 4, 3);
+
+      // Redraw screws
+      screwPositions.forEach((pos) => {
+        hatch.fillStyle(0x2a3a4a, 1);
+        hatch.fillCircle(pos.x, pos.y, 4);
+        hatch.lineStyle(1, 0x1a2a3a, 1);
+        hatch.strokeCircle(pos.x, pos.y, 4);
+        hatch.lineBetween(pos.x - 2, pos.y, pos.x + 2, pos.y);
+      });
+
+      // Redraw stripes
+      for (let i = 0; i < 8; i++) {
+        hatch.fillStyle(i % 2 === 0 ? 0xf0c000 : 0x222222, 1);
+        hatch.fillRect(hatchX + 6 + i * 8.5, hatchY + 6, 8, stripeHeight);
+      }
+    });
+
+    // Click handler - zoom in and transition
+    hitArea.on("pointerdown", () => {
+      this.openElectricityHatch(hatchX + hatchWidth / 2, hatchY + hatchHeight / 2);
+    });
+  }
+
+  private openElectricityHatch(centerX: number, centerY: number) {
+    // Zoom camera into the hatch
+    this.cameras.main.pan(centerX, centerY, 500, "Power2");
+    this.cameras.main.zoomTo(4, 500, "Power2");
+
+    // Fade to black and switch scene
+    this.time.delayedCall(400, () => {
+      this.cameras.main.fadeOut(300, 0, 0, 0);
+    });
+
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+      this.scene.start("ShipFuelScene");
+    });
+  }
+
+  update(_time: number, delta: number) {
+    this.stars?.update(delta);
   }
 }

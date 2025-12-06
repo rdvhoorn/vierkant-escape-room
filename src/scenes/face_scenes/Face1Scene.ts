@@ -143,6 +143,65 @@ export default class Face1Scene extends FaceBase {
 
     // Decorations etc.
     this.decorateCrashSite(radius);
+
+    // Check if teaser is complete (electricity puzzle solved)
+    if (this.registry.get("electricitySolved")) {
+      this.time.delayedCall(5000, () => this.showTeaserCompletePopup());
+    }
+  }
+
+  private showTeaserCompletePopup() {
+    const { width, height } = this.scale;
+
+    // Darken background
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+    overlay.setDepth(200);
+
+    // Popup box
+    const boxWidth = 400;
+    const boxHeight = 200;
+    const box = this.add.graphics();
+    box.setDepth(201);
+    box.fillStyle(0x1b2748, 0.95);
+    box.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
+    box.lineStyle(3, 0x3c5a99, 1);
+    box.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
+
+    // Title
+    const title = this.add.text(width / 2, height / 2 - 50, "Gelukt!", {
+      fontFamily: "sans-serif",
+      fontSize: "32px",
+      color: "#00ff88",
+      fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(202);
+
+    // Message
+    const msg = this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in januari terug voor meer!", {
+      fontFamily: "sans-serif",
+      fontSize: "18px",
+      color: "#e7f3ff",
+      align: "center",
+    }).setOrigin(0.5).setDepth(202);
+
+    // Confetti effect
+    const confettiColors = [0xffd700, 0x00ff00, 0x00ffff, 0xff00ff, 0xffffff, 0xffff00];
+    for (let i = 0; i < 50; i++) {
+      const x = Phaser.Math.Between(width / 2 - 200, width / 2 + 200);
+      const startY = height / 2 - 120;
+      const particle = this.add.circle(x, startY, Phaser.Math.Between(3, 6), Phaser.Utils.Array.GetRandom(confettiColors));
+      particle.setDepth(203);
+
+      this.tweens.add({
+        targets: particle,
+        y: startY + Phaser.Math.Between(150, 250),
+        x: x + Phaser.Math.Between(-50, 50),
+        alpha: 0,
+        duration: Phaser.Math.Between(1500, 2500),
+        ease: "cubic.out",
+        delay: Phaser.Math.Between(0, 500),
+        onComplete: () => particle.destroy(),
+      });
+    }
   }
 
   update(_time: number, delta: number) {

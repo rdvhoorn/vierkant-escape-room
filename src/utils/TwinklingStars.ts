@@ -16,7 +16,7 @@ export class TwinklingStars {
   public graphics: Phaser.GameObjects.Graphics;
   private time = 0;
 
-  constructor(scene: Phaser.Scene, count: number, width: number, height: number) {
+  constructor(scene: Phaser.Scene, count: number, width: number, height: number, yOffset: number = 0) {
     this.scene = scene;
     this.graphics = scene.add.graphics();
 
@@ -25,7 +25,7 @@ export class TwinklingStars {
       const baseAlpha = Phaser.Math.FloatBetween(0.3, 1.0);
       this.stars.push({
         x: Phaser.Math.Between(0, width),
-        y: Phaser.Math.Between(0, height),
+        y: Phaser.Math.Between(yOffset, yOffset + height),
         size: Math.random() < 0.8 ? 2 : 3, // Most stars are small, some bigger
         alpha: baseAlpha,
         baseAlpha,
