@@ -32,6 +32,9 @@ import CockpitScene from "./scenes/CockpitScene";
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
 
+// Debug mode - set to false for release
+export const DEBUG = true;
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   backgroundColor: "#0b1020",
@@ -48,8 +51,9 @@ const config: Phaser.Types.Core.GameConfig = {
 },
 
   scene: [
-  CockpitScene,  // TEST: Start with cockpit for now
   PreloadScene,
+  TitleScene,
+  CockpitScene,
   ShipFuelScene,
   Face1Scene,
   Face2Scene,
@@ -64,7 +68,6 @@ const config: Phaser.Types.Core.GameConfig = {
   Face11Scene,
   Face12Scene,
   BootScene,
-  TitleScene,
   IntroScene,
   MoreToComeScene,
   PuzzleLogicOneScene,

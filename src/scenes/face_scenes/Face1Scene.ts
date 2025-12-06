@@ -131,10 +131,16 @@ export default class Face1Scene extends FaceBase {
         if (this.inShipRange) {
           this.scene.start("ShipFuelScene");
         } else if (this.inPuzzleRange) {
-          if (this.registry.get("logic1Solved")) {
-            this.scene.start("PuzzleLogicTwoScene");
+          // In teaser: show popup if electricity puzzle is solved
+          if (this.registry.get("electricitySolved")) {
+            this.showTeaserCompletePopup();
           } else {
-            this.scene.start("PuzzleLogicOneScene");
+            // Normal game flow (not in teaser)
+            if (this.registry.get("logic1Solved")) {
+              this.scene.start("PuzzleLogicTwoScene");
+            } else {
+              this.scene.start("PuzzleLogicOneScene");
+            }
           }
         }
       },
@@ -143,11 +149,6 @@ export default class Face1Scene extends FaceBase {
 
     // Decorations etc.
     this.decorateCrashSite(radius);
-
-    // Check if teaser is complete (electricity puzzle solved)
-    if (this.registry.get("electricitySolved")) {
-      this.time.delayedCall(5000, () => this.showTeaserCompletePopup());
-    }
   }
 
   private showTeaserCompletePopup() {
@@ -202,6 +203,18 @@ export default class Face1Scene extends FaceBase {
         onComplete: () => particle.destroy(),
       });
     }
+
+    // Click on popup box to dismiss
+    const hitArea = this.add.rectangle(width / 2, height / 2, boxWidth, boxHeight, 0xffffff, 0);
+    hitArea.setDepth(204);
+    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.once("pointerdown", () => {
+      overlay.destroy();
+      box.destroy();
+      title.destroy();
+      msg.destroy();
+      hitArea.destroy();
+    });
   }
 
   update(_time: number, delta: number) {

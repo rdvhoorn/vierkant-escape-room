@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../../utils/TwinklingStars";
+import { DEBUG } from "../../main";
 
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
@@ -169,6 +170,16 @@ export default class ShipFuelScene extends Phaser.Scene {
 
     this.restartBtn.on("pointerdown", () => this.resetPuzzle());
     this.tweens.add({ targets: this.restartBtn, alpha: 1, duration: 220 });
+
+    // DEBUG: Skip button (gold) at top-left of grid
+    if (DEBUG) {
+      const skipBtn = this.add.text(this.gridOrigin.x - 40, this.gridOrigin.y + 20, "⚡", {
+        fontFamily: "sans-serif",
+        fontSize: "28px",
+        color: "#ffd700"
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      skipBtn.on("pointerdown", () => this.solvePuzzle());
+    }
 
     // Graphics
     this.gridGfx = this.add.graphics().setAlpha(0);
@@ -485,6 +496,37 @@ export default class ShipFuelScene extends Phaser.Scene {
     for (const p of this.pairs) this.paths.set(p.color, [p.a]);
     this.drawingColor = undefined;
     this.redrawPaths();
+  }
+
+  // DEBUG: Instantly solve the puzzle
+  private solvePuzzle() {
+    // Hardcoded solution for the 6x6 puzzle
+    this.paths.set(0x9b59b6, [ // Purple
+      {x:0,y:0},{x:0,y:1},{x:0,y:2},{x:0,y:3},{x:0,y:4}
+    ]);
+    this.paths.set(0xf0c419, [ // Yellow
+      {x:2,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:1,y:4},{x:1,y:5},{x:0,y:5}
+    ]);
+    this.paths.set(0xe74c3c, [ // Red
+      {x:3,y:0},{x:3,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}
+    ]);
+    this.paths.set(0x29abe2, [ // Blue
+      {x:4,y:1},{x:5,y:1},{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:2,y:1},{x:2,y:2},{x:2,y:3},{x:3,y:3},{x:4,y:3}
+    ]);
+    this.paths.set(0x2ecc71, [ // Green
+      {x:5,y:3},{x:5,y:4},{x:5,y:5}
+    ]);
+    this.paths.set(0xe67e22, [ // Orange
+      {x:4,y:2},{x:4,y:3},{x:4,y:4},{x:4,y:5},{x:3,y:5},{x:2,y:5},{x:2,y:4},{x:3,y:4}
+    ]);
+
+    // Lock all colors
+    for (const p of this.pairs) {
+      this.lockedColors.add(p.color);
+    }
+
+    this.redrawPaths();
+    this.triggerVictory();
   }
 
   private getColorAtCell(c: Cell): number | null {
