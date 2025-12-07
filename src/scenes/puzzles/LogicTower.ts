@@ -10,7 +10,7 @@ export default class LogicTowerScene extends Phaser.Scene {
   private dialogText!: Phaser.GameObjects.Text;
 
   private riddleText!: Phaser.GameObjects.Text;
-  private answerInput!: Phaser.GameObjects.DOMElement;
+  private answerInput?: Phaser.GameObjects.DOMElement;
 
   private dialogKeyHandler?: (ev: KeyboardEvent) => void;
   private pointerHandler?: () => void;
@@ -198,11 +198,21 @@ export default class LogicTowerScene extends Phaser.Scene {
             background:#e7f3ff;">
     `);
 
+    if (!this.answerInput) {
+      console.error("[LogicTower] Failed to create answer input!");
+      return;
+    }
+
     this.answerInput.addListener("change");
     this.answerInput.on("change", () => {
-        const value = (document.getElementById("answerBox") as HTMLInputElement)
-        .value.trim()
-        .toLowerCase();
+        const input = document.getElementById("answerBox") as HTMLInputElement | null;
+
+        if (!input) {
+          console.error("[LogicTower] Answer input field not found in DOM!");
+          return;
+        }
+
+        const value = input.value.trim().toLowerCase();
 
         if (value === "ster") {
         this.completePuzzle();
