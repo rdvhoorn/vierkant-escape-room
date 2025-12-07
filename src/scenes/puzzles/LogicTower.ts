@@ -181,28 +181,22 @@ export default class LogicTowerScene extends Phaser.Scene {
         })
         .setOrigin(0.8);
 
-//answer box: werkt nog niet
-    this.answerInput = this.add.dom(panelX, panelY + panelHeight * 0.9).createFromHTML(`
-        <input 
-        type="text" 
-        id="answerBox" 
-        placeholder="Type je antwoord" 
+//answer box
+    const inputY = this.scale.height - 80; // 80 pixels from bottom
+    this.answerInput = this.add.dom(panelX, inputY).createFromHTML(`
+        <input
+        type="text"
+        id="answerBox"
+        placeholder="Type je antwoord"
         style="
-            width: 250px; 
-            height: 32px; 
-            font-size: 18px; 
+            width: 250px;
+            height: 32px;
+            font-size: 18px;
             padding: 4px;
             border-radius: 6px;
             border: 2px solid #3c5a99;
             background:#e7f3ff;">
     `);
-//er moet nog iets in de phaser: 
-//Uncaught Error: No DOM Container set in game config
-    //at LogicTowerScene.showRiddle (LogicTower.ts:187:33)
-    //at LogicTowerScene.endDialog (LogicTower.ts:163:10)
-    //at LogicTowerScene.advanceDialog (LogicTower.ts:151:12)
-    //at InputPlugin2.pointerHandler (LogicTower.ts:100:37)
-
 
     this.answerInput.addListener("change");
     this.answerInput.on("change", () => {

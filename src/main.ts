@@ -42,6 +42,9 @@ const config: Phaser.Types.Core.GameConfig = {
     height: GAME_HEIGHT,
     parent: "game",
   },
+  dom: {
+    createContainer: true,
+  },
   physics: {
   default: "arcade",
   arcade: { gravity: { x: 0, y: 0 }, debug: false },
