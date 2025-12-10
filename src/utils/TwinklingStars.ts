@@ -11,13 +11,11 @@ interface Star {
 }
 
 export class TwinklingStars {
-  private scene: Phaser.Scene;
   private stars: Star[] = [];
   public graphics: Phaser.GameObjects.Graphics;
   private time = 0;
 
   constructor(scene: Phaser.Scene, count: number, width: number, height: number) {
-    this.scene = scene;
     this.graphics = scene.add.graphics();
 
     // Generate stars

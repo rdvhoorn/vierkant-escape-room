@@ -9,7 +9,6 @@ export default class LogicTowerScene extends Phaser.Scene {
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
 
-  private riddleText!: Phaser.GameObjects.Text;
   private answerInput?: Phaser.GameObjects.DOMElement;
 
   private dialogKeyHandler?: (ev: KeyboardEvent) => void;
@@ -171,7 +170,7 @@ export default class LogicTowerScene extends Phaser.Scene {
     const riddle = "raadsel hier";
 
 //schuiven
-    this.riddleText = this.add
+    this.add
         .text(panelX, panelY - panelHeight * 0.7, riddle, {
         fontSize: "24px",
         fontFamily: "sans-serif",
