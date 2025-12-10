@@ -32,7 +32,24 @@ export default class Face2Scene extends FaceBase {
       showLabel: visuals.showLabel ?? true,
     });
 
-    this.addPlaceholderNpc();
+    const baseLayers = this.getFaceLayers();
+
+    this.addFarmer();
+
+    // ---- Farm building ----
+    const center = this.getPolygonCenter(this.poly);
+    const farmPos = new Phaser.Math.Vector2(center.x, center.y-50);
+
+    const farm = this.add
+      .image(farmPos.x, farmPos.y, "farm")
+      .setOrigin(0.5, 0.6)
+      .setDisplaySize(100, 100)
+      .setDepth(50);
+    baseLayers.deco?.add(farm);
+
+    const farmBlock = this.add.zone(farmPos.x, farmPos.y-40, 60, 70);
+    this.physics.add.existing(farmBlock, true);
+    this.physics.add.collider(this.player, farmBlock);
   }
 
   update(_time: number, delta: number) {
@@ -40,20 +57,17 @@ export default class Face2Scene extends FaceBase {
   }
 
   // ---------------- NPC + dialog using helpers ----------------
-  private addPlaceholderNpc() {
-    const { width, height } = this.scale;
+  private addFarmer() {
     const layers = this.getFaceLayers();
 
-    const npcWidth = 22;
-    const npcHeight = 34;
+    const center= this.getPolygonCenter(this.poly);
+    const farmerPos = new Phaser.Math.Vector2(center.x + 40, center.y);
+    const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(44, 56).setDepth(70);
+    layers.actors.add(farmer);
 
-    const npc = this.add
-      .rectangle(width / 2 + 40, height / 2, npcWidth, npcHeight, 0xffcc88)
-      .setStrokeStyle(2, 0x3a230f);
+    let already_talked = false;
 
-    layers.actors.add(npc);
-
-    const handle = this.createDialogInteraction(npc, {
+    const handle = this.createDialogInteraction(farmer, {
       hitRadius: 50,
       hintText: "Praat met reiziger: E",
       buildLines: () => {
@@ -66,6 +80,13 @@ export default class Face2Scene extends FaceBase {
           ];
         }
 
+        if (this.entry_from_puzzle && !tangramSolved) {
+          already_talked = true;
+          return [
+            "Reiziger: Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!"
+          ]
+        }
+
         // Puzzle not solved → dialog that leads into tangram select
         return [
           "Reiziger: Hé, jij ziet er nieuw uit op dit vlak.",
@@ -76,7 +97,7 @@ export default class Face2Scene extends FaceBase {
       },
       onComplete: () => {
         const tangramSolved = !!this.registry.get("tangram_puzzle_solved");
-        if (!tangramSolved) {
+        if (!tangramSolved && !already_talked) {
           this.scene.start("TangramSelectScene");
         }
       },
@@ -84,7 +105,6 @@ export default class Face2Scene extends FaceBase {
 
     this.travelerDialogHandle = handle;
 
-    // 👉 If we just came back from the puzzle, immediately resume dialog
     if (this.entry_from_puzzle) {
       // small delay so HUD/player/etc are fully ready
       this.time.delayedCall(50, () => {

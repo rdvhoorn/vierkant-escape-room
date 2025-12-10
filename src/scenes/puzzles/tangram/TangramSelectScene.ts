@@ -1,5 +1,6 @@
 // TangramSelectScene.ts
 import Phaser from "phaser";
+import { createBackButton } from "../../../utils/BackButton";
 
 interface TangramLevel {
   key: string;          // Scene key of the puzzle
@@ -34,6 +35,9 @@ export default class TangramSelectScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+
+    // Back button
+    createBackButton(this, "Face2Scene", { entry_from_puzzle: true });
 
     // 🔧 IMPORTANT: reset the stored text objects when the scene (re)starts
     this.levelTextObjects = [];
