@@ -3,11 +3,10 @@ import { TwinklingStars } from "../utils/TwinklingStars";
 
 export default class CockpitScene extends Phaser.Scene {
   private stars?: TwinklingStars;
-  private energyLevel: number = 50; // 0-100
+  private energyLevel: number = 20; // 0-100
   private lampStates: Record<string, boolean> = {
     stroom: true,
-    waarschuwing: false,
-    brandstof: true,
+    waarschuwing: true,
     zuurstof: true,
     motor: true,
     schild: false,
@@ -15,12 +14,11 @@ export default class CockpitScene extends Phaser.Scene {
   };
 
   // Navigation
-  private destinations: string[] = ["DEZONIA", "CALCULON", "MATHORIA", "AARDE", "LUNTEREN", "HEINO"];
+  private destinations: string[] = ["DEZONIA", "CALCULON", "MATHORIA", "LUNTEREN", "HEINO"];
   private distances: Record<string, number> = {
-    "DEZONIA": 0,        // HIER - gestrand bij deze planeet
+    "DEZONIA": 2026,     // HIER - gestrand bij deze planeet
     "CALCULON": 850,     // Dichtbij wiskunde-planeet
     "MATHORIA": 2400,    // Nabije planeet met puzzels
-    "AARDE": 785000,     // Ver van huis!
     "LUNTEREN": 450000, // Ergens halverwege
     "HEINO": 785042,     // Op aarde, dus net zo ver + 42 ;)
   };
@@ -121,20 +119,20 @@ export default class CockpitScene extends Phaser.Scene {
     // Top area (above window)
     mask.fillRect(0, 0, width, windowTop);
 
-    // Left triangle
+    // Left triangle (extend slightly to avoid gaps)
     mask.beginPath();
-    mask.moveTo(0, windowTop);
-    mask.lineTo(topLeft, windowTop);
-    mask.lineTo(bottomLeft, windowBottom);
+    mask.moveTo(0, windowTop - 1);
+    mask.lineTo(topLeft + 1, windowTop - 1);
+    mask.lineTo(bottomLeft + 1, windowBottom);
     mask.lineTo(0, windowBottom);
     mask.closePath();
     mask.fillPath();
 
-    // Right triangle
+    // Right triangle (extend slightly to avoid gaps)
     mask.beginPath();
-    mask.moveTo(width, windowTop);
-    mask.lineTo(topRight, windowTop);
-    mask.lineTo(bottomRight, windowBottom);
+    mask.moveTo(width, windowTop - 1);
+    mask.lineTo(topRight - 1, windowTop - 1);
+    mask.lineTo(bottomRight - 1, windowBottom);
     mask.lineTo(width, windowBottom);
     mask.closePath();
     mask.fillPath();
@@ -151,16 +149,6 @@ export default class CockpitScene extends Phaser.Scene {
     frame.closePath();
     frame.strokePath();
 
-    // Inner frame highlight
-    frame.lineStyle(2, 0x5a7a9a, 0.6);
-    frame.beginPath();
-    frame.moveTo(topLeft + 8, windowTop + 6);
-    frame.lineTo(topRight - 8, windowTop + 6);
-    frame.lineTo(bottomRight - 8, windowBottom - 6);
-    frame.lineTo(bottomLeft + 8, windowBottom - 6);
-    frame.closePath();
-    frame.strokePath();
-
     // Panel dividers (window struts)
     frame.lineStyle(6, 0x3d4f6f, 1);
     const divider1Top = width * 0.35;
@@ -174,7 +162,7 @@ export default class CockpitScene extends Phaser.Scene {
   private drawDashboard(width: number, height: number) {
     const gfx = this.add.graphics();
     gfx.setDepth(2); // Above windows
-    const dashTop = height * 0.5;
+    const dashTop = height * 0.50;
 
     // Main dashboard background
     gfx.fillStyle(0x16213e, 1);
@@ -205,7 +193,7 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private drawInstruments(width: number, height: number) {
-    const dashTop = height * 0.5;
+    const dashTop = height * 0.50;
     const leftPanelW = width * 0.18;
     const centerPanelX = 20 + leftPanelW + 20;
     const centerPanelW = width * 0.45;
@@ -220,15 +208,14 @@ export default class CockpitScene extends Phaser.Scene {
 
     // RIGHT PANEL: Energy meter + Gauge
     this.drawEnergyMeter(rightPanelX + 10, dashTop + 35, rightPanelW - 20);
-    this.drawGauge(rightPanelX + rightPanelW / 2, dashTop + 130, 35);
+    this.drawGauge(rightPanelX + rightPanelW / 2, dashTop + 138, 28); // Smaller + lower to align
   }
 
   private drawLamps(x: number, y: number, width: number, height: number) {
-    const lampNames = ["stroom", "waarschuwing", "brandstof", "zuurstof", "motor", "schild", "deuren"];
+    const lampNames = ["stroom", "waarschuwing", "zuurstof", "motor", "schild", "deuren"];
     const lampLabels = {
       stroom: "STROOM",
       waarschuwing: "ALARM",
-      brandstof: "BRANDSTOF",
       zuurstof: "ZUURSTOF",
       motor: "MOTOR",
       schild: "SCHILD",
@@ -237,7 +224,6 @@ export default class CockpitScene extends Phaser.Scene {
     const lampColors = {
       stroom: 0x00ff00,
       waarschuwing: 0xff0000,
-      brandstof: 0xffaa00,
       zuurstof: 0x00ddff,
       motor: 0x00ff88,
       schild: 0x0099ff,
@@ -318,8 +304,8 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private drawEnergyMeter(x: number, y: number, maxWidth: number) {
-    // Label
-    this.add.text(x, y - 22, "ENERGIE", {
+    // Label (moved down slightly)
+    this.add.text(x, y - 14, "ENERGIE", {
       fontSize: "13px",
       color: "#00ff88",
     }).setDepth(3);
@@ -342,7 +328,7 @@ export default class CockpitScene extends Phaser.Scene {
     if (!this.energyBar) return;
 
     const { width, height } = this.scale;
-    const dashTop = height * 0.5;
+    const dashTop = height * 0.50;
     const leftPanelW = width * 0.18;
     const centerPanelX = 20 + leftPanelW + 20;
     const centerPanelW = width * 0.45;
@@ -471,7 +457,7 @@ export default class CockpitScene extends Phaser.Scene {
 
     // Redraw navigation panel
     const { width, height } = this.scale;
-    const dashTop = height * 0.5;
+    const dashTop = height * 0.50;
     const leftPanelW = width * 0.18;
     const centerPanelX = 20 + leftPanelW + 20;
     const centerPanelW = width * 0.45;
@@ -542,8 +528,9 @@ export default class CockpitScene extends Phaser.Scene {
   private drawElectricityHatch(width: number, height: number) {
     const hatchWidth = 80;
     const hatchHeight = 50;
-    const hatchX = width * 0.25 - hatchWidth / 2; // Left of center
-    const hatchY = height - hatchHeight - 20;
+    const leftPanelW = width * 0.18;
+    const hatchX = 20 + leftPanelW + 20; // Align with center panel left edge
+    const hatchY = height - hatchHeight - 10;
 
     // Hatch panel (metallic)
     const hatch = this.add.graphics();

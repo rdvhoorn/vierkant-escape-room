@@ -818,18 +818,17 @@ export default abstract class FaceBase extends Phaser.Scene {
       this.faceLayers.fx.add(gfx);
 
       // DEV: Add label showing target scene name
-      // Calculate offset direction from pentagon center to edge
+      // DISABLED: Labels turned off for cleaner visuals
+      /*
       const center = this.getPolygonCenter(this.poly);
       const dx = e.mid.x - center.x;
       const dy = e.mid.y - center.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // Push label outward from center, beyond the edge
       const pushDistance = 25;
       const labelX = e.mid.x + (dx / dist) * pushDistance;
       const labelY = e.mid.y + (dy / dist) * pushDistance;
 
-      // Remove "Scene" suffix from label
       const labelText = target.replace("Scene", "");
 
       const label = this.add.text(labelX, labelY, labelText, {
@@ -842,6 +841,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(61);
       this.faceLayers.ui.add(label);
+      */
 
       this.travelEdgeZones.push({
         zone,
