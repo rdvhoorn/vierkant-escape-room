@@ -28,8 +28,8 @@ export default class Face1Scene extends FaceBase {
   private inPuzzleRange = false;
 
   // Quadratus dialog
-  private dialogActive = false;
-  private dialogLines: { speaker: string; text: string; thought?: boolean }[] = [
+  private quadratusDialogActive = false;
+  private quadratusLines: { speaker: string; text: string; thought?: boolean }[] = [
     { speaker: "Q", text: "Hoi vreemdeling, ik ben Quadratus de Espirantus. Welkom op de planeet Dezonia!" },
     { speaker: "IK", text: "(Quadratus lijkt vriendelijk en ik kan wel wat hulp gebruiken.)", thought: true },
     { speaker: "IK", text: "Hoi Quadratus, ik ben een beetje verdwaald geloof ik." },
@@ -41,12 +41,12 @@ export default class Face1Scene extends FaceBase {
     { speaker: "IK", text: "Wacht! Ga je niet met me mee?" },
     { speaker: "Q", text: "Nee, maar ik denk niet dat dit de laatste keer is dat we elkaar zien." },
   ];
-  private dialogIndex = 0;
-  private dialogBox?: Phaser.GameObjects.Graphics;
-  private dialogText?: Phaser.GameObjects.Text;
-  private dialogSpeaker?: Phaser.GameObjects.Text;
-  private dialogOverlay?: Phaser.GameObjects.Rectangle;
-  private dialogPortrait?: Phaser.GameObjects.Image;
+  private quadratusIndex = 0;
+  private quadratusBox?: Phaser.GameObjects.Graphics;
+  private quadratusText?: Phaser.GameObjects.Text;
+  private quadratusSpeaker?: Phaser.GameObjects.Text;
+  private quadratusOverlay?: Phaser.GameObjects.Rectangle;
+  private quadratusPortrait?: Phaser.GameObjects.Image;
 
   create() {
     console.log("[ENTER]", this.scene.key);
@@ -181,43 +181,42 @@ export default class Face1Scene extends FaceBase {
     }
 
     // Dialog input handlers
-    this.input.on("pointerdown", () => this.advanceDialog());
-    this.input.keyboard?.on("keydown-SPACE", () => this.advanceDialog());
+    this.input.on("pointerdown", () => this.advanceQuadratusDialog());
+    this.input.keyboard?.on("keydown-SPACE", () => this.advanceQuadratusDialog());
   }
 
   private startQuadratusDialog() {
-    if (this.dialogActive) return;
-    this.dialogActive = true;
-    this.dialogIndex = 0;
+    if (this.quadratusDialogActive) return;
+    this.quadratusDialogActive = true;
+    this.quadratusIndex = 0;
 
     const { width, height } = this.scale;
 
     // Semi-transparent overlay
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
-    this.dialogOverlay.setDepth(200);
+    this.quadratusOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    this.quadratusOverlay.setDepth(200);
 
     // Dialog box at bottom
     const boxHeight = 120;
-    const boxY = height - boxHeight / 2 - 20;
 
-    this.dialogBox = this.add.graphics();
-    this.dialogBox.setDepth(201);
-    this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
-    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.quadratusBox = this.add.graphics();
+    this.quadratusBox.setDepth(201);
+    this.quadratusBox.fillStyle(0x1b2748, 0.95);
+    this.quadratusBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.quadratusBox.lineStyle(2, 0x3c5a99, 1);
+    this.quadratusBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
 
     // Portrait (80x80, left side of dialog box)
     const portraitSize = 80;
     const portraitX = 50 + portraitSize / 2;
     const portraitY = height - boxHeight / 2 - 20;
-    this.dialogPortrait = this.add.image(portraitX, portraitY, "quadratus")
+    this.quadratusPortrait = this.add.image(portraitX, portraitY, "quadratus")
       .setDisplaySize(portraitSize, portraitSize)
       .setDepth(202);
 
     // Speaker name (right of portrait)
     const textStartX = 50 + portraitSize + 40;
-    this.dialogSpeaker = this.add.text(textStartX, height - boxHeight - 5, "", {
+    this.quadratusSpeaker = this.add.text(textStartX, height - boxHeight - 5, "", {
       fontFamily: "sans-serif",
       fontSize: "14px",
       color: "#ffaa00",
@@ -225,7 +224,7 @@ export default class Face1Scene extends FaceBase {
     }).setDepth(202);
 
     // Dialog text (right of portrait)
-    this.dialogText = this.add.text(textStartX, height - boxHeight + 15, "", {
+    this.quadratusText = this.add.text(textStartX, height - boxHeight + 15, "", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#e7f3ff",
@@ -237,37 +236,37 @@ export default class Face1Scene extends FaceBase {
       fontFamily: "sans-serif",
       fontSize: "12px",
       color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("dialogHint");
+    }).setOrigin(1, 1).setDepth(202).setName("quadratusHint");
 
     this.showDialogLine();
   }
 
   private showDialogLine() {
-    if (!this.dialogText || !this.dialogSpeaker) return;
+    if (!this.quadratusText || !this.quadratusSpeaker) return;
 
-    const line = this.dialogLines[this.dialogIndex];
+    const line = this.quadratusLines[this.quadratusIndex];
     const speakerName = line.speaker === "Q" ? "Quadratus" : "Jij";
     const textColor = line.thought ? "#aaaaff" : "#e7f3ff";
     const speakerColor = line.speaker === "Q" ? "#ffaa00" : "#88ff88";
 
-    this.dialogSpeaker.setText(speakerName).setColor(speakerColor);
-    this.dialogText.setText(line.text).setColor(textColor);
+    this.quadratusSpeaker.setText(speakerName).setColor(speakerColor);
+    this.quadratusText.setText(line.text).setColor(textColor);
 
     // Show portrait only when Quadratus speaks
-    if (this.dialogPortrait) {
-      this.dialogPortrait.setVisible(line.speaker === "Q");
+    if (this.quadratusPortrait) {
+      this.quadratusPortrait.setVisible(line.speaker === "Q");
     }
 
     // Fade in effect
-    this.dialogText.setAlpha(0);
-    this.tweens.add({ targets: this.dialogText, alpha: 1, duration: 150 });
+    this.quadratusText.setAlpha(0);
+    this.tweens.add({ targets: this.quadratusText, alpha: 1, duration: 150 });
   }
 
-  private advanceDialog() {
-    if (!this.dialogActive) return;
+  private advanceQuadratusDialog() {
+    if (!this.quadratusDialogActive) return;
 
-    this.dialogIndex++;
-    if (this.dialogIndex < this.dialogLines.length) {
+    this.quadratusIndex++;
+    if (this.quadratusIndex < this.quadratusLines.length) {
       this.showDialogLine();
     } else {
       this.endQuadratusDialog();
@@ -275,16 +274,16 @@ export default class Face1Scene extends FaceBase {
   }
 
   private endQuadratusDialog() {
-    this.dialogActive = false;
+    this.quadratusDialogActive = false;
     this.registry.set("quadratusDialogSeen", true);
 
     // Clean up dialog UI
-    this.dialogOverlay?.destroy();
-    this.dialogBox?.destroy();
-    this.dialogText?.destroy();
-    this.dialogSpeaker?.destroy();
-    this.dialogPortrait?.destroy();
-    this.children.getByName("dialogHint")?.destroy();
+    this.quadratusOverlay?.destroy();
+    this.quadratusBox?.destroy();
+    this.quadratusText?.destroy();
+    this.quadratusSpeaker?.destroy();
+    this.quadratusPortrait?.destroy();
+    this.children.getByName("quadratusHint")?.destroy();
 
     // Show teaser complete popup after dialog
     this.time.delayedCall(500, () => this.showTeaserCompletePopup());

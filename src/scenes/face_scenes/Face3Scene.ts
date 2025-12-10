@@ -1,4 +1,3 @@
-import Phaser from "phaser";
 import FaceBase from "./_FaceBase";
 import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 

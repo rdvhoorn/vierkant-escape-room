@@ -27,9 +27,7 @@ export default class CockpitScene extends Phaser.Scene {
   // Interactive elements
   private energyBar?: Phaser.GameObjects.Graphics;
   private lamps: Map<string, Phaser.GameObjects.Graphics> = new Map();
-  private lampLabels: Map<string, Phaser.GameObjects.Text> = new Map();
   private needle?: Phaser.GameObjects.Graphics;
-  private energyText?: Phaser.GameObjects.Text;
 
   // Scene state
   private currentPhase: "intro1" | "intro2" | "damaged" | "repaired" = "intro1";
@@ -416,7 +414,7 @@ export default class CockpitScene extends Phaser.Scene {
     this.drawGauge(rightPanelX + rightPanelW / 2, dashTop + 138, 28); // Smaller + lower to align
   }
 
-  private drawLamps(x: number, y: number, width: number, height: number) {
+  private drawLamps(x: number, y: number, _width: number, _height: number) {
     const lampNames = ["stroom", "waarschuwing", "zuurstof", "motor", "schild", "deuren"];
     const lampLabels = {
       stroom: "STROOM",
@@ -464,7 +462,7 @@ export default class CockpitScene extends Phaser.Scene {
     });
   }
 
-  private drawNavigationPanel(x: number, y: number, w: number, h: number) {
+  private drawNavigationPanel(x: number, y: number, w: number, _h: number) {
     const isOff = this.selectedDestination === -1;
 
     // Title (dimmed when off)
@@ -823,7 +821,7 @@ export default class CockpitScene extends Phaser.Scene {
         yoyo: true,
         repeat: -1,
         onUpdate: (tween) => {
-          const alpha = tween.getValue();
+          const alpha = tween.getValue() ?? 0.3;
           glow.clear();
           glow.fillStyle(0xff6600, alpha);
           glow.fillRoundedRect(hatchX - 4, hatchY - 4, hatchWidth + 8, hatchHeight + 8, 8);
