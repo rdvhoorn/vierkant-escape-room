@@ -55,6 +55,9 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("player_normal_3", "/assets/player/3.png");
     this.load.image("player_normal_4", "/assets/player/4.png");
     this.load.image("player_normal_5", "/assets/player/5.png");
+
+    // Characters
+    this.load.image("quadratus", "/assets/Quadratus.png");
   }
 
   create() {

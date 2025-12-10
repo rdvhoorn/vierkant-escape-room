@@ -27,6 +27,27 @@ export default class Face1Scene extends FaceBase {
   private inShipRange = false;
   private inPuzzleRange = false;
 
+  // Quadratus dialog
+  private dialogActive = false;
+  private dialogLines: { speaker: string; text: string; thought?: boolean }[] = [
+    { speaker: "Q", text: "Hoi vreemdeling, ik ben Quadratus de Espirantus. Welkom op de planeet Dezonia!" },
+    { speaker: "IK", text: "(Quadratus lijkt vriendelijk en ik kan wel wat hulp gebruiken.)", thought: true },
+    { speaker: "IK", text: "Hoi Quadratus, ik ben een beetje verdwaald geloof ik." },
+    { speaker: "IK", text: "Ik was op weg naar de Aarde met mijn capsule, maar nu ben ik ineens hier." },
+    { speaker: "IK", text: "Mijn capsule doet het nog, maar de energietank is bijna leeg. Hoe kom ik nu naar huis?" },
+    { speaker: "Q", text: "Ach vreemdeling toch, wat een pech. Gelukkig is er hier op Dezonia ook energie te vinden..." },
+    { speaker: "IK", text: "Nou, dat biedt hoop, dank je wel Quadratus!" },
+    { speaker: "Q", text: "Veel succes, vreemdeling! Het is aan jou of je de hele planeet wil ontdekken." },
+    { speaker: "IK", text: "Wacht! Ga je niet met me mee?" },
+    { speaker: "Q", text: "Nee, maar ik denk niet dat dit de laatste keer is dat we elkaar zien." },
+  ];
+  private dialogIndex = 0;
+  private dialogBox?: Phaser.GameObjects.Graphics;
+  private dialogText?: Phaser.GameObjects.Text;
+  private dialogSpeaker?: Phaser.GameObjects.Text;
+  private dialogOverlay?: Phaser.GameObjects.Rectangle;
+  private dialogPortrait?: Phaser.GameObjects.Image;
+
   create() {
     console.log("[ENTER]", this.scene.key);
     const { width, height } = this.scale;
@@ -131,9 +152,13 @@ export default class Face1Scene extends FaceBase {
         if (this.inShipRange) {
           this.scene.start("ShipFuelScene");
         } else if (this.inPuzzleRange) {
-          // In teaser: show popup if electricity puzzle is solved
+          // In teaser: start Quadratus dialog or show popup
           if (this.registry.get("electricitySolved")) {
-            this.showTeaserCompletePopup();
+            if (!this.registry.get("quadratusDialogSeen")) {
+              this.startQuadratusDialog();
+            } else {
+              this.showTeaserCompletePopup();
+            }
           } else {
             // Normal game flow (not in teaser)
             if (this.registry.get("logic1Solved")) {
@@ -149,6 +174,120 @@ export default class Face1Scene extends FaceBase {
 
     // Decorations etc.
     this.decorateCrashSite(radius);
+
+    // Start Quadratus dialog after a delay (if electricity is solved and dialog not seen yet)
+    if (this.registry.get("electricitySolved") && !this.registry.get("quadratusDialogSeen")) {
+      this.time.delayedCall(2000, () => this.startQuadratusDialog());
+    }
+
+    // Dialog input handlers
+    this.input.on("pointerdown", () => this.advanceDialog());
+    this.input.keyboard?.on("keydown-SPACE", () => this.advanceDialog());
+  }
+
+  private startQuadratusDialog() {
+    if (this.dialogActive) return;
+    this.dialogActive = true;
+    this.dialogIndex = 0;
+
+    const { width, height } = this.scale;
+
+    // Semi-transparent overlay
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    this.dialogOverlay.setDepth(200);
+
+    // Dialog box at bottom
+    const boxHeight = 120;
+    const boxY = height - boxHeight / 2 - 20;
+
+    this.dialogBox = this.add.graphics();
+    this.dialogBox.setDepth(201);
+    this.dialogBox.fillStyle(0x1b2748, 0.95);
+    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
+    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+
+    // Portrait (80x80, left side of dialog box)
+    const portraitSize = 80;
+    const portraitX = 50 + portraitSize / 2;
+    const portraitY = height - boxHeight / 2 - 20;
+    this.dialogPortrait = this.add.image(portraitX, portraitY, "quadratus")
+      .setDisplaySize(portraitSize, portraitSize)
+      .setDepth(202);
+
+    // Speaker name (right of portrait)
+    const textStartX = 50 + portraitSize + 40;
+    this.dialogSpeaker = this.add.text(textStartX, height - boxHeight - 5, "", {
+      fontFamily: "sans-serif",
+      fontSize: "14px",
+      color: "#ffaa00",
+      fontStyle: "bold",
+    }).setDepth(202);
+
+    // Dialog text (right of portrait)
+    this.dialogText = this.add.text(textStartX, height - boxHeight + 15, "", {
+      fontFamily: "sans-serif",
+      fontSize: "18px",
+      color: "#e7f3ff",
+      wordWrap: { width: width - textStartX - 60, useAdvancedWrap: true },
+    }).setDepth(202);
+
+    // Hint
+    this.add.text(width - 50, height - 30, "Klik →", {
+      fontFamily: "sans-serif",
+      fontSize: "12px",
+      color: "#888888",
+    }).setOrigin(1, 1).setDepth(202).setName("dialogHint");
+
+    this.showDialogLine();
+  }
+
+  private showDialogLine() {
+    if (!this.dialogText || !this.dialogSpeaker) return;
+
+    const line = this.dialogLines[this.dialogIndex];
+    const speakerName = line.speaker === "Q" ? "Quadratus" : "Jij";
+    const textColor = line.thought ? "#aaaaff" : "#e7f3ff";
+    const speakerColor = line.speaker === "Q" ? "#ffaa00" : "#88ff88";
+
+    this.dialogSpeaker.setText(speakerName).setColor(speakerColor);
+    this.dialogText.setText(line.text).setColor(textColor);
+
+    // Show portrait only when Quadratus speaks
+    if (this.dialogPortrait) {
+      this.dialogPortrait.setVisible(line.speaker === "Q");
+    }
+
+    // Fade in effect
+    this.dialogText.setAlpha(0);
+    this.tweens.add({ targets: this.dialogText, alpha: 1, duration: 150 });
+  }
+
+  private advanceDialog() {
+    if (!this.dialogActive) return;
+
+    this.dialogIndex++;
+    if (this.dialogIndex < this.dialogLines.length) {
+      this.showDialogLine();
+    } else {
+      this.endQuadratusDialog();
+    }
+  }
+
+  private endQuadratusDialog() {
+    this.dialogActive = false;
+    this.registry.set("quadratusDialogSeen", true);
+
+    // Clean up dialog UI
+    this.dialogOverlay?.destroy();
+    this.dialogBox?.destroy();
+    this.dialogText?.destroy();
+    this.dialogSpeaker?.destroy();
+    this.dialogPortrait?.destroy();
+    this.children.getByName("dialogHint")?.destroy();
+
+    // Show teaser complete popup after dialog
+    this.time.delayedCall(500, () => this.showTeaserCompletePopup());
   }
 
   private showTeaserCompletePopup() {

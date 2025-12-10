@@ -3,31 +3,36 @@ import { TwinklingStars } from "../utils/TwinklingStars";
 
 export default class CockpitScene extends Phaser.Scene {
   private stars?: TwinklingStars;
-  private energyLevel: number = 20; // 0-100
+  private energyLevel: number = 90; // 0-100
   private lampStates: Record<string, boolean> = {
     stroom: true,
-    waarschuwing: true,
+    waarschuwing: false,
     zuurstof: true,
     motor: true,
-    schild: false,
+    schild: true,
     deuren: true,
   };
 
-  // Navigation
-  private destinations: string[] = ["DEZONIA", "CALCULON", "MATHORIA", "LUNTEREN", "HEINO"];
+  // Navigation (HEINO bovenaan, DEZONIA onderaan)
+  private destinations: string[] = ["HEINO", "LUNTEREN", "MATHORIA", "CALCULON", "DEZONIA"];
   private distances: Record<string, number> = {
-    "DEZONIA": 2026,     // HIER - gestrand bij deze planeet
-    "CALCULON": 850,     // Dichtbij wiskunde-planeet
-    "MATHORIA": 2400,    // Nabije planeet met puzzels
-    "LUNTEREN": 450000, // Ergens halverwege
-    "HEINO": 785042,     // Op aarde, dus net zo ver + 42 ;)
+    "DEZONIA": 2026,
+    "CALCULON": 850,
+    "MATHORIA": 2400,
+    "LUNTEREN": 450000,
+    "HEINO": 785042,
   };
-  private selectedDestination: number = 0;
+  private selectedDestination: number = 0; // Start with HEINO selected (index 0)
 
   // Interactive elements
   private energyBar?: Phaser.GameObjects.Graphics;
   private lamps: Map<string, Phaser.GameObjects.Graphics> = new Map();
+  private lampLabels: Map<string, Phaser.GameObjects.Text> = new Map();
   private needle?: Phaser.GameObjects.Graphics;
+  private energyText?: Phaser.GameObjects.Text;
+
+  // Scene state
+  private currentPhase: "intro1" | "intro2" | "damaged" | "repaired" = "intro1";
 
   constructor() {
     super("CockpitScene");
@@ -36,7 +41,20 @@ export default class CockpitScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    console.log("[CockpitScene] create() called");
+    // Determine current phase based on registry
+    const introDone = this.registry.get("introDone") || false;
+    const electricitySolved = this.registry.get("electricitySolved") || false;
+
+    if (electricitySolved) {
+      this.currentPhase = "repaired";
+    } else if (introDone) {
+      this.currentPhase = "damaged";
+    } else {
+      this.currentPhase = "intro1";
+    }
+
+    // Set initial state based on phase
+    this.applyPhaseState();
 
     // Background color (dark space)
     this.cameras.main.setBackgroundColor("#050510");
@@ -45,58 +63,245 @@ export default class CockpitScene extends Phaser.Scene {
     const windowTop = 80;
     const windowBottom = height * 0.5;
     this.stars = new TwinklingStars(this, 150, width, windowBottom - windowTop, windowTop);
-    // Set stars to back layer (depth 0)
     this.stars.graphics.setDepth(0);
-    console.log("[CockpitScene] stars created");
 
-    // Draw cockpit elements (back to front)
-    // Windows go on top of stars but behind dashboard
-    console.log("[CockpitScene] drawing windows");
+    // Draw cockpit elements
     this.drawCockpitWindows(width, height);
-    console.log("[CockpitScene] drawing dashboard");
     this.drawDashboard(width, height);
-    console.log("[CockpitScene] drawing instruments");
     this.drawInstruments(width, height);
-    console.log("[CockpitScene] drawing stick control");
     this.drawStickControl(width, height);
-    console.log("[CockpitScene] drawing hatch");
     this.drawElectricityHatch(width, height);
-    console.log("[CockpitScene] create() complete");
 
-    // Test: Press SPACE to toggle warning lamp
-    this.input.keyboard!.on("keydown-SPACE", () => {
-      this.lampStates.waarschuwing = !this.lampStates.waarschuwing;
-      this.updateLamps();
-    });
+    // Start intro sequence if not done yet
+    if (this.currentPhase === "intro1") {
+      this.time.delayedCall(2000, () => this.startCrashSequence());
+    }
 
-    // Navigation controls: W/S or UP/DOWN
+    // Wake up effect for damaged state (eyes opening)
+    if (this.currentPhase === "damaged") {
+      this.playWakeUpEffect();
+    } else if (this.currentPhase === "repaired") {
+      this.cameras.main.fadeIn(500);
+    }
+
+    // Navigation controls (only when not in intro)
     this.input.keyboard!.on("keydown-W", () => {
+      if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.max(0, this.selectedDestination - 1);
       this.updateNavigationPanel();
     });
 
     this.input.keyboard!.on("keydown-S", () => {
+      if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.min(this.destinations.length - 1, this.selectedDestination + 1);
       this.updateNavigationPanel();
     });
 
     this.input.keyboard!.on("keydown-UP", () => {
+      if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.max(0, this.selectedDestination - 1);
       this.updateNavigationPanel();
     });
 
     this.input.keyboard!.on("keydown-DOWN", () => {
+      if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.min(this.destinations.length - 1, this.selectedDestination + 1);
       this.updateNavigationPanel();
     });
+  }
 
-    // Set course with ENTER or E
-    this.input.keyboard!.on("keydown-ENTER", () => {
-      console.log(`Koers ingesteld naar: ${this.destinations[this.selectedDestination]}`);
+  private applyPhaseState() {
+    switch (this.currentPhase) {
+      case "intro1":
+        // Flying to earth - everything green, 90% energy, HEINO selected
+        this.energyLevel = 90;
+        this.selectedDestination = 0; // HEINO (index 0)
+        this.lampStates = {
+          stroom: true,
+          waarschuwing: false,
+          zuurstof: true,
+          motor: true,
+          schild: true,
+          deuren: true,
+        };
+        break;
+
+      case "damaged":
+        // After crash - most things off, energy empty, navigation off
+        this.energyLevel = 0;
+        this.selectedDestination = -1; // No selection (navigation off)
+        this.lampStates = {
+          stroom: false,
+          waarschuwing: true, // Alarm still on
+          zuurstof: false,
+          motor: false,
+          schild: false,
+          deuren: false,
+        };
+        break;
+
+      case "repaired":
+        // After puzzle solved - things back on, 10% energy
+        this.energyLevel = 10;
+        this.selectedDestination = 4; // DEZONIA (index 4)
+        this.lampStates = {
+          stroom: true,
+          waarschuwing: false,
+          zuurstof: true,
+          motor: true,
+          schild: false,
+          deuren: true,
+        };
+        break;
+    }
+  }
+
+  private startCrashSequence() {
+    this.currentPhase = "intro2";
+
+    // Alarm on!
+    this.lampStates.waarschuwing = true;
+    this.updateLamps();
+
+    // Screen shake
+    this.cameras.main.shake(800, 0.02);
+
+    // Flash red
+    this.time.delayedCall(200, () => {
+      this.cameras.main.flash(300, 255, 50, 0);
     });
 
-    this.input.keyboard!.on("keydown-E", () => {
-      console.log(`Koers ingesteld naar: ${this.destinations[this.selectedDestination]}`);
+    // More shake
+    this.time.delayedCall(500, () => {
+      this.cameras.main.shake(600, 0.03);
+    });
+
+    // Turn off lamps one by one
+    this.time.delayedCall(800, () => {
+      this.lampStates.motor = false;
+      this.updateLamps();
+    });
+    this.time.delayedCall(1000, () => {
+      this.lampStates.schild = false;
+      this.updateLamps();
+    });
+    this.time.delayedCall(1200, () => {
+      this.lampStates.zuurstof = false;
+      this.updateLamps();
+    });
+    this.time.delayedCall(1400, () => {
+      this.lampStates.stroom = false;
+      this.updateLamps();
+    });
+
+    // Change navigation to DEZONIA
+    this.time.delayedCall(1000, () => {
+      this.selectedDestination = 4; // DEZONIA (index 4)
+      this.updateNavigationPanel();
+    });
+
+    // Reduce energy
+    this.time.delayedCall(600, () => {
+      this.energyLevel = 50;
+      this.updateEnergyBar();
+    });
+    this.time.delayedCall(1000, () => {
+      this.energyLevel = 20;
+      this.updateEnergyBar();
+    });
+    this.time.delayedCall(1400, () => {
+      this.energyLevel = 0;
+      this.updateEnergyBar();
+    });
+
+    // Fade to black (longer)
+    this.time.delayedCall(1800, () => {
+      this.cameras.main.fadeOut(1500, 0, 0, 0);
+    });
+
+    // Set introDone and restart scene in damaged state
+    this.time.delayedCall(3500, () => {
+      this.registry.set("introDone", true);
+      this.scene.restart();
+    });
+  }
+
+  private playWakeUpEffect() {
+    const { width, height } = this.scale;
+
+    // Black overlay that we'll fade out
+    const blackOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1);
+    blackOverlay.setDepth(100);
+
+    // Blur overlay (dark semi-transparent)
+    const blurOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
+    blurOverlay.setDepth(99);
+
+    // Eye blink overlays (top and bottom)
+    const blinkTop = this.add.rectangle(width / 2, 0, width, height / 2, 0x000000, 1).setOrigin(0.5, 0);
+    const blinkBottom = this.add.rectangle(width / 2, height, width, height / 2, 0x000000, 1).setOrigin(0.5, 1);
+    blinkTop.setDepth(101);
+    blinkBottom.setDepth(101);
+
+    // First: fade from black
+    this.tweens.add({
+      targets: blackOverlay,
+      alpha: 0,
+      duration: 1000,
+      ease: "Power2",
+      onComplete: () => blackOverlay.destroy()
+    });
+
+    // Eye blink 1 (at 800ms)
+    this.time.delayedCall(800, () => {
+      // Close eyes
+      this.tweens.add({
+        targets: [blinkTop, blinkBottom],
+        scaleY: 1.5,
+        duration: 150,
+        yoyo: true,
+        ease: "Power2"
+      });
+    });
+
+    // Eye blink 2 (at 1500ms)
+    this.time.delayedCall(1500, () => {
+      this.tweens.add({
+        targets: [blinkTop, blinkBottom],
+        scaleY: 1.5,
+        duration: 150,
+        yoyo: true,
+        ease: "Power2"
+      });
+    });
+
+    // Gradually reduce blur (3 seconds total)
+    this.tweens.add({
+      targets: blurOverlay,
+      alpha: 0,
+      duration: 3000,
+      delay: 500,
+      ease: "Power2",
+      onComplete: () => blurOverlay.destroy()
+    });
+
+    // Remove blink overlays
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({
+        targets: [blinkTop, blinkBottom],
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          blinkTop.destroy();
+          blinkBottom.destroy();
+        }
+      });
+    });
+
+    // Update navigation to DEZONIA after waking up (when vision clears)
+    this.time.delayedCall(3000, () => {
+      this.selectedDestination = 4; // DEZONIA (index 4)
+      this.updateNavigationPanel();
     });
   }
 
@@ -260,12 +465,14 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private drawNavigationPanel(x: number, y: number, w: number, h: number) {
-    // Title
+    const isOff = this.selectedDestination === -1;
+
+    // Title (dimmed when off)
     this.add.text(x + w / 2, y + 10, "⚡ NAVIGATIE ⚡", {
       fontSize: "16px",
-      color: "#00ff88",
+      color: isOff ? "#334444" : "#00ff88",
       fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(3);
+    }).setOrigin(0.5).setDepth(3).setName("nav-title");
 
     // Destinations list
     const listY = y + 40;
@@ -276,22 +483,22 @@ export default class CockpitScene extends Phaser.Scene {
       const isSelected = idx === this.selectedDestination;
 
       // Selection indicator (arrow)
-      if (isSelected) {
+      if (isSelected && !isOff) {
         this.add.text(x + 15, itemY, "▶", {
           fontSize: "14px",
           color: "#ffaa00",
         }).setOrigin(0, 0.5).setDepth(3).setName(`nav-arrow`);
       }
 
-      // Destination text
-      const destText = this.add.text(x + 35, itemY, dest, {
-        fontSize: isSelected ? "15px" : "13px",
-        color: isSelected ? "#ffffff" : "#888888",
-        fontStyle: isSelected ? "bold" : "normal",
+      // Destination text (all dimmed when off)
+      this.add.text(x + 35, itemY, dest, {
+        fontSize: isSelected && !isOff ? "15px" : "13px",
+        color: isOff ? "#333333" : (isSelected ? "#ffffff" : "#888888"),
+        fontStyle: isSelected && !isOff ? "bold" : "normal",
       }).setOrigin(0, 0.5).setDepth(3).setName(`nav-dest-${idx}`);
 
       // Distance indicator
-      if (isSelected) {
+      if (isSelected && !isOff) {
         const distance = this.distances[dest];
         const distText = distance === 0 ? "HIER" : distance < 1000 ? `${distance} km` : `${Math.floor(distance / 1000)}k km`;
         this.add.text(x + w - 20, itemY, distText, {
@@ -346,19 +553,23 @@ export default class CockpitScene extends Phaser.Scene {
     if (this.energyLevel < 30) color = 0xff0000;
     else if (this.energyLevel < 60) color = 0xffaa00;
 
-    this.energyBar.fillStyle(color, 0.8);
-    this.energyBar.fillRect(x + 2, y + 2, barWidth - 4, 26);
+    // Only draw bar if energy > 0
+    if (this.energyLevel > 0) {
+      this.energyBar.fillStyle(color, 0.8);
+      this.energyBar.fillRect(x + 2, y + 2, barWidth - 4, 26);
+    }
 
-    // Percentage text
-    const percentage = Math.round(this.energyLevel);
-    // Remove old text if exists
+    // Percentage text (show "---" when empty)
     const oldText = this.children.getByName("energyText");
     if (oldText) oldText.destroy();
 
+    const displayText = this.energyLevel === 0 ? "---" : `${Math.round(this.energyLevel)}%`;
+    const textColor = this.energyLevel === 0 ? "#666666" : "#ffffff";
+
     this.add
-      .text(x + maxWidth / 2, y + 15, `${percentage}%`, {
+      .text(x + maxWidth / 2, y + 15, displayText, {
         fontSize: "18px",
-        color: "#ffffff",
+        color: textColor,
       })
       .setOrigin(0.5)
       .setName("energyText")
@@ -382,15 +593,23 @@ export default class CockpitScene extends Phaser.Scene {
     // Needle (rotatable)
     this.needle = this.add.graphics();
     this.needle.setDepth(3);
-    this.updateNeedle(cx, cy, radius, 45); // Initial angle
 
-    // Animate needle
+    // Animate needle based on phase
+    // 2:00 position = 60 degrees from top (12:00) = 150 degrees in our system
+    const baseAngle = this.currentPhase === "intro1" ? 150 :
+                      this.currentPhase === "damaged" ? 30 : 90;
+    const wobbleAmount = this.currentPhase === "intro1" ? 3 :
+                         this.currentPhase === "damaged" ? 0 : 15;
+
+    this.updateNeedle(cx, cy, radius, baseAngle);
+
     this.time.addEvent({
       delay: 50,
       loop: true,
       callback: () => {
-        const angle = Math.sin(this.time.now / 1000) * 60 + 90;
-        this.updateNeedle(cx, cy, radius, angle);
+        // Small wobble around base angle
+        const wobble = Math.sin(this.time.now / 150) * wobbleAmount;
+        this.updateNeedle(cx, cy, radius, baseAngle + wobble);
       },
     });
 
@@ -467,28 +686,36 @@ export default class CockpitScene extends Phaser.Scene {
     const w = centerPanelW;
     const listY = y + 40;
     const itemHeight = 22;
+    const isOff = this.selectedDestination === -1;
+
+    // Title (dimmed when off)
+    this.add.text(x + w / 2, y + 10, "⚡ NAVIGATIE ⚡", {
+      fontSize: "16px",
+      color: isOff ? "#334444" : "#00ff88",
+      fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(3).setName("nav-title");
 
     this.destinations.forEach((dest, idx) => {
       const itemY = listY + idx * itemHeight;
       const isSelected = idx === this.selectedDestination;
 
       // Selection indicator (arrow)
-      if (isSelected) {
+      if (isSelected && !isOff) {
         this.add.text(x + 15, itemY, "▶", {
           fontSize: "14px",
           color: "#ffaa00",
         }).setOrigin(0, 0.5).setDepth(3).setName(`nav-arrow`);
       }
 
-      // Destination text
+      // Destination text (all dimmed when off)
       this.add.text(x + 35, itemY, dest, {
-        fontSize: isSelected ? "15px" : "13px",
-        color: isSelected ? "#ffffff" : "#888888",
-        fontStyle: isSelected ? "bold" : "normal",
+        fontSize: isSelected && !isOff ? "15px" : "13px",
+        color: isOff ? "#333333" : (isSelected ? "#ffffff" : "#888888"),
+        fontStyle: isSelected && !isOff ? "bold" : "normal",
       }).setOrigin(0, 0.5).setDepth(3).setName(`nav-dest-${idx}`);
 
       // Distance indicator (only for selected)
-      if (isSelected) {
+      if (isSelected && !isOff) {
         const distance = this.distances[dest];
         const distText = distance === 0 ? "HIER" : distance < 1000 ? `${distance} km` : `${Math.floor(distance / 1000)}k km`;
         this.add.text(x + w - 20, itemY, distText, {
@@ -584,7 +811,27 @@ export default class CockpitScene extends Phaser.Scene {
       fontSize: "14px",
     }).setOrigin(0.5).setDepth(3);
 
-    // Interactive zone
+    // Pulsing glow effect in damaged state
+    if (this.currentPhase === "damaged") {
+      const glow = this.add.graphics();
+      glow.setDepth(2);
+
+      this.tweens.add({
+        targets: { alpha: 0.3 },
+        alpha: 0.8,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+        onUpdate: (tween) => {
+          const alpha = tween.getValue();
+          glow.clear();
+          glow.fillStyle(0xff6600, alpha);
+          glow.fillRoundedRect(hatchX - 4, hatchY - 4, hatchWidth + 8, hatchHeight + 8, 8);
+        }
+      });
+    }
+
+    // Interactive zone - only in damaged state
     const hitArea = this.add.rectangle(
       hatchX + hatchWidth / 2,
       hatchY + hatchHeight / 2,
@@ -593,11 +840,16 @@ export default class CockpitScene extends Phaser.Scene {
       0xffffff,
       0
     );
-    hitArea.setInteractive({ useHandCursor: true });
     hitArea.setDepth(4);
+
+    // Only interactive in damaged state
+    if (this.currentPhase === "damaged") {
+      hitArea.setInteractive({ useHandCursor: true });
+    }
 
     // Hover effect
     hitArea.on("pointerover", () => {
+      if (this.currentPhase !== "damaged") return;
       hatch.clear();
       // Redraw with highlight
       hatch.fillStyle(0x4d5a6c, 1);
@@ -624,6 +876,7 @@ export default class CockpitScene extends Phaser.Scene {
     });
 
     hitArea.on("pointerout", () => {
+      if (this.currentPhase !== "damaged") return;
       hatch.clear();
       // Redraw normal
       hatch.fillStyle(0x3d4a5c, 1);
