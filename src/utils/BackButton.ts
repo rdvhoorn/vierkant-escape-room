@@ -12,10 +12,11 @@ export function createBackButton(
         fontFamily: "Arial",
         fontSize: "28px",
         color: "#ffffff",
-        backgroundColor: "#000000",
+        backgroundColor: undefined,
       })
       .setPadding(10)
-      .setInteractive({ useHandCursor: true });
+      .setInteractive({ useHandCursor: true })
+      .setDepth(1000);
 
     backButton.on("pointerup", () => {
       // Go back to the selection / previous scene
@@ -27,7 +28,7 @@ export function createBackButton(
     });
 
     backButton.on("pointerout", () => {
-      backButton.setStyle({ backgroundColor: "#000000" });
+      backButton.setStyle({ backgroundColor: undefined });
     });
 
     return backButton;

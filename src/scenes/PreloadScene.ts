@@ -41,6 +41,8 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("letter", "/assets/decor/letter.png");
     this.load.image("farm", "/assets/decor/farm.png");
     this.load.image("farmer", "/assets/decor/farmer.png");
+    this.load.image("wooden_sign", "/assets/decor/wooden_sign.png");
+    this.load.image("wooden_panel", "/assets/decor/wooden_panel.png");
 
     // Small spark/smoke particle (8x8-ish white dot or smoke puff)
     // this.load.image("spark", "/assets/particles/spark.png");
