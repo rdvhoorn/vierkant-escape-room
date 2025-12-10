@@ -28,9 +28,9 @@ export default class Face5Scene extends FaceBase {
 
 
     const center = this.getPolygonCenter(this.poly);
-    const signPos = new Phaser.Math.Vector2(center.x, center.y + 50);
+    const sign1Pos = new Phaser.Math.Vector2(center.x, center.y + 50);
     const sign1 = this.add
-      .image(signPos.x, signPos.y, "wooden_sign")
+      .image(sign1Pos.x, sign1Pos.y, "wooden_sign")
       .setOrigin(0.5, 0.6)
       .setDisplaySize(48, 48)
       .setDepth(50);
@@ -38,16 +38,41 @@ export default class Face5Scene extends FaceBase {
     this.addSoftShadowBelow(sign1, 22, 0x000000, 0.28);
     this.faceLayers?.deco.add(sign1);
 
-    const signBlock = this.add.zone(signPos.x, signPos.y, 10, 10);
-    this.physics.add.existing(signBlock, true);
-    this.physics.add.collider(this.player, signBlock);
+    const signBlock1 = this.add.zone(sign1Pos.x, sign1Pos.y, 10, 10);
+    this.physics.add.existing(signBlock1, true);
+    this.physics.add.collider(this.player, signBlock1);
 
     this.makeObjectInteractable(sign1, {
       hitRadius: 40,
       paddingX: 0,
       paddingY: 0,
+      hintText: "E: Bekijk het bord",
       onUse: () => {
         this.scene.start("kvq_driehoeken");
+      }
+    })
+
+    const sign2Pos = new Phaser.Math.Vector2(center.x + 80, center.y - 50);
+    const sign2 = this.add
+      .image(sign2Pos.x, sign2Pos.y, "wooden_sign")
+      .setOrigin(0.5, 0.6)
+      .setDisplaySize(48, 48)
+      .setDepth(50);
+    sign2.setAngle(-18);
+    this.addSoftShadowBelow(sign2, 22, 0x000000, 0.28);
+    this.faceLayers?.deco.add(sign2);
+
+    const signBlock2 = this.add.zone(sign2Pos.x, sign2Pos.y, 10, 10);
+    this.physics.add.existing(signBlock2, true);
+    this.physics.add.collider(this.player, signBlock2);
+
+    this.makeObjectInteractable(sign2, {
+      hitRadius: 40,
+      paddingX: 0,
+      paddingY: 0,
+      hintText: "E: Bekijk het bord",
+      onUse: () => {
+        this.scene.start("kvq_som_1");
       }
     })
   }

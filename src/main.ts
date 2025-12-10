@@ -17,6 +17,7 @@ import Face11Scene from "./scenes/face_scenes/Face11Scene";
 import Face12Scene from "./scenes/face_scenes/Face12Scene";
 
 import KVQDriehoeken from "./scenes/puzzles/kist_van_quadratus/kvq_driehoeken";
+import KVQSom1 from "./scenes/puzzles/kist_van_quadratus/kvq_som_1";
 
 import TangramKikkerScene from "./scenes/puzzles/tangram/TangramKikkerScene";
 import TangramKrabScene from "./scenes/puzzles/tangram/TangramKrabScene";
@@ -75,6 +76,7 @@ const config: Phaser.Types.Core.GameConfig = {
   PuzzleLogicOneScene,
   PuzzleLogicTwoScene,
   KVQDriehoeken,
+  KVQSom1,
   TangramKikkerScene,
   TangramKrabScene,
   TangramSchildpadScene,
