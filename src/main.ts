@@ -28,7 +28,9 @@ import PuzzleLogicOneScene from "./scenes/puzzles/PuzzleLogicOneScene";
 import PuzzleLogicTwoScene from "./scenes/puzzles/PuzzleLogicTwoScene";
 import StreakMaze from "./scenes/puzzles/StreakMaze";
 import LogicTower from "./scenes/puzzles/LogicTower";
-
+import LogicTower_1 from "./scenes/puzzles/LogicTower_1";
+import LogicTower_2 from "./scenes/puzzles/LogicTower_2";
+import LogicTower_3 from "./scenes/puzzles/LogicTower_3";
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
 
@@ -76,7 +78,10 @@ const config: Phaser.Types.Core.GameConfig = {
   TangramSchildpadScene,
   TangramSelectScene,
   StreakMaze,
-  LogicTower
+  LogicTower,
+  LogicTower_1,
+  LogicTower_2,
+  LogicTower_3
 ],
 };
 
