@@ -27,6 +27,7 @@ import MoreToComeScene from "./scenes/MoreToComeScene";
 import PuzzleLogicOneScene from "./scenes/puzzles/PuzzleLogicOneScene";
 import PuzzleLogicTwoScene from "./scenes/puzzles/PuzzleLogicTwoScene";
 import StreakMaze from "./scenes/puzzles/StreakMaze";
+import LogicTower from "./scenes/puzzles/LogicTower";
 
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
@@ -40,6 +41,9 @@ const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent: "game",
+  },
+  dom: {
+    createContainer: true,
   },
   physics: {
   default: "arcade",
@@ -71,7 +75,8 @@ const config: Phaser.Types.Core.GameConfig = {
   TangramKrabScene,
   TangramSchildpadScene,
   TangramSelectScene,
-  StreakMaze
+  StreakMaze,
+  LogicTower
 ],
 };
 
