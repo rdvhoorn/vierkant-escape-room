@@ -51,6 +51,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("chest","/assets/decor/chest.png")
     this.load.image("chest_2","/assets/decor/chest_2.png")
     this.load.image("tower","/assets/decor/tower.png")
+    this.load.image("tower","/assets/decor/brokenpanel.png")
 
     // Player images - simple 2D top-down
     this.load.image("player_normal_1", "/assets/player/1.png");
