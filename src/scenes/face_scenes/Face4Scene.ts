@@ -3,7 +3,6 @@ import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
 export default class Face4Scene extends FaceBase {
   private readonly birdSize = 96;
-
   constructor() {
     super("Face4Scene");
   }

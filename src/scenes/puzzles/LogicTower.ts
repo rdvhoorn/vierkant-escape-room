@@ -236,7 +236,7 @@ export default class LogicTowerScene extends Phaser.Scene {
     const inputElement = this.answerInput.getChildByName("answerField") as HTMLInputElement;
     if (inputElement) {
       const value = inputElement.value.trim().toLowerCase();
-      if (value === "sterren" || value === "ster" || value === "maan") {
+      if (value === "sterren" || value === "ster") {
         this.completePuzzle();
       } else {
         //shake
