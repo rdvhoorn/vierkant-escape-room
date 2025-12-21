@@ -423,32 +423,33 @@ export default class CockpitScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
 
-    // Semi-transparent overlay (not interactive initially to prevent immediate clicks)
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    // More transparent overlay to see dashboard better
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.25);
     this.dialogOverlay.setDepth(200);
 
-    // Dialog box at bottom
+    // Dialog box positioned higher, in front of the window area
     const boxHeight = 120;
+    const boxY = height * 0.35; // Position at 35% from top (in window area)
     this.dialogBox = this.add.graphics();
     this.dialogBox.setDepth(201);
     this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.fillRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
     this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.strokeRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
 
     // Text starting position (no speaker name for thoughts)
     const textStartX = 60;
 
     // Dialog text (centered vertically in box without speaker name)
-    this.dialogText = this.add.text(textStartX, height - boxHeight / 2 - 10, "", {
+    this.dialogText = this.add.text(textStartX, boxY, "", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#aaaaff",
       wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
     }).setDepth(202);
 
-    // Hint
-    this.add.text(width - 50, height - 30, "Klik →", {
+    // Hint positioned relative to new box position
+    this.add.text(width - 50, boxY + boxHeight / 2 - 10, "Klik →", {
       fontFamily: "sans-serif",
       fontSize: "12px",
       color: "#888888",

@@ -122,10 +122,10 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
-    // Set flag that electricity puzzle is solved, then go to planet
+    // Set flag that electricity puzzle is solved, then go back to cockpit
     this.registry.set("electricitySolved", true);
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("Face1Scene");
+      if (p === 1) this.scene.start("CockpitScene");
     });
   }
 
