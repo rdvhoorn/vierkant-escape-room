@@ -32,6 +32,14 @@ export default class CockpitScene extends Phaser.Scene {
   // Scene state
   private currentPhase: "intro1" | "intro2" | "damaged" | "repaired" = "intro1";
 
+  // Dialog system
+  private dialogActive: boolean = false;
+  private dialogOverlay?: Phaser.GameObjects.Rectangle;
+  private dialogBox?: Phaser.GameObjects.Graphics;
+  private dialogText?: Phaser.GameObjects.Text;
+  private dialogLines: string[] = [];
+  private dialogIndex: number = 0;
+
   constructor() {
     super("CockpitScene");
   }
@@ -80,6 +88,10 @@ export default class CockpitScene extends Phaser.Scene {
       this.playWakeUpEffect();
     } else if (this.currentPhase === "repaired") {
       this.cameras.main.fadeIn(500);
+      // Show post-puzzle thoughts after fade
+      this.time.delayedCall(800, () => {
+        this.showPostPuzzleThoughts();
+      });
     }
 
     // Navigation controls (only when not in intro)
@@ -241,54 +253,54 @@ export default class CockpitScene extends Phaser.Scene {
     blinkTop.setDepth(101);
     blinkBottom.setDepth(101);
 
-    // First: fade from black
+    // First: fade from black (halved from 1000ms to 500ms)
     this.tweens.add({
       targets: blackOverlay,
       alpha: 0,
-      duration: 1000,
+      duration: 500,
       ease: "Power2",
       onComplete: () => blackOverlay.destroy()
     });
 
-    // Eye blink 1 (at 800ms)
-    this.time.delayedCall(800, () => {
+    // Eye blink 1 (at 400ms, halved from 800ms)
+    this.time.delayedCall(400, () => {
       // Close eyes
       this.tweens.add({
         targets: [blinkTop, blinkBottom],
         scaleY: 1.5,
-        duration: 150,
+        duration: 75,
         yoyo: true,
         ease: "Power2"
       });
     });
 
-    // Eye blink 2 (at 1500ms)
-    this.time.delayedCall(1500, () => {
+    // Eye blink 2 (at 750ms, halved from 1500ms)
+    this.time.delayedCall(750, () => {
       this.tweens.add({
         targets: [blinkTop, blinkBottom],
         scaleY: 1.5,
-        duration: 150,
+        duration: 75,
         yoyo: true,
         ease: "Power2"
       });
     });
 
-    // Gradually reduce blur (3 seconds total)
+    // Gradually reduce blur (1.5 seconds total, halved from 3 seconds)
     this.tweens.add({
       targets: blurOverlay,
       alpha: 0,
-      duration: 3000,
-      delay: 500,
+      duration: 1500,
+      delay: 250,
       ease: "Power2",
       onComplete: () => blurOverlay.destroy()
     });
 
-    // Remove blink overlays
-    this.time.delayedCall(3000, () => {
+    // Remove blink overlays (halved from 3000ms to 1500ms)
+    this.time.delayedCall(1500, () => {
       this.tweens.add({
         targets: [blinkTop, blinkBottom],
         alpha: 0,
-        duration: 500,
+        duration: 250,
         onComplete: () => {
           blinkTop.destroy();
           blinkBottom.destroy();
@@ -296,10 +308,160 @@ export default class CockpitScene extends Phaser.Scene {
       });
     });
 
-    // Update navigation to DEZONIA after waking up (when vision clears)
-    this.time.delayedCall(3000, () => {
-      this.selectedDestination = 4; // DEZONIA (index 4)
-      this.updateNavigationPanel();
+    // Navigation stays OFF in damaged state (selectedDestination remains -1)
+    // It will turn back on in repaired state after puzzle is solved
+
+    // Show wake-up thoughts after vision clears (halved from 3500ms to 1750ms)
+    this.time.delayedCall(1750, () => {
+      this.showWakeUpThoughts();
+    });
+  }
+
+  private showWakeUpThoughts() {
+    this.dialogActive = true;
+    this.dialogIndex = 0;
+    this.dialogLines = [
+      "Waar ben ik? Wat is er gebeurd? Waar is iedereen?",
+      "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen capsules naar de aarde terug gingen.",
+      "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben.",
+      "Wacht... het paneel! Alle draden zijn los!"
+    ];
+
+    const { width, height } = this.scale;
+
+    // Semi-transparent overlay (not interactive initially to prevent immediate clicks)
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    this.dialogOverlay.setDepth(200);
+
+    // Dialog box at bottom
+    const boxHeight = 120;
+    this.dialogBox = this.add.graphics();
+    this.dialogBox.setDepth(201);
+    this.dialogBox.fillStyle(0x1b2748, 0.95);
+    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
+    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+
+    // Text starting position (no speaker name for thoughts)
+    const textStartX = 60;
+
+    // Dialog text (centered vertically in box without speaker name)
+    this.dialogText = this.add.text(textStartX, height - boxHeight / 2 - 10, "", {
+      fontFamily: "sans-serif",
+      fontSize: "18px",
+      color: "#aaaaff",
+      wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
+    }).setDepth(202);
+
+    // Hint
+    this.add.text(width - 50, height - 30, "Klik →", {
+      fontFamily: "sans-serif",
+      fontSize: "12px",
+      color: "#888888",
+    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
+
+    this.showDialogLine();
+
+    // Enable clicking after a short delay to prevent immediate click-through
+    this.time.delayedCall(300, () => {
+      if (this.dialogOverlay) {
+        this.dialogOverlay.setInteractive();
+        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
+      }
+    });
+  }
+
+  private showDialogLine() {
+    if (!this.dialogText) return;
+
+    if (this.dialogIndex < this.dialogLines.length) {
+      this.dialogText.setText(this.dialogLines[this.dialogIndex]);
+    }
+  }
+
+  private advanceDialog() {
+    this.dialogIndex++;
+    if (this.dialogIndex < this.dialogLines.length) {
+      this.showDialogLine();
+    } else {
+      this.closeDialog();
+    }
+  }
+
+  private closeDialog() {
+    this.dialogActive = false;
+    this.dialogOverlay?.destroy();
+    this.dialogBox?.destroy();
+    this.dialogText?.destroy();
+
+    // Remove hint
+    this.children.getAll().forEach((child) => {
+      if (child.name === "thoughtHint") {
+        child.destroy();
+      }
+    });
+
+    // If in repaired state, transition to Face1Scene after dialog closes
+    if (this.currentPhase === "repaired") {
+      this.time.delayedCall(500, () => {
+        this.cameras.main.fadeOut(800, 0, 0, 0);
+      });
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        this.scene.start("Face1Scene");
+      });
+    }
+  }
+
+  private showPostPuzzleThoughts() {
+    this.dialogActive = true;
+    this.dialogIndex = 0;
+    this.dialogLines = [
+      "Yes! De systemen werken weer!",
+      "Maar de energie is volledig op, reizen zal dus niet meer lukken.",
+      "Ik moet uitstappen om verder te onderzoeken waar ik ben."
+    ];
+
+    const { width, height } = this.scale;
+
+    // Semi-transparent overlay (not interactive initially to prevent immediate clicks)
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    this.dialogOverlay.setDepth(200);
+
+    // Dialog box at bottom
+    const boxHeight = 120;
+    this.dialogBox = this.add.graphics();
+    this.dialogBox.setDepth(201);
+    this.dialogBox.fillStyle(0x1b2748, 0.95);
+    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
+    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+
+    // Text starting position (no speaker name for thoughts)
+    const textStartX = 60;
+
+    // Dialog text (centered vertically in box without speaker name)
+    this.dialogText = this.add.text(textStartX, height - boxHeight / 2 - 10, "", {
+      fontFamily: "sans-serif",
+      fontSize: "18px",
+      color: "#aaaaff",
+      wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
+    }).setDepth(202);
+
+    // Hint
+    this.add.text(width - 50, height - 30, "Klik →", {
+      fontFamily: "sans-serif",
+      fontSize: "12px",
+      color: "#888888",
+    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
+
+    this.showDialogLine();
+
+    // Enable clicking after a short delay to prevent immediate click-through
+    this.time.delayedCall(300, () => {
+      if (this.dialogOverlay) {
+        this.dialogOverlay.setInteractive();
+        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
+      }
     });
   }
 
@@ -465,10 +627,15 @@ export default class CockpitScene extends Phaser.Scene {
   private drawNavigationPanel(x: number, y: number, w: number, _h: number) {
     const isOff = this.selectedDestination === -1;
 
-    // Title (dimmed when off)
+    // If navigation is off, draw nothing at all (completely empty panel)
+    if (isOff) {
+      return;
+    }
+
+    // Title
     this.add.text(x + w / 2, y + 10, "⚡ NAVIGATIE ⚡", {
       fontSize: "16px",
-      color: isOff ? "#334444" : "#00ff88",
+      color: "#00ff88",
       fontStyle: "bold",
     }).setOrigin(0.5).setDepth(3).setName("nav-title");
 
@@ -481,22 +648,22 @@ export default class CockpitScene extends Phaser.Scene {
       const isSelected = idx === this.selectedDestination;
 
       // Selection indicator (arrow)
-      if (isSelected && !isOff) {
+      if (isSelected) {
         this.add.text(x + 15, itemY, "▶", {
           fontSize: "14px",
           color: "#ffaa00",
         }).setOrigin(0, 0.5).setDepth(3).setName(`nav-arrow`);
       }
 
-      // Destination text (all dimmed when off)
+      // Destination text
       this.add.text(x + 35, itemY, dest, {
-        fontSize: isSelected && !isOff ? "15px" : "13px",
-        color: isOff ? "#333333" : (isSelected ? "#ffffff" : "#888888"),
-        fontStyle: isSelected && !isOff ? "bold" : "normal",
+        fontSize: isSelected ? "15px" : "13px",
+        color: isSelected ? "#ffffff" : "#888888",
+        fontStyle: isSelected ? "bold" : "normal",
       }).setOrigin(0, 0.5).setDepth(3).setName(`nav-dest-${idx}`);
 
-      // Distance indicator
-      if (isSelected && !isOff) {
+      // Distance indicator (only for selected)
+      if (isSelected) {
         const distance = this.distances[dest];
         const distText = distance === 0 ? "HIER" : distance < 1000 ? `${distance} km` : `${Math.floor(distance / 1000)}k km`;
         this.add.text(x + w - 20, itemY, distText, {

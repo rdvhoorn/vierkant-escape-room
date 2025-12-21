@@ -49,18 +49,18 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Na fade → Wake-up effect:**
 
 -   Fade van zwart naar cockpitscene (damaged state)
--   Eerste 3 seconden: alles wazig + ogen knipperen effect (2x blink)
+-   Eerste 1.5 seconden: alles wazig + ogen knipperen effect (2x blink)
 -   Blur verdwijnt geleidelijk
--   Navigatie springt automatisch naar DEZONIA
+-   Navigatie blijft UIT (leeg scherm)
 
-**Gedachtewolkjes na wake-up (optioneel in deze fase):**
+**Gedachtewolkjes na wake-up (geïmplementeerd):**
 
 > "Waar ben ik? Wat is er gebeurd? Waar is iedereen?"
 > "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen capsules naar de aarde terug gingen."
 > "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben."
 > "Wacht... het paneel! Alle draden zijn los!"
 
-**Implementatie:** Deze teksten kunnen als overlay dialoog, of gewoon overslaan voor betere flow
+**Implementatie:** Dialoog overlay met 4 regels, speler klikt door met "Klik →" hint
 
 ---
 
@@ -74,6 +74,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 -   Veel lampjes uit
 -   ELEKTRA paneel licht op (gloeit/pulseert)
 -   Energie leeg, geen percentage aanduiding (of "---")
+-   Navigatie volledig UIT (leeg scherm, geen NAVIGATIE tekst, geen bestemmingen, geen afstand)
 -   Snelheidsmeter staat stil op 0km/u. Rond 7:00 uur.
 
 **Interactie:**
@@ -117,19 +118,17 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 -   Navigatie werkt weer (DEZONIA geselecteerd)
 -   Snelheidsmeter blijft stil op 0km/u. Rond 7:00 uur.
 
-**Gedachtewolkjes (optioneel):**
+**Gedachtewolkjes (geïmplementeerd):**
 
 > "Yes! De systemen werken weer!"
 > "Maar de energie is volledig op, reizen zal dus niet meer lukken."
 > "Ik moet uitstappen om verder te onderzoeken waar ik ben."
-> "Laat ik voor de zekerheid maar mijn ruimtehelm opzetten en kijken of ik buiten iets aan de capsule zie."
 
 **Interactie:**
 
--   ESC-knop werkt nu → Face1Scene
--   Of automatisch na X seconden / na gedachtewolkjes
-
-**Implementatie:** Gedachtewolkjes kunnen ook overgeslagen worden voor snellere flow. ESC werkt altijd.
+-   3 gedachtewolkjes verschijnen automatisch
+-   Speler klikt door de gedachtewolkjes (3 regels)
+-   Na laatste klik: automatische fade naar Face1Scene
 
 ---
 
@@ -237,12 +236,10 @@ Kom in januari terug voor meer!
 -   Face1Scene: Teaser einde popup met confetti
 -   Registry state management (introDone, electricitySolved, quadratusDialogSeen)
 
-⚠️ **Optionele toevoegingen (niet kritisch):**
+⚠️ **Optionele toevoegingen:**
 
--   [ ] Gedachtewolkjes na wake-up (4 regels) - kan overgeslagen
+-   [x] Gedachtewolkjes na wake-up (4 regels) - GEÏMPLEMENTEERD
 -   [ ] Intro tekst bij puzzle (3 regels) - kan in instructies rechts
 -   [ ] Instructies rechts van puzzle visueel
--   [ ] Gedachtewolkjes na puzzel (4 regels) - kan overgeslagen
+-   [x] Gedachtewolkjes na puzzel (3 regels) - GEÏMPLEMENTEERD
 -   [ ] Gedachtewolkje voor Quadratus (1 regel) - kan overgeslagen
-
-**Beslissing:** Alle optionele gedachtewolkjes **OVERSLAAN** voor snellere, strak
