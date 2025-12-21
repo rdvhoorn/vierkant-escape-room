@@ -231,8 +231,8 @@ export default class CockpitScene extends Phaser.Scene {
       this.cameras.main.fadeOut(1500, 0, 0, 0);
     });
 
-    // Set introDone and restart scene in damaged state
-    this.time.delayedCall(3500, () => {
+    // Set introDone and restart scene in damaged state (right after fadeOut completes)
+    this.time.delayedCall(3300, () => {
       this.registry.set("introDone", true);
       this.scene.restart();
     });
@@ -249,45 +249,16 @@ export default class CockpitScene extends Phaser.Scene {
     const blurOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
     blurOverlay.setDepth(99);
 
-    // Eye blink overlays (top and bottom)
-    const blinkTop = this.add.rectangle(width / 2, 0, width, height / 2, 0x000000, 1).setOrigin(0.5, 0);
-    const blinkBottom = this.add.rectangle(width / 2, height, width, height / 2, 0x000000, 1).setOrigin(0.5, 1);
-    blinkTop.setDepth(101);
-    blinkBottom.setDepth(101);
-
-    // First: fade from black (halved from 1000ms to 500ms)
+    // Fade from black (same duration as fade out: 1500ms)
     this.tweens.add({
       targets: blackOverlay,
       alpha: 0,
-      duration: 500,
+      duration: 1500,
       ease: "Power2",
       onComplete: () => blackOverlay.destroy()
     });
 
-    // Eye blink 1 (at 400ms, halved from 800ms)
-    this.time.delayedCall(400, () => {
-      // Close eyes
-      this.tweens.add({
-        targets: [blinkTop, blinkBottom],
-        scaleY: 1.5,
-        duration: 75,
-        yoyo: true,
-        ease: "Power2"
-      });
-    });
-
-    // Eye blink 2 (at 750ms, halved from 1500ms)
-    this.time.delayedCall(750, () => {
-      this.tweens.add({
-        targets: [blinkTop, blinkBottom],
-        scaleY: 1.5,
-        duration: 75,
-        yoyo: true,
-        ease: "Power2"
-      });
-    });
-
-    // Gradually reduce blur (1.5 seconds total, halved from 3 seconds)
+    // Gradually reduce blur (1500ms total)
     this.tweens.add({
       targets: blurOverlay,
       alpha: 0,
@@ -297,24 +268,11 @@ export default class CockpitScene extends Phaser.Scene {
       onComplete: () => blurOverlay.destroy()
     });
 
-    // Remove blink overlays (halved from 3000ms to 1500ms)
-    this.time.delayedCall(1500, () => {
-      this.tweens.add({
-        targets: [blinkTop, blinkBottom],
-        alpha: 0,
-        duration: 250,
-        onComplete: () => {
-          blinkTop.destroy();
-          blinkBottom.destroy();
-        }
-      });
-    });
-
     // Navigation stays OFF in damaged state (selectedDestination remains -1)
     // It will turn back on in repaired state after puzzle is solved
 
-    // Show wake-up thoughts after vision clears (halved from 3500ms to 1750ms)
-    this.time.delayedCall(1750, () => {
+    // Show wake-up thoughts after vision clears (500ms later)
+    this.time.delayedCall(2250, () => {
       this.showWakeUpThoughts();
     });
   }
@@ -335,28 +293,29 @@ export default class CockpitScene extends Phaser.Scene {
     this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
     this.dialogOverlay.setDepth(200);
 
-    // Dialog box at bottom
+    // Dialog box positioned in front of window area (35% from top, same as post-puzzle)
     const boxHeight = 120;
+    const boxY = height * 0.35;
     this.dialogBox = this.add.graphics();
     this.dialogBox.setDepth(201);
     this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.fillRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
     this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(40, height - boxHeight - 20, width - 80, boxHeight, 12);
+    this.dialogBox.strokeRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
 
     // Text starting position (no speaker name for thoughts)
     const textStartX = 60;
 
     // Dialog text (centered vertically in box without speaker name)
-    this.dialogText = this.add.text(textStartX, height - boxHeight / 2 - 10, "", {
+    this.dialogText = this.add.text(textStartX, boxY, "", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#aaaaff",
       wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
     }).setDepth(202);
 
-    // Hint
-    this.add.text(width - 50, height - 30, "Klik →", {
+    // Hint positioned relative to box
+    this.add.text(width - 50, boxY + boxHeight / 2 - 10, "Klik →", {
       fontFamily: "sans-serif",
       fontSize: "12px",
       color: "#888888",
