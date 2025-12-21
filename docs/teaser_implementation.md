@@ -101,7 +101,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Navigatie:**
 
 -   ESC → terug naar CockpitScene (capsule onderzoeken)
--   Puzzel oplossen → `electricitySolved = true` → terug naar CockpitScene
+-   Puzzel oplossen → "Gelukt..." confetti → `electricitySolved = true` → automatisch terug naar CockpitScene (repaired state)
 
 **Implementatie:** Intro tekst kan als dialog overlay, of in instructie rechts van puzzle
 
@@ -115,20 +115,23 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 
 -   Lampjes gaan weer aan (sommige groen, schild blijft uit)
 -   Energie op 10% (rood)
--   Navigatie werkt weer (DEZONIA geselecteerd)
+-   Navigatie werkt weer (DEZONIA geselecteerd, afstand "HIER")
 -   Snelheidsmeter blijft stil op 0km/u. Rond 7:00 uur.
 
 **Gedachtewolkjes (geïmplementeerd):**
 
 > "Yes! De systemen werken weer!"
 > "Maar de energie is volledig op, reizen zal dus niet meer lukken."
-> "Ik moet uitstappen om verder te onderzoeken waar ik ben."
+> "Volgens mijn navigatie ben ik op Dezonia?"
+> "Ik moet uitstappen om dit te onderzoeken."
 
 **Interactie:**
 
--   3 gedachtewolkjes verschijnen automatisch
--   Speler klikt door de gedachtewolkjes (3 regels)
--   Na laatste klik: automatische fade naar Face1Scene
+-   4 gedachtewolkjes verschijnen automatisch na 800ms
+-   Dialog box gepositioneerd voor het raam (35% van top)
+-   Transparante overlay (25% alpha) voor zichtbaarheid dashboard
+-   Speler klikt door de gedachtewolkjes (4 regels)
+-   Na laatste klik: 500ms pauze → fade → Face1Scene
 
 ---
 
@@ -241,5 +244,5 @@ Kom in januari terug voor meer!
 -   [x] Gedachtewolkjes na wake-up (4 regels) - GEÏMPLEMENTEERD
 -   [ ] Intro tekst bij puzzle (3 regels) - kan in instructies rechts
 -   [ ] Instructies rechts van puzzle visueel
--   [x] Gedachtewolkjes na puzzel (3 regels) - GEÏMPLEMENTEERD
+-   [x] Gedachtewolkjes na puzzel (4 regels) - GEÏMPLEMENTEERD
 -   [ ] Gedachtewolkje voor Quadratus (1 regel) - kan overgeslagen

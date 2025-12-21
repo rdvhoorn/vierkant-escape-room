@@ -154,6 +154,8 @@ export default class CockpitScene extends Phaser.Scene {
         // After puzzle solved - things back on, 10% energy
         this.energyLevel = 10;
         this.selectedDestination = 4; // DEZONIA (index 4)
+        // Set DEZONIA distance to 0 to show "HIER"
+        this.distances["DEZONIA"] = 0;
         this.lampStates = {
           stroom: true,
           waarschuwing: false,
@@ -418,7 +420,8 @@ export default class CockpitScene extends Phaser.Scene {
     this.dialogLines = [
       "Yes! De systemen werken weer!",
       "Maar de energie is volledig op, reizen zal dus niet meer lukken.",
-      "Ik moet uitstappen om verder te onderzoeken waar ik ben."
+      "Volgens mijn navigatie ben ik op Dezonia?",
+      "Ik moet uitstappen om dit te onderzoeken."
     ];
 
     const { width, height } = this.scale;
