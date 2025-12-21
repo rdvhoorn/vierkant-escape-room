@@ -33,7 +33,6 @@ export default class CockpitScene extends Phaser.Scene {
   private currentPhase: "intro1" | "intro2" | "damaged" | "repaired" = "intro1";
 
   // Dialog system
-  private dialogActive: boolean = false;
   private dialogOverlay?: Phaser.GameObjects.Rectangle;
   private dialogBox?: Phaser.GameObjects.Graphics;
   private dialogText?: Phaser.GameObjects.Text;
@@ -278,7 +277,6 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private showWakeUpThoughts() {
-    this.dialogActive = true;
     this.dialogIndex = 0;
     this.dialogLines = [
       "Waar ben ik? Wat is er gebeurd? Waar is iedereen?",
@@ -350,7 +348,6 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private closeDialog() {
-    this.dialogActive = false;
     this.dialogOverlay?.destroy();
     this.dialogBox?.destroy();
     this.dialogText?.destroy();
@@ -374,7 +371,6 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private showPostPuzzleThoughts() {
-    this.dialogActive = true;
     this.dialogIndex = 0;
     this.dialogLines = [
       "Yes! De systemen werken weer!",
