@@ -83,18 +83,13 @@ export default class TitleScene extends Phaser.Scene {
     this.infoPopup = new InfoPopup(this);
     
     // Handle clicks to start game (but not on info button)
-    // Check this on pointerdown before it bubbles
-    let clickedOnInfo = false;
-    
-    infoButton.on("pointerdown", () => {
-      clickedOnInfo = true;
-    });
-    
-    this.input.on("pointerdown", () => {
-      if (!clickedOnInfo) {
-        this.startGame();
+    this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      // Check if the click is within the info button bounds
+      const bounds = infoButton.getBounds();
+      if (Phaser.Geom.Rectangle.Contains(bounds, pointer.x, pointer.y)) {
+        return; // Don't start game if clicking on info button
       }
-      clickedOnInfo = false;
+      this.startGame();
     });
   }
 

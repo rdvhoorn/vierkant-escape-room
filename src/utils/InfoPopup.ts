@@ -9,6 +9,7 @@ export class InfoPopup {
   private container?: Phaser.GameObjects.Container;
   private overlay?: Phaser.GameObjects.Rectangle;
   private isVisible: boolean = false;
+  private wheelHandler?: (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => void;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -116,8 +117,8 @@ export class InfoPopup {
       
       this.container.add(scrollHint);
       
-      // Mouse wheel scrolling
-      this.scene.input.on("wheel", (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
+      // Mouse wheel scrolling - store handler reference for cleanup
+      this.wheelHandler = (pointer: any, gameObjects: any, deltaX: number, deltaY: number) => {
         if (!this.isVisible) return;
         
         currentScroll = Phaser.Math.Clamp(currentScroll + deltaY * 0.3, 0, maxScroll);
@@ -127,7 +128,9 @@ export class InfoPopup {
         if (currentScroll > 10 && scrollHint.alpha > 0) {
           scrollHint.setAlpha(0);
         }
-      });
+      };
+      
+      this.scene.input.on("wheel", this.wheelHandler);
       
       // Touch scrolling support
       let isDragging = false;
@@ -182,8 +185,11 @@ export class InfoPopup {
   hide() {
     if (!this.isVisible) return;
     
-    // Remove wheel listener
-    this.scene.input.off("wheel");
+    // Remove wheel listener using stored reference
+    if (this.wheelHandler) {
+      this.scene.input.off("wheel", this.wheelHandler);
+      this.wheelHandler = undefined;
+    }
     
     this.overlay?.destroy();
     this.container?.destroy();
