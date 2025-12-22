@@ -1,61 +1,70 @@
 import Phaser from "phaser";
 
-export default class LogicTowerScene extends Phaser.Scene {
-  private panel!: Phaser.GameObjects.Image;
-
+export default class LogicTower_1 extends Phaser.Scene {
+  private telescope!: Phaser.GameObjects.Image;
   private dialogActive = false;
   private dialog: string[] = [];
   private dialogIndex = 0;
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
-  private riddleText!: Phaser.GameObjects.Text; //kan eruit later, tekst onscreen is prima
+
+  private riddleText!: Phaser.GameObjects.Text;
   private answerInput?: Phaser.GameObjects.DOMElement;
+
   private dialogKeyHandler?: (ev: KeyboardEvent) => void;
   private pointerHandler?: () => void;
   private cleanupRegistered = false;
+
   private returnSceneKey: string = "Face4Scene"; 
 
-  //scaling
-  private readonly panelScale = 0.2;
+  private readonly objectScale = 0.3; 
   private readonly backgroundScale = 1;
 
   constructor() {
-    super("LogicTower");
+    super("LogicTower_1");
   }
 
-  init(data: { entry_from_face?: boolean; returnScene?: string }) {
+  init(data: { cameFromScene?: string; returnScene?: string }) {
     if (data?.returnScene) {
       this.returnSceneKey = data.returnScene;
     }
   }
-//overbodig lowkey
+
   preload() {
-    this.load.image("brokenpanel", "assets/decor/brokenpanel.png");
+    this.load.image("telescope", "assets/decor/telescope.png");
   }
+
   create() {
     const { width, height } = this.scale;
-    //bg
     const bg = this.add
       .rectangle(0, 0, width, height, 0x0f182b)
       .setOrigin(0, 0);
     bg.setScale(this.backgroundScale);
 
-    //dit verdween, zit wel in facebase
     this.add.text(20, 20, "ESC om terug te gaan", {
       fontFamily: "sans-serif",
       fontSize: "16px",
       color: "#8fd5ff",
     }).setOrigin(0, 0).setAlpha(0.7);
+
     this.input.keyboard?.on("keydown-ESC", () => {
       this.exitPuzzle();
     });
-    this.panel = this.add
-      .image(width / 2, height / 2, "brokenpanel")
-      .setScale(this.panelScale)
+
+    this.telescope = this.add
+      .image(width / 2, height / 2 + 20, "telescope")
+      .setScale(this.objectScale)
       .setInteractive({ useHandCursor: true });
-    this.panel.on("pointerdown", () => {
-      this.startDialog(["Helaas, het paneel is kapot...", "Misschien kan ik het systeem herstarten?"]);
+
+    this.telescope.on("pointerdown", () => {
+      if (this.answerInput) return;
+
+      this.startDialog([
+        "Een oude telescoop...",
+        "Er staat een iets geschreven op de voet."
+      ]);
     });
+
     this.ensureDialogUI();
   }
 
@@ -65,10 +74,11 @@ export default class LogicTowerScene extends Phaser.Scene {
     this.scene.start(this.returnSceneKey, {
       spawnX,
       spawnY,
-      cameFromScene: "LogicTower",
+      cameFromScene: "LogicTower_1",
     });
   }
-  //dialog
+
+
   private ensureDialogUI() {
     if (this.dialogBox) return;
     const w = this.scale.width;
@@ -93,20 +103,18 @@ export default class LogicTowerScene extends Phaser.Scene {
       )
       .setDepth(1001)
       .setVisible(false);
-//inputs
+
     const inputPlugin = this.input;
     if (inputPlugin) {
-      const keyboard = (inputPlugin as any).keyboard as Phaser.Input.Keyboard.KeyboardPlugin | undefined;
-
+      const keyboard = (inputPlugin as any).keyboard as Phaser.Input.Keyboard.KeyboardPlugin;
       if (keyboard) {
         this.dialogKeyHandler = (ev: KeyboardEvent) => {
-          if ((ev.key === "E" || ev.key === "e") && this.dialogActive) {
+          if ((ev.key === "E" || ev.key === "e" || ev.code === "Space") && this.dialogActive) {
             this.advanceDialog();
           }
         };
         keyboard.on("keydown", this.dialogKeyHandler);
       }
-
       this.pointerHandler = () => {
         if (this.dialogActive) this.advanceDialog();
       };
@@ -126,7 +134,7 @@ export default class LogicTowerScene extends Phaser.Scene {
         inputPlugin.off("pointerdown", this.pointerHandler);
         this.pointerHandler = undefined;
       }
-      const keyboard = (inputPlugin as any).keyboard as Phaser.Input.Keyboard.KeyboardPlugin | undefined;
+      const keyboard = (inputPlugin as any).keyboard;
       if (keyboard && this.dialogKeyHandler) {
         keyboard.off("keydown", this.dialogKeyHandler);
         this.dialogKeyHandler = undefined;
@@ -147,6 +155,7 @@ export default class LogicTowerScene extends Phaser.Scene {
   private advanceDialog() {
     if (!this.dialogActive) return;
     this.dialogIndex++;
+
     if (this.dialogIndex >= this.dialog.length) {
       this.endDialog();
       return;
@@ -161,32 +170,27 @@ export default class LogicTowerScene extends Phaser.Scene {
     this.showRiddle();
   }
 
-//DOM input, werkt raar
   private showRiddle() {
     const w = this.scale.width;
-    const panelX = this.panel.x;
-    const panelY = this.panel.y;
-    const panelHeight = this.panel.height * this.panelScale;
-    const riddle = "Ik schijn zonder een lamp te zijn \n en ik brand zonder te verbranden \n Je ziet me alleen als de nacht donker is \n en avonturiers gebruiken mij om hun weg te vinden";
-
+    const textY = this.telescope.y - (this.telescope.displayHeight / 2) - 60;
+    const riddle = "Je vindt mij in Mercurius, Aarde, Mars en Jupiter,\nmaar niet in Venus of Neptunus.\nWat ben ik?";
     this.riddleText = this.add
-      .text(panelX, panelY - panelHeight * 0.7, riddle, {
+      .text(w / 2, textY, riddle, {
         fontSize: "20px",
         fontFamily: "sans-serif",
         color: "#c6e2ff",
         align: "center",
-        wordWrap: { width: 450 },
+        wordWrap: { width: 500 },
       })
       .setOrigin(0.5);
 
-    //dom met de button
-    const inputY = this.scale.height * 0.65;
-    this.answerInput = this.add.dom(panelX, inputY).createFromHTML(`
+    const inputY = this.scale.height * 0.75; 
+    this.answerInput = this.add.dom(w / 2, inputY).createFromHTML(`
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
           <input
             type="text"
             name="answerField"
-            placeholder="Wachtwoord..."
+            placeholder="Antwoord..."
             style="
               width: 220px;
               padding: 10px;
@@ -195,6 +199,7 @@ export default class LogicTowerScene extends Phaser.Scene {
               border: 2px solid #3c5a99;
               outline: none;
               color: #000;
+              text-align: center;
             "
           />
           <button
@@ -210,7 +215,7 @@ export default class LogicTowerScene extends Phaser.Scene {
               font-family: sans-serif;
             "
           >
-            Invoeren
+            Check
           </button>
         </div>
       `);
@@ -236,25 +241,26 @@ export default class LogicTowerScene extends Phaser.Scene {
     const inputElement = this.answerInput.getChildByName("answerField") as HTMLInputElement;
     if (inputElement) {
       const value = inputElement.value.trim().toLowerCase();
-      if (value === "sterren" || value === "ster") {
+      // misschien meer varianten
+      if (value === "r" || value === "de letter r") {
         this.completePuzzle();
       } else {
-        //shake
         inputElement.style.border = "2px solid #ff4444";
         this.tweens.add({
           targets: this.answerInput,
           x: this.answerInput.x + 5,
           duration: 50,
           yoyo: true,
-          repeat: 3,
-          onComplete: () => {
-          }
+          repeat: 3
         });
       }
     }
   }
 
-  private completePuzzle() {
-    this.scene.start("LogicTower_1");
-  }
-}
+    private completePuzzle() {
+        console.log("Puzzle 2 Complete!");
+        this.scene.start("LogicTower_2", { 
+            returnScene: this.returnSceneKey 
+        }); 
+    }
+    }
