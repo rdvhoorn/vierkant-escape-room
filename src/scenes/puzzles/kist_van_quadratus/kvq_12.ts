@@ -7,7 +7,7 @@ export default class KVQ12 extends Phaser.Scene {
   }
 
   create() {
-    createBackButton(this, "Face6Scene");
+    createBackButton(this, "Face8Scene");
 
     const { width, height } = this.scale;
     const centerX = width / 2;

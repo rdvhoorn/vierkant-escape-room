@@ -54,6 +54,11 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("vierkant_logo", "/assets/decor/kvq/vierkant_logo.png");
     this.load.image("vraagtekens", "/assets/decor/kvq/vraagtekens.png");
     this.load.image("driehoek", "/assets/decor/kvq/driehoek.png");
+    this.load.image("1kers", "/assets/decor/fruit/1kers.png");
+    this.load.image("1peer", "/assets/decor/fruit/1peer.png");
+    this.load.image("2kersen", "/assets/decor/fruit/2kersen.png");
+    this.load.image("6druiven", "/assets/decor/fruit/6druiven.png");
+    this.load.image("8druiven", "/assets/decor/fruit/8druiven.png");
 
     // Rocks / tufts / debris (any small PNGs)
     this.load.image("rock", "/assets/decor/rock.png");
