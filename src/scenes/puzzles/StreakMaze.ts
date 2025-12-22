@@ -30,9 +30,22 @@ export default class StreakMaze extends Phaser.Scene {
   private dialogLines: string[] = [];
   private currentLine: number = 0;
   private dialogActive: boolean = false;
+  
+  // Characters
+  private zippuImage?: Phaser.GameObjects.Image;
+  private poffieImage?: Phaser.GameObjects.Image;
+  
+  // --- SCALING CONFIG ---
+  private readonly zippuScale = 0.3; 
+  private readonly poffieScale = 0.3; 
 
   constructor() {
     super("StreakMaze");
+  }
+
+  preload() {
+      this.load.image("zippu", "assets/decor/zippu.png"); 
+      this.load.image("poffie", "assets/decor/poffie.png"); 
   }
 
   create() {
@@ -41,11 +54,7 @@ export default class StreakMaze extends Phaser.Scene {
     if (this.firstTimeEntering) {
       this.firstTimeEntering = false;
       this.addNpcDialog(true, () => {
-        // Skip voor 1ste/2de keer
-        this.dialogText?.destroy();
-        this.dialogHint?.destroy();
-        this.dialogText = undefined;
-        this.dialogHint = undefined;
+        this.cleanupDialog();
         this.enterRoom("stage1");
       });
     } else {
@@ -53,11 +62,27 @@ export default class StreakMaze extends Phaser.Scene {
     }
   }
 
-  // NPC DIALOG // GOOFY e-key handling
+  private cleanupDialog() {
+    this.dialogText?.destroy();
+    this.dialogHint?.destroy();
+    this.zippuImage?.destroy(); 
+    this.poffieImage?.destroy(); // Cleanup Poffie too
+    
+    this.dialogText = undefined;
+    this.dialogHint = undefined;
+    this.zippuImage = undefined;
+    this.poffieImage = undefined;
+  }
+
+  // NPC DIALOG
   private addNpcDialog(forFirstTime: boolean, onComplete: () => void) {
     const { width, height } = this.scale;
-    const npc = this.add.circle(width - 80, height / 2, 30, 0x3366ff).setStrokeStyle(3, 0x112244);
+    
+    // 1. Setup Zippu
+    this.zippuImage = this.add.image(width - 150, height / 2, "zippu");
+    this.zippuImage.setScale(this.zippuScale);
 
+    // 2. Define Lines
     this.dialogLines = forFirstTime
       ? [
           "Zippu: Hoi! Ik ben Zippu, kom jij me helpen om mijn poffel te vinden?",
@@ -72,56 +97,118 @@ export default class StreakMaze extends Phaser.Scene {
         ]
       : [
           "Zippu: Poffie! Poffie, kom dan! Poffie!",
-          "POFFIE KOMT IN BEELD",
+          "POFFIE KOMT IN BEELD", // Trigger for Poffie spawn
           "Zippu: Oh, daar ben je!",
-          "Zippu: Dank je wel, zonder jou had ik Poffie nooit gevonden. Hier heb je 10 energie",
-          "ZE VLIEGEN WEG"
+          "Zippu: Dank je wel, zonder jou had ik Poffie nooit gevonden. Hier heb je 10 energie.",
+          "ZE VLIEGEN WEG" // Trigger for fly animation
         ];
 
     this.currentLine = 0;
     this.dialogActive = true;
 
+    // 3. UI Text
     if (!this.dialogText)
       this.dialogText = this.add.text(width / 2, height - 100, "", {
         fontSize: "24px",
         color: "#ffffff",
         wordWrap: { width: width - 100, useAdvancedWrap: true },
         align: "center"
-      }).setOrigin(0.5);
+      }).setDepth(100).setOrigin(0.5);
 
     if (!this.dialogHint)
       this.dialogHint = this.add.text(width / 2, height - 50, "Druk op E om verder te gaan", {
         fontSize: "18px",
         color: "#ffff00",
-      }).setOrigin(0.5);
+      }).setDepth(100).setOrigin(0.5);
 
+    // 4. Input Handler
     const keyE = this.input!.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
     const advanceHandler = () => {
       if (!this.dialogActive) return;
+      
       this.showNextDialogLine(onComplete, () => {
-        npc.destroy();
-        this.dialogText?.destroy();
-        this.dialogHint?.destroy();
-        this.dialogText = undefined;
-        this.dialogHint = undefined;
-        //Variable for in Face3Scene when it is end of the maze dialog
+        // This callback runs when dialogue is totally finished
+        this.cleanupDialog();
         if (!forFirstTime) this.registry.set("streak_maze_solved", true);
       });
     };
 
     keyE.on("down", advanceHandler);
+    
+    // Show first line immediately
+    this.showNextDialogLine(onComplete, () => {});
   }
 
+  // Handles displaying lines AND special actions (Spawn / Fly)
   private showNextDialogLine(onComplete: () => void, cleanup?: () => void) {
+    // If we ran out of lines, finish.
     if (this.currentLine >= this.dialogLines.length) {
       cleanup?.();
       this.dialogActive = false;
       onComplete();
       return;
     }
-    this.dialogText?.setText(this.dialogLines[this.currentLine]);
+
+    const line = this.dialogLines[this.currentLine];
+
+    // --- ACTION: SPAWN POFFIE ---
+    if (line === "POFFIE KOMT IN BEELD") {
+        this.spawnPoffie();
+        this.currentLine++; // Skip this line so we don't display the placeholder text
+        this.showNextDialogLine(onComplete, cleanup); // Immediately show next line
+        return;
+    }
+
+    // --- ACTION: FLY AWAY ---
+    if (line === "ZE VLIEGEN WEG") {
+        // Start animation, then finish dialog when animation is done
+        this.performFlyAway(() => {
+            cleanup?.();
+            this.dialogActive = false;
+            onComplete();
+        });
+        return;
+    }
+
+    // Normal Text Line
+    this.dialogText?.setText(line);
     this.currentLine++;
+  }
+
+  private spawnPoffie() {
+      const { width, height } = this.scale;
+      
+      // Create Poffie off-screen to the right
+      this.poffieImage = this.add.image(width + 100, height / 2 + 50, "poffie");
+      this.poffieImage.setScale(this.poffieScale);
+
+      // Tween her in next to Zippu
+      this.tweens.add({
+          targets: this.poffieImage,
+          x: width - 250, // To the left of Zippu
+          y: height / 2 + 20,
+          duration: 600,
+          ease: 'Back.out'
+      });
+  }
+
+  private performFlyAway(onAnimComplete: () => void) {
+      // Hide UI during animation
+      this.dialogText?.setVisible(false);
+      this.dialogHint?.setVisible(false);
+
+      const targets = [this.zippuImage];
+      if (this.poffieImage) targets.push(this.poffieImage);
+
+      this.tweens.add({
+          targets: targets,
+          y: -150,           // Fly off top
+          x: '+=100',        // Slightly to the right
+          duration: 1500,
+          ease: 'Quad.in',
+          onComplete: onAnimComplete
+      });
   }
 
   // puzzle data
@@ -202,12 +289,11 @@ export default class StreakMaze extends Phaser.Scene {
       this.clueText.setText("Je hebt het doolhof opgelost!");
       //Forceer eind-dialoog
       this.addNpcDialog(false, () => {
-        // Spawn near door in Face3Scene (door is at center + 80 down)
         const { width, height } = this.scale;
         this.scene.start("Face3Scene", {
           entry_from_puzzle: true,
           spawnX: width / 2,
-          spawnY: height / 2 + 80 - 30  // Just above the door
+          spawnY: height / 2 + 80 - 30 
         });
       });
       return;

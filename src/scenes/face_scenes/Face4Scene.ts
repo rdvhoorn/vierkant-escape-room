@@ -2,7 +2,7 @@ import FaceBase from "./_FaceBase";
 import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
 
 export default class Face4Scene extends FaceBase {
-  private readonly birdSize = 96;
+  private readonly birdSize = 20;
   constructor() {
     super("Face4Scene");
   }
@@ -33,7 +33,7 @@ export default class Face4Scene extends FaceBase {
     const centerY = this.scale.height / 2;
     const tower = this.add.image(centerX, centerY + 40, "tower");
     tower.setOrigin(0.5, 1);
-    const scaleFactor = 0.04;
+    const scaleFactor = 0.15;
     tower.setScale(scaleFactor);
     actors.add(tower);
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
