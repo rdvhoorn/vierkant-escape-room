@@ -41,7 +41,7 @@ export default class Face7Scene extends FaceBase {
       hitRadius: 50,
       paddingX: 10,
       paddingY: 10,
-      hintText: "E: Bekijk het slot op de kist",
+      hintText: "Bekijk het slot op de kist",
       onUse: () => {
         this.scene.start("kvq_antwoorden_invullen");
       }
