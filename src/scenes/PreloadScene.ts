@@ -47,6 +47,14 @@ export default class PreloadScene extends Phaser.Scene {
     // Small spark/smoke particle (8x8-ish white dot or smoke puff)
     // this.load.image("spark", "/assets/particles/spark.png");
 
+    // KVQ
+    this.load.image("twelve", "/assets/decor/kvq/12.png");
+    this.load.image("ei", "/assets/decor/kvq/ei.png");
+    this.load.image("fruitmand", "/assets/decor/kvq/fruitmand.png");
+    this.load.image("vierkant_logo", "/assets/decor/kvq/vierkant_logo.png");
+    this.load.image("vraagtekens", "/assets/decor/kvq/vraagtekens.png");
+    this.load.image("driehoek", "/assets/decor/kvq/driehoek.png");
+
     // Rocks / tufts / debris (any small PNGs)
     this.load.image("rock", "/assets/decor/rock.png");
     this.load.image("tuft1", "/assets/decor/purple_tuft.png");
