@@ -59,6 +59,7 @@ type StandardFaceConfig = {
   edgeTriggerScale?: number;
   backgroundColor?: string;
   showLabel?: boolean;
+  disableEscape?: boolean; // Disable ESC key to title screen
 };
 
 export default abstract class FaceBase extends Phaser.Scene {
@@ -67,6 +68,7 @@ export default abstract class FaceBase extends Phaser.Scene {
 
   protected playerController!: PlayerController;
   protected hud!: Hud;
+  protected escapeHandler?: (() => void) | null;
 
   // Gameplay geometry
   protected poly!: Phaser.Geom.Polygon;
@@ -213,7 +215,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.hud = new Hud(this, this.playerController, {
       getPlayer: () => this.player,
       isDesktop,
-      onEscape: () => this.scene.start("TitleScene"),
+      onEscape: this.escapeHandler ? () => this.escapeHandler!() : undefined,
       // Energy hooks for HUD (optional in subclasses)
       getEnergy: () => this.getEnergy(),
       maxEnergy: this.maxEnergy,
@@ -883,6 +885,9 @@ export default abstract class FaceBase extends Phaser.Scene {
    */
   protected initStandardFace(config: StandardFaceConfig) {
     const { width, height } = this.scale;
+
+    // Set escape handler (null disables ESC key)
+    this.escapeHandler = config.disableEscape ? null : () => this.scene.start("TitleScene");
 
     const bgColor = config.backgroundColor ?? "#0b1020";
     this.cameras.main.setBackgroundColor(bgColor);

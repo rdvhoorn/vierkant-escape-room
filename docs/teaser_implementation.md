@@ -75,7 +75,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 -   ELEKTRA paneel licht op (gloeit/pulseert)
 -   Energie leeg, geen percentage aanduiding (of "---")
 -   Navigatie volledig UIT (leeg scherm, geen NAVIGATIE tekst, geen bestemmingen, geen afstand)
--   Snelheidsmeter staat stil op 0km/u. Rond 7:00 uur.
+-   Snelheidsmeter staat stil op 0km/u op 7:00 uur positie (links beneden).
 
 **Interactie:**
 
@@ -116,7 +116,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 -   Lampjes gaan weer aan (sommige groen, schild blijft uit)
 -   Energie op 10% (rood)
 -   Navigatie werkt weer (DEZONIA geselecteerd, afstand "HIER")
--   Snelheidsmeter blijft stil op 0km/u. Rond 7:00 uur.
+-   Snelheidsmeter blijft stil op 0km/u op 7:00 uur positie (links beneden).
 
 **Gedachtewolkjes (geïmplementeerd):**
 

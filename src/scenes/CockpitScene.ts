@@ -87,10 +87,12 @@ export default class CockpitScene extends Phaser.Scene {
       this.playWakeUpEffect();
     } else if (this.currentPhase === "repaired") {
       this.cameras.main.fadeIn(500);
-      // Show post-puzzle thoughts after fade
-      this.time.delayedCall(800, () => {
-        this.showPostPuzzleThoughts();
-      });
+      // Show post-puzzle thoughts after fade (only once)
+      if (!this.registry.get("postPuzzleThoughtsShown")) {
+        this.time.delayedCall(800, () => {
+          this.showPostPuzzleThoughts();
+        });
+      }
     }
 
     // Navigation controls (only when not in intro)
@@ -371,6 +373,9 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private showPostPuzzleThoughts() {
+    // Mark as shown so it doesn't repeat
+    this.registry.set("postPuzzleThoughtsShown", true);
+
     this.dialogIndex = 0;
     this.dialogLines = [
       "Yes! De systemen werken weer!",
@@ -720,10 +725,10 @@ export default class CockpitScene extends Phaser.Scene {
 
     // Animate needle based on phase
     // 2:00 position = 60 degrees from top (12:00) = 150 degrees in our system
+    // 7:00 position = 210 degrees from top (12:00)
     const baseAngle = this.currentPhase === "intro1" ? 150 :
-                      this.currentPhase === "damaged" ? 30 : 90;
-    const wobbleAmount = this.currentPhase === "intro1" ? 3 :
-                         this.currentPhase === "damaged" ? 0 : 15;
+                      (this.currentPhase === "damaged" || this.currentPhase === "repaired") ? 210 : 90;
+    const wobbleAmount = this.currentPhase === "intro1" ? 3 : 0;
 
     this.updateNeedle(cx, cy, radius, baseAngle);
 

@@ -69,6 +69,7 @@ export default class Face1Scene extends FaceBase {
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
       showLabel: visuals.showLabel, // false for Face1 in config
+      disableEscape: true, // Disable ESC to title screen in teaser
     });
 
     // Grab the created layers from FaceBase and map them to our local layer object
@@ -150,7 +151,12 @@ export default class Face1Scene extends FaceBase {
       () => this.inShipRange || this.inPuzzleRange,
       () => {
         if (this.inShipRange) {
-          this.scene.start("ShipFuelScene");
+          // If puzzle already solved, go to cockpit instead of puzzle
+          if (this.registry.get("electricitySolved")) {
+            this.scene.start("CockpitScene");
+          } else {
+            this.scene.start("ShipFuelScene");
+          }
         } else if (this.inPuzzleRange) {
           // In teaser: start Quadratus dialog or show popup
           if (this.registry.get("electricitySolved")) {
