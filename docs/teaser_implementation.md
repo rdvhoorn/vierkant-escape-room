@@ -56,7 +56,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Gedachtewolkjes na wake-up (geïmplementeerd):**
 
 > "Waar ben ik? Wat is er gebeurd? Waar is iedereen?"
-> "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen capsules naar de aarde terug gingen."
+> "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde terug gingen."
 > "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben."
 > "Wacht... het paneel! Alle draden zijn los!"
 
@@ -64,7 +64,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 
 ---
 
-## 5. CockpitScene - Capsule onderzoeken
+## 5. CockpitScene - Raket onderzoeken
 
 **Conditie:** `electricitySolved = false`, `introDone = true`
 
@@ -100,7 +100,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 
 **Navigatie:**
 
--   ESC → terug naar CockpitScene (capsule onderzoeken)
+-   ESC → terug naar CockpitScene (raket onderzoeken)
 -   Puzzel oplossen → "Gelukt..." confetti → `electricitySolved = true` → automatisch terug naar CockpitScene (repaired state)
 
 **Implementatie:** Intro tekst kan als dialog overlay, of in instructie rechts van puzzle
@@ -121,7 +121,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Gedachtewolkjes (geïmplementeerd):**
 
 > "Yes! De systemen werken weer!"
-> "Maar de energie is volledig op, reizen zal dus niet meer lukken."
+> "Maar de energie is bijna op, reizen zal dus niet meer lukken."
 > "Volgens mijn navigatie ben ik op Dezonia?"
 > "Ik moet uitstappen om dit te onderzoeken."
 
@@ -135,11 +135,11 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 
 ---
 
-## 8. Face1Scene - Buiten bij capsule
+## 8. Face1Scene - Buiten bij raket
 
 **Wat de speler ziet:**
 
--   Rondlopen op planeet bij gecrashte capsule
+-   Rondlopen op planeet bij gecrashte raket
 
 **Quadratus trigger:**
 
@@ -164,8 +164,8 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 Q: "Hoi vreemdeling, ik ben Quadratus de Espirantus. Welkom op de planeet Dezonia!"
 Ik (gedachte): "Quadratus lijkt vriendelijk en ik kan wel wat hulp gebruiken."
 Ik: "Hoi Quadratus, ik ben ... en ik ben een beetje verdwaald geloof ik."
-Ik: "Ik was op weg naar de Aarde met mijn capsule, maar nu ben ik ineens hier."
-Ik: "Mijn capsule doet het nog, maar de energietank is helemaal leeg. Hoe kom ik nu naar huis?"
+Ik: "Ik was op weg naar de Aarde met mijn raket, maar nu ben ik ineens hier."
+Ik: "Mijn raket doet het nog, maar de energietank is helemaal leeg. Hoe kom ik nu naar huis?"
 Q: "Ach vreemdeling toch, wat een pech. Gelukkig is er hier op Dezonia ook energie te vinden..."
 Ik: "Nou, dat biedt hoop, dank je wel Quadratus!"
 Q: "Veel succes, vreemdeling!"

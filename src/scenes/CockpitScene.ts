@@ -282,7 +282,7 @@ export default class CockpitScene extends Phaser.Scene {
     this.dialogIndex = 0;
     this.dialogLines = [
       "Waar ben ik? Wat is er gebeurd? Waar is iedereen?",
-      "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen capsules naar de aarde terug gingen.",
+      "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde terug gingen.",
       "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben.",
       "Wacht... het paneel! Alle draden zijn los!"
     ];
@@ -381,7 +381,7 @@ export default class CockpitScene extends Phaser.Scene {
     this.dialogIndex = 0;
     this.dialogLines = [
       "Yes! De systemen werken weer!",
-      "Maar de energie is volledig op, reizen zal dus niet meer lukken.",
+      "Maar de energie is bijna op, reizen zal dus niet meer lukken.",
       "Volgens mijn navigatie ben ik op Dezonia?",
       "Ik moet uitstappen om dit te onderzoeken."
     ];
