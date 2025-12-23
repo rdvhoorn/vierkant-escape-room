@@ -202,10 +202,10 @@ export default class Face1Scene extends FaceBase {
     this.quadratusOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
     this.quadratusOverlay.setDepth(200);
 
-    // Dialog box at bottom (full width with margins)
+    // Dialog box at bottom (30% smaller, centered)
     const boxHeight = 120;
-    const boxX = 40;
-    const boxWidth = width - 80;
+    const boxWidth = 640;
+    const boxX = width / 2 - boxWidth / 2;
 
     this.quadratusBox = this.add.graphics();
     this.quadratusBox.setDepth(201);
@@ -234,9 +234,9 @@ export default class Face1Scene extends FaceBase {
       fontStyle: "bold",
     }).setDepth(202);
 
-    // Dialog text (remaining width, very small right margin)
+    // Dialog text (positioned higher in box)
     const textWidth = boxWidth - (portraitMargin + portraitSize + gapAfterPortrait + 10); // 10px right margin
-    this.quadratusText = this.add.text(textStartX, height - boxHeight + 15, "", {
+    this.quadratusText = this.add.text(textStartX, height - boxHeight + 5, "", {
       fontFamily: "sans-serif",
       fontSize: "17px",
       color: "#e7f3ff",

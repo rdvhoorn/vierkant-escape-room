@@ -290,28 +290,30 @@ export default class CockpitScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Semi-transparent overlay (not interactive initially to prevent immediate clicks)
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
     this.dialogOverlay.setDepth(200);
 
-    // Dialog box positioned in front of window area (35% from top, same as post-puzzle)
+    // Dialog box positioned in front of window area (35% from top, 30% smaller)
     const boxHeight = 120;
+    const boxWidth = 640;
     const boxY = height * 0.35;
+    const boxX = width / 2 - boxWidth / 2;
     this.dialogBox = this.add.graphics();
     this.dialogBox.setDepth(201);
     this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
+    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
     this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
+    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
 
     // Text starting position (no speaker name for thoughts)
-    const textStartX = 60;
+    const textStartX = boxX + 20;
 
-    // Dialog text (centered vertically in box without speaker name)
-    this.dialogText = this.add.text(textStartX, boxY, "", {
+    // Dialog text (positioned higher in box)
+    this.dialogText = this.add.text(textStartX, boxY - 30, "", {
       fontFamily: "sans-serif",
       fontSize: "18px",
-      color: "#aaaaff",
-      wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
+      color: "#e7f3ff",
+      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
     }).setDepth(202);
 
     // Hint positioned relative to box
@@ -387,28 +389,30 @@ export default class CockpitScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // More transparent overlay to see dashboard better
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.25);
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
     this.dialogOverlay.setDepth(200);
 
-    // Dialog box positioned higher, in front of the window area
+    // Dialog box positioned higher, in front of the window area (30% smaller)
     const boxHeight = 120;
+    const boxWidth = 640;
     const boxY = height * 0.35; // Position at 35% from top (in window area)
+    const boxX = width / 2 - boxWidth / 2;
     this.dialogBox = this.add.graphics();
     this.dialogBox.setDepth(201);
     this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
+    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
     this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(40, boxY - boxHeight / 2, width - 80, boxHeight, 12);
+    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
 
     // Text starting position (no speaker name for thoughts)
-    const textStartX = 60;
+    const textStartX = boxX + 20;
 
-    // Dialog text (centered vertically in box without speaker name)
-    this.dialogText = this.add.text(textStartX, boxY, "", {
+    // Dialog text (positioned higher in box)
+    this.dialogText = this.add.text(textStartX, boxY - 30, "", {
       fontFamily: "sans-serif",
       fontSize: "18px",
-      color: "#aaaaff",
-      wordWrap: { width: width - textStartX - 80, useAdvancedWrap: true },
+      color: "#e7f3ff",
+      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
     }).setDepth(202);
 
     // Hint positioned relative to new box position
