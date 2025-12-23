@@ -689,7 +689,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     radius: number,
     color: number,
     alpha: number
-  ) {
+  ): Phaser.GameObjects.Graphics {
     const g = this.add.graphics();
     const b = 1; // blur-ish by layering circles
     for (let i = 0; i < 4; i++) {
@@ -709,6 +709,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       g.setPosition(obj.x, obj.y + (obj.displayHeight ?? 0) * 0.35);
       g.setDepth((obj.depth ?? 0) - 1);
     });
+    return g;
   }
 
   /** Create standard bg/ground/deco/actors/fx/ui layer containers. */

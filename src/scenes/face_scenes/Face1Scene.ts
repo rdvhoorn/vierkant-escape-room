@@ -27,6 +27,10 @@ export default class Face1Scene extends FaceBase {
   private inShipRange = false;
   private inPuzzleRange = false;
 
+  // Quadratus character
+  private quadratusSprite?: Phaser.GameObjects.Image;
+  private quadratusShadow?: Phaser.GameObjects.Graphics;
+
   // Quadratus dialog
   private quadratusDialogActive = false;
   private quadratusLines: { speaker: string; text: string; thought?: boolean }[] = [
@@ -180,14 +184,43 @@ export default class Face1Scene extends FaceBase {
     // Decorations etc.
     this.decorateCrashSite(radius);
 
-    // Start Quadratus dialog after a delay (if electricity is solved and dialog not seen yet)
+    // Start intro sequence (if electricity is solved and dialog not seen yet)
     if (this.registry.get("electricitySolved") && !this.registry.get("quadratusDialogSeen")) {
-      this.time.delayedCall(2000, () => this.startQuadratusDialog());
+      this.startIntroSequence();
     }
 
     // Dialog input handlers
     this.input.on("pointerdown", () => this.advanceQuadratusDialog());
     this.input.keyboard?.on("keydown-SPACE", () => this.advanceQuadratusDialog());
+  }
+
+  private startIntroSequence() {
+    // Sequence: spawn Quadratus → dialog → Quadratus leaves
+    const center = this.getPolygonCenter(this.poly);
+
+    // Spawn Quadratus to the right of player (after short delay)
+    this.time.delayedCall(1000, () => {
+      const quadratusX = center.x + 60; // Right of center
+      const quadratusY = center.y - 8; // Slightly higher than astronaut
+
+      this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
+        .setOrigin(0.5, 0.6)
+        .setDisplaySize(58, 58) // 20% larger (48 * 1.2 ≈ 58)
+        .setDepth(55)
+        .setFlipX(true); // Mirror sprite to face left
+
+      // Enable anti-aliasing for smooth rendering
+      const texture = this.textures.get("quadratus");
+      texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+
+      this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 26, 0x000000, 0.28);
+      this.layer.actors?.add(this.quadratusSprite);
+
+      // Start dialog after Quadratus appears
+      this.time.delayedCall(500, () => {
+        this.startQuadratusDialog();
+      });
+    });
   }
 
   private startQuadratusDialog() {
@@ -197,8 +230,8 @@ export default class Face1Scene extends FaceBase {
 
     const { width, height } = this.scale;
 
-    // Semi-transparent overlay (fixed to screen, not world)
-    this.quadratusOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
+    // No dark overlay - keep Quadratus visible
+    this.quadratusOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0);
     this.quadratusOverlay.setDepth(200);
     this.quadratusOverlay.setScrollFactor(0);
 
@@ -282,6 +315,10 @@ export default class Face1Scene extends FaceBase {
     this.quadratusText?.destroy();
     this.quadratusSpeaker?.destroy();
     this.children.getByName("quadratusHint")?.destroy();
+
+    // Quadratus leaves (destroy sprite and shadow)
+    this.quadratusSprite?.destroy();
+    this.quadratusShadow?.destroy();
 
     // Show teaser complete popup after dialog
     this.time.delayedCall(500, () => this.showTeaserCompletePopup());

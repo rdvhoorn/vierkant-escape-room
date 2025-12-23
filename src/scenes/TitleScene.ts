@@ -63,8 +63,15 @@ export default class TitleScene extends Phaser.Scene {
 
   private startGame() {
     this.pulseTween?.stop();
+
+    // DEBUG: Set registry for testing Face1Scene with Quadratus dialog
+    this.registry.set("introDone", true);
+    this.registry.set("electricitySolved", true);
+    this.registry.set("postPuzzleThoughtsShown", true);
+    this.registry.set("quadratusDialogSeen", false);
+
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("CockpitScene");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 }

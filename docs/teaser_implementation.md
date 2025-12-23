@@ -137,20 +137,39 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 
 ## 8. Face1Scene - Buiten bij raket
 
-**Wat de speler ziet:**
+**Sequence (automatisch, geen speler input):**
 
--   Rondlopen op planeet bij gecrashte raket
+1. **Astronaut is zichtbaar**
+   - Player al spawned door FaceBase
+   - Normaal camera view (geen zoom)
 
-**Quadratus trigger:**
+2. **Quadratus verschijnt**
+   - Spawnt rechts van astronaut na 1 seconde
+   - Sprite gespiegeld (kijkt naar links)
+   - Optioneel later: inschuif-effect van rechts
 
--   Na 2 seconden automatisch → Quadratus dialog start
--   Of: bij interactie met puzzleZone (E-toets)
+3. **Dialoog textbox verschijnt**
+   - Textbox onderaan scherm
+   - Speler klikt door dialoog (10 regels)
 
-**Gedachtewolkje voor Quadratus (optioneel):**
+4. **Quadratus verdwijnt**
+   - Na laatste dialoog regel
+   - Optioneel later: uitschuif-effect naar rechts
 
-> "He, wat zie ik daar? Het lijkt wel of iemand deze kant op komt lopen."
+5. **Teaser complete popup**
+   - 500ms na dialoog
+   - Speler kan daarna vrij rondlopen
 
-**Implementatie:** Dit kan ook overgeslagen, Quadratus dialog start gewoon direct
+**Implementatie details:**
+
+-   Geen camera zoom (normaal overzicht)
+-   Quadratus sprite: `setFlipX(true)` (gespiegeld)
+-   Alle UI: `setScrollFactor(0)` voor correcte positionering
+-   Geen speler controle tijdens sequence
+
+**Optioneel (later):**
+-   Camera zoom in/uit sequence
+-   Inschuif/uitschuif effecten voor Quadratus
 
 ---
 
