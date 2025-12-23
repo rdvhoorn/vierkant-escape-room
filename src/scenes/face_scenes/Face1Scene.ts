@@ -205,7 +205,7 @@ export default class Face1Scene extends FaceBase {
 
       this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
         .setOrigin(0.5, 0.6)
-        .setDisplaySize(58, 58) // 20% larger (48 * 1.2 ≈ 58)
+        .setDisplaySize(70, 70) // 40% larger than original (58 * 1.2 ≈ 70)
         .setDepth(55)
         .setFlipX(true); // Mirror sprite to face left
 
@@ -213,7 +213,7 @@ export default class Face1Scene extends FaceBase {
       const texture = this.textures.get("quadratus");
       texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-      this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 26, 0x000000, 0.28);
+      this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 13, 0x000000, 0.28); // 50% smaller shadow (26 / 2)
       this.layer.actors?.add(this.quadratusSprite);
 
       // Start dialog after Quadratus appears
