@@ -46,7 +46,6 @@ export default class Face1Scene extends FaceBase {
   private quadratusText?: Phaser.GameObjects.Text;
   private quadratusSpeaker?: Phaser.GameObjects.Text;
   private quadratusOverlay?: Phaser.GameObjects.Rectangle;
-  private quadratusPortrait?: Phaser.GameObjects.Image;
 
   create() {
     console.log("[ENTER]", this.scene.key);
@@ -198,63 +197,56 @@ export default class Face1Scene extends FaceBase {
 
     const { width, height } = this.scale;
 
-    // Semi-transparent overlay
+    // Semi-transparent overlay (fixed to screen, not world)
     this.quadratusOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.5);
     this.quadratusOverlay.setDepth(200);
+    this.quadratusOverlay.setScrollFactor(0);
 
-    // Dialog box at bottom (30% smaller, centered)
+    // Dialog box at bottom (same dimensions as CockpitScene, fixed to screen)
     const boxHeight = 120;
     const boxWidth = 640;
     const boxX = width / 2 - boxWidth / 2;
+    const boxY = height - boxHeight - 20;
 
     this.quadratusBox = this.add.graphics();
     this.quadratusBox.setDepth(201);
+    this.quadratusBox.setScrollFactor(0);
     this.quadratusBox.fillStyle(0x1b2748, 0.95);
-    this.quadratusBox.fillRoundedRect(boxX, height - boxHeight - 20, boxWidth, boxHeight, 12);
+    this.quadratusBox.fillRoundedRect(boxX, boxY, boxWidth, boxHeight, 12);
     this.quadratusBox.lineStyle(2, 0x3c5a99, 1);
-    this.quadratusBox.strokeRoundedRect(boxX, height - boxHeight - 20, boxWidth, boxHeight, 12);
+    this.quadratusBox.strokeRoundedRect(boxX, boxY, boxWidth, boxHeight, 12);
 
-    // Portrait (100x100, inside left side of dialog box, shifted right)
-    const portraitSize = 100;
-    const portraitMargin = 30; // larger margin to shift portrait right
-    // Portrait center X should be: boxX + margin + (portraitSize / 2)
-    const portraitX = boxX + portraitMargin + (portraitSize / 2);
-    const portraitY = height - boxHeight / 2 - 20;
-    this.quadratusPortrait = this.add.image(portraitX, portraitY, "quadratus")
-      .setDisplaySize(portraitSize, portraitSize)
-      .setDepth(202);
+    // Text layout (same as CockpitScene, fixed to screen)
+    const textStartX = boxX + 20;
 
-    // Text starts after portrait with larger gap to shift right
-    const gapAfterPortrait = 50; // Larger gap to push text further right
-    const textStartX = boxX + portraitMargin + portraitSize + gapAfterPortrait;
-    this.quadratusSpeaker = this.add.text(textStartX, height - boxHeight - 5, "", {
+    // Speaker name at top of box
+    this.quadratusSpeaker = this.add.text(textStartX, boxY + 15, "", {
       fontFamily: "sans-serif",
       fontSize: "14px",
       color: "#ffaa00",
       fontStyle: "bold",
-    }).setDepth(202);
+    }).setDepth(202).setScrollFactor(0);
 
-    // Dialog text (positioned higher in box)
-    const textWidth = boxWidth - (portraitMargin + portraitSize + gapAfterPortrait + 10); // 10px right margin
-    this.quadratusText = this.add.text(textStartX, height - boxHeight + 5, "", {
+    // Dialog text below speaker
+    this.quadratusText = this.add.text(textStartX, boxY + 35, "", {
       fontFamily: "sans-serif",
-      fontSize: "17px",
+      fontSize: "18px",
       color: "#e7f3ff",
-      wordWrap: { width: textWidth, useAdvancedWrap: true },
-    }).setDepth(202);
+      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
+    }).setDepth(202).setScrollFactor(0);
 
     // Hint
     this.add.text(width - 50, height - 30, "Klik →", {
       fontFamily: "sans-serif",
       fontSize: "12px",
       color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("quadratusHint");
+    }).setOrigin(1, 1).setDepth(202).setScrollFactor(0).setName("quadratusHint");
 
     this.showDialogLine();
   }
 
   private showDialogLine() {
-    if (!this.quadratusText || !this.quadratusSpeaker || !this.quadratusPortrait) return;
+    if (!this.quadratusText || !this.quadratusSpeaker) return;
 
     const line = this.quadratusLines[this.quadratusIndex];
     const speakerName = line.speaker === "Q" ? "Quadratus" : "Jij";
@@ -263,14 +255,6 @@ export default class Face1Scene extends FaceBase {
 
     this.quadratusSpeaker.setText(speakerName).setColor(speakerColor);
     this.quadratusText.setText(line.text).setColor(textColor);
-
-    // Switch portrait based on speaker
-    if (line.speaker === "Q") {
-      this.quadratusPortrait.setTexture("quadratus");
-    } else {
-      this.quadratusPortrait.setTexture("player_normal_1");
-    }
-    this.quadratusPortrait.setVisible(true);
 
     // Fade in effect
     this.quadratusText.setAlpha(0);
@@ -297,7 +281,6 @@ export default class Face1Scene extends FaceBase {
     this.quadratusBox?.destroy();
     this.quadratusText?.destroy();
     this.quadratusSpeaker?.destroy();
-    this.quadratusPortrait?.destroy();
     this.children.getByName("quadratusHint")?.destroy();
 
     // Show teaser complete popup after dialog

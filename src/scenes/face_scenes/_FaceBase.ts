@@ -736,9 +736,11 @@ export default abstract class FaceBase extends Phaser.Scene {
     if (!this.faceLayers) return;
 
     this.twinklingStars = new TwinklingStars(this, 220, width, height);
+    this.twinklingStars.graphics.setScrollFactor(0);
     this.faceLayers.bg.add(this.twinklingStars.graphics);
 
     const stars = this.add.graphics();
+    stars.setScrollFactor(0);
     for (let i = 0; i < 200; i++) {
       stars.fillStyle(0xffffff, Phaser.Math.FloatBetween(0.15, 0.8));
       stars.fillRect(
