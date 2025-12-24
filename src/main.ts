@@ -49,7 +49,7 @@ const config: Phaser.Types.Core.GameConfig = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent: "game",
-    resolution: window.devicePixelRatio, // High-DPI support for sharper rendering
+    // resolution: window.devicePixelRatio, // TypeScript doesn't recognize this property
   },
   physics: {
   default: "arcade",
