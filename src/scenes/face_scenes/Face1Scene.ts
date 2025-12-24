@@ -92,32 +92,6 @@ export default class Face1Scene extends FaceBase {
     this.shipHighlight.setAlpha(0.8);
     this.layer.fx?.add(this.shipHighlight);
 
-    // ---- Puzzle zone near ship
-    const puzzlePos = new Phaser.Math.Vector2(shipPos.x + 100, shipPos.y - 80);
-
-    this.puzzleZone = this.add.zone(puzzlePos.x, puzzlePos.y, 80, 80).setOrigin(0.5);
-    this.physics.add.existing(this.puzzleZone, true);
-
-    this.puzzleHighlight = this.add.graphics().setDepth(51).setVisible(false);
-    this.puzzleHighlight.lineStyle(2, 0xffff00, 0.6);
-    this.puzzleHighlight.strokeRoundedRect(
-      puzzlePos.x - 40,
-      puzzlePos.y - 40,
-      80,
-      80,
-      8
-    );
-    this.puzzleHighlight.setAlpha(0.8);
-    this.layer.fx?.add(this.puzzleHighlight);
-
-    const puzzleImage = this.add
-      .image(puzzlePos.x, puzzlePos.y, "letter")
-      .setOrigin(0.5, 0.5)
-      .setDisplaySize(48, 48)
-      .setDepth(50);
-    this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
-    this.layer.actors?.add(puzzleImage);
-
     const isDesktop = getIsDesktop(this);
     const hintText = "Interactie: " + (isDesktop ? "E" : "I");
 
@@ -125,11 +99,7 @@ export default class Face1Scene extends FaceBase {
     this.registerInteraction(
       () => this.inShipRange || this.inPuzzleRange,
       () => {
-        if (this.inShipRange) {
-          this.scene.start("ShipFuelScene");
-        } else if (this.inPuzzleRange) {
-          this.addEnergy(20)
-        }
+        this.scene.start("ShipFuelScene");
       },
       { hintText }
     );
@@ -145,11 +115,6 @@ export default class Face1Scene extends FaceBase {
     const isOverlappingShip = this.physics.world.overlap(this.player, this.shipZone);
     this.inShipRange = isOverlappingShip;
     this.shipHighlight.setVisible(this.inShipRange);
-
-    // ---- Puzzle overlap
-    const isOverlappingPuzzle = this.physics.world.overlap(this.player, this.puzzleZone);
-    this.inPuzzleRange = isOverlappingPuzzle;
-    this.puzzleHighlight.setVisible(this.inPuzzleRange);
   }
 
   /**
