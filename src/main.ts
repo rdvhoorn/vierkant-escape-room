@@ -16,6 +16,14 @@ import Face10Scene from "./scenes/face_scenes/Face10Scene";
 import Face11Scene from "./scenes/face_scenes/Face11Scene";
 import Face12Scene from "./scenes/face_scenes/Face12Scene";
 
+import KVQDriehoeken from "./scenes/puzzles/kist_van_quadratus/kvq_driehoeken";
+import KVQSom1 from "./scenes/puzzles/kist_van_quadratus/kvq_som_1";
+import KVQEieren from "./scenes/puzzles/kist_van_quadratus/kvq_eieren";
+import KVQOneven from "./scenes/puzzles/kist_van_quadratus/kvq_oneven";
+import KVQfruit from "./scenes/puzzles/kist_van_quadratus/kvq_fruit";
+import KVQ12 from "./scenes/puzzles/kist_van_quadratus/kvq_12";
+import KVQAntwoordenInvullen from "./scenes/puzzles/kist_van_quadratus/kvq_antwoorden_invullen";
+
 import TangramKikkerScene from "./scenes/puzzles/tangram/TangramKikkerScene";
 import TangramKrabScene from "./scenes/puzzles/tangram/TangramKrabScene";
 import TangramSchildpadScene from "./scenes/puzzles/tangram/TangramSchildpadScene";
@@ -48,9 +56,10 @@ const config: Phaser.Types.Core.GameConfig = {
     createContainer: true,
   },
   physics: {
-  default: "arcade",
-  arcade: { gravity: { x: 0, y: 0 }, debug: false },
-},
+    default: "arcade",
+    arcade: { gravity: { x: 0, y: 0 }, debug: false },  
+  },
+  render: { pixelArt: true, antialias: false},
 
   scene: [
   PreloadScene,
@@ -73,6 +82,13 @@ const config: Phaser.Types.Core.GameConfig = {
   MoreToComeScene,
   PuzzleLogicOneScene,
   PuzzleLogicTwoScene,
+  KVQDriehoeken,
+  KVQSom1,
+  KVQEieren,
+  KVQOneven,
+  KVQ12,
+  KVQfruit,
+  KVQAntwoordenInvullen,
   TangramKikkerScene,
   TangramKrabScene,
   TangramSchildpadScene,

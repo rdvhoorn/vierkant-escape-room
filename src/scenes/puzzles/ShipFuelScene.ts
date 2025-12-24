@@ -685,7 +685,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.cameras.main.flash(300, 100, 255, 100);
 
     // Confetti explosion from grid center
-    const { width, height } = this.scale;
+    const width = this.scale.width;
     const cx = width / 2;
     const cy = this.gridOrigin.y + (this.gridSize * this.cell) / 2;
 

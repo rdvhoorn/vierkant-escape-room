@@ -41,9 +41,24 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("letter", "/assets/decor/letter.png");
     this.load.image("farm", "/assets/decor/farm.png");
     this.load.image("farmer", "/assets/decor/farmer.png");
+    this.load.image("wooden_sign", "/assets/decor/wooden_sign.png");
+    this.load.image("wooden_panel", "/assets/decor/wooden_panel.png");
 
     // Small spark/smoke particle (8x8-ish white dot or smoke puff)
     // this.load.image("spark", "/assets/particles/spark.png");
+
+    // KVQ
+    this.load.image("twelve", "/assets/decor/kvq/12.png");
+    this.load.image("ei", "/assets/decor/kvq/ei.png");
+    this.load.image("fruitmand", "/assets/decor/kvq/fruitmand.png");
+    this.load.image("vierkant_logo", "/assets/decor/kvq/vierkant_logo.png");
+    this.load.image("vraagtekens", "/assets/decor/kvq/vraagtekens.png");
+    this.load.image("driehoek", "/assets/decor/kvq/driehoek.png");
+    this.load.image("1kers", "/assets/decor/fruit/1kers.png");
+    this.load.image("1peer", "/assets/decor/fruit/1peer.png");
+    this.load.image("2kersen", "/assets/decor/fruit/2kersen.png");
+    this.load.image("6druiven", "/assets/decor/fruit/6druiven.png");
+    this.load.image("8druiven", "/assets/decor/fruit/8druiven.png");
 
     // Rocks / tufts / debris (any small PNGs)
     this.load.image("rock", "/assets/decor/rock.png");
