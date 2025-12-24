@@ -8,7 +8,6 @@ export default class Face7Scene extends FaceBase {
 
   create() {
     console.log("[ENTER]", this.scene.key);
-    this.ensureEnergyInitialized(0);
 
     const cfg = getFaceConfig("Face7Scene");
     const { radius, neighbors, visuals } = cfg;

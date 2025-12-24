@@ -1,5 +1,5 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { getFaceConfig, buildNeighborColorMap, PUZZLE_REWARDS, PuzzleKey } from "./_FaceConfig";
 
 export default class Face2Scene extends FaceBase {
   private entry_from_puzzle: boolean = false;
@@ -15,8 +15,6 @@ export default class Face2Scene extends FaceBase {
   }
 
   create() {
-    this.ensureEnergyInitialized(0);
-
     const cfg = getFaceConfig("Face2Scene");
     const { radius, neighbors, visuals } = cfg;
     const colorMap = buildNeighborColorMap(neighbors);
@@ -71,10 +69,11 @@ export default class Face2Scene extends FaceBase {
       hitRadius: 50,
       hintText: "Praat met reiziger: E",
       buildLines: () => {
-        const tangramSolved = !!this.registry.get("tangram_puzzle_solved");
+        const tangramSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.Tangram].puzzleSolvedRegistryKey);
 
         if (tangramSolved) {
           // Puzzle already solved → short thank-you dialog
+          this.addPuzzleRewardIfNotObtained(PuzzleKey.Tangram)
           return [
             "Reiziger: Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!",
           ];

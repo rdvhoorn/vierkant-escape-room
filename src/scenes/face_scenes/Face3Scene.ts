@@ -27,7 +27,6 @@ export default class Face3Scene extends FaceBase {
 
   create() {
     console.log("[ENTER]", this.scene.key);
-    this.ensureEnergyInitialized(0);
 
     const cfg = getFaceConfig("Face3Scene");
     const { radius, neighbors, visuals } = cfg;

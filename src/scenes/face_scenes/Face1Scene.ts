@@ -31,9 +31,6 @@ export default class Face1Scene extends FaceBase {
     console.log("[ENTER]", this.scene.key);
     const { width, height } = this.scale;
 
-    // Shared energy initialization for this face
-    this.ensureEnergyInitialized(0);
-
     // --- Pull config from faceConfig.ts ---
     const cfg = resolveFaceConfig("Face1Scene");
     const { radius, neighbors, visuals } = cfg;
@@ -131,11 +128,7 @@ export default class Face1Scene extends FaceBase {
         if (this.inShipRange) {
           this.scene.start("ShipFuelScene");
         } else if (this.inPuzzleRange) {
-          if (this.registry.get("logic1Solved")) {
-            this.scene.start("PuzzleLogicTwoScene");
-          } else {
-            this.scene.start("PuzzleLogicOneScene");
-          }
+          this.addEnergy(20)
         }
       },
       { hintText }

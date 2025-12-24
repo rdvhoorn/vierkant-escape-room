@@ -50,7 +50,6 @@ export class Hud {
     if (!opts.isDesktop) {
       this.createTouchControls();
     }
-    this.bindEscape();
     this.bindModeToggle();
   }
 
@@ -116,7 +115,7 @@ export class Hud {
         .text(
           this.scene.scale.width - 12,
           this.scene.scale.height - 10,
-          "Lopen: WASD / Pijltjes   |  E:  Interactie   |  ESC: Titel Scherm",
+          "Lopen: WASD / Pijltjes   |  E:  Interactie",
           { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
         )
         .setScrollFactor(0)
@@ -139,17 +138,14 @@ export class Hud {
   // Energy bar UI (top-right)
   private createEnergyUI() {
     if (!this.opts.getEnergy) return; // HUD can be used without energy
-
-    const max = this.opts.maxEnergy ?? 100;
-    const initialEnergy = Phaser.Math.Clamp(this.opts.getEnergy(), 0, max);
-
+    const current_energy = this.opts.getEnergy();
     const energyBg = this.scene.add.graphics();
     energyBg.fillStyle(0x222222, 0.7);
     energyBg.fillRect(0, 0, 104, 24);
 
     this.energyBar = this.scene.add.graphics();
     this.energyBar.fillStyle(0x00ff00, 1);
-    this.energyBar.fillRect(2, 2, Math.min(initialEnergy, max), 20);
+    this.energyBar.fillRect(2, 2, Math.min(current_energy, this.opts.maxEnergy ?? 100), 20);
 
     this.energyContainer = this.scene.add
       .container(this.scene.scale.width - 120, 28, [energyBg, this.energyBar])
@@ -169,11 +165,6 @@ export class Hud {
     this.energyBar.fillStyle(0x00ff00, 1);
     this.energyBar.fillRect(2, 2, Math.min(clamped, max), 20);
   };
-
-  private bindEscape() {
-    if (!this.opts.onEscape) return;
-    this.scene.input.keyboard?.on("keydown-ESC", this.opts.onEscape);
-  }
 
   private bindModeToggle() {
     // Secret dev key: backtick (`) toggles control mode and restarts the scene.

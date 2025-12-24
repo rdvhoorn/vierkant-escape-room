@@ -8,8 +8,6 @@ export default class Face10Scene extends FaceBase {
 
   create() {
     console.log("[ENTER]", this.scene.key);
-    this.ensureEnergyInitialized(0);
-
     const cfg = getFaceConfig("Face10Scene");
     const { radius, neighbors, visuals } = cfg;
     const colorMap = buildNeighborColorMap(neighbors);
