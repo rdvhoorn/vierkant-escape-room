@@ -159,16 +159,16 @@ export default class Face1Scene extends FaceBase {
     const quadratusX = center.x + 100; // Further right to avoid overlap
     const quadratusY = center.y - 30; // Slightly higher, not too much
 
-    // Enable anti-aliasing BEFORE creating the sprite
-    const texture = this.textures.get("quadratus");
-    texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    // Test NEAREST filter for pixel-art look (sharp pixels, no blur)
+    const texture = this.textures.get("quadratus_small");
+    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
 
-    // Cropped image is 729x1224 (aspect ratio ~3:5)
-    // Use setScale to maintain aspect ratio
-    // With antialiasing enabled, Phaser smoothly downsamples the large PNG
-    this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
+    // LOD approach: Use pre-scaled quadratus_small.webp (200x336) for gameplay
+    // This avoids GPU downsampling artifacts from scaling down large images
+    // Scale 0.30 → 60x100 pixels (larger for better quality)
+    this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus_small")
       .setOrigin(0.5, 0.6)
-      .setScale(0.06) // Scale to about 44x73 game pixels
+      .setScale(0.30) // Larger scale for better detail (200px → 60px)
       .setDepth(55)
       .setFlipX(true);
 

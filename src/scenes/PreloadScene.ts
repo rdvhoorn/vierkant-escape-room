@@ -56,8 +56,9 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("player_normal_4", "/assets/player/4.png");
     this.load.image("player_normal_5", "/assets/player/5.png");
 
-    // Characters
-    this.load.image("quadratus", "/assets/Quadratus.png");
+    // Characters - LOD (Level of Detail) approach
+    this.load.image("quadratus_small", "/assets/quadratus_small.webp"); // 200x336 for gameplay
+    this.load.image("quadratus_large", "/assets/quadratus_large.webp"); // 729x1224 for close-ups
   }
 
   create() {
