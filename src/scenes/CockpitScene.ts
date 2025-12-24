@@ -584,11 +584,103 @@ export default class CockpitScene extends Phaser.Scene {
 
       this.lamps.set(name, lamp);
 
-      // Label
-      this.add.text(x + 16, lampY - 6, lampLabels[name as keyof typeof lampLabels], {
-        fontSize: "11px",
-        color: isOn ? "#ffffff" : "#666666",
-      }).setDepth(3);
+      // Label - make DEUREN a visual button in repaired state
+      if (name === "deuren") {
+        if (this.currentPhase === "repaired" && isOn) {
+          // Create visual button
+          const buttonX = x + 16;
+          const buttonY = lampY - 10;
+          const buttonWidth = 55; // Narrower button
+          const buttonHeight = 20;
+
+          // Subtle shadow
+          const shadow = this.add.graphics();
+          shadow.setDepth(2);
+          shadow.fillStyle(0x000000, 0.25);
+          shadow.fillRoundedRect(buttonX + 1, buttonY + 1, buttonWidth, buttonHeight, 3);
+
+          // Button background (flat design with subtle border)
+          const buttonBg = this.add.graphics();
+          buttonBg.setDepth(3);
+          buttonBg.setName("deurenButtonBg");
+
+          // Main button fill - darker, flatter
+          buttonBg.fillStyle(0x3a4a2a, 1); // Dark olive green
+          buttonBg.fillRoundedRect(buttonX, buttonY, buttonWidth, buttonHeight, 3);
+
+          // Border for definition
+          buttonBg.lineStyle(1, 0x5a6a4a, 0.8); // Subtle green border
+          buttonBg.strokeRoundedRect(buttonX, buttonY, buttonWidth, buttonHeight, 3);
+
+          // Glow effect (more subtle)
+          const glow = this.add.graphics();
+          glow.setDepth(2);
+          glow.setName("deurenButtonGlow");
+          glow.lineStyle(1, 0xffff00, 0.3);
+          glow.strokeRoundedRect(buttonX - 1, buttonY - 1, buttonWidth + 2, buttonHeight + 2, 4);
+
+          // Button text - aligned left, white color
+          const buttonText = this.add.text(buttonX + 5, buttonY + buttonHeight / 2, "DEUREN", {
+            fontSize: "11px",
+            color: "#ffffff",
+            fontStyle: "normal",
+          }).setOrigin(0, 0.5).setDepth(4);
+
+          // Interactive hit area
+          const hitArea = this.add.rectangle(
+            buttonX + buttonWidth / 2,
+            buttonY + buttonHeight / 2,
+            buttonWidth,
+            buttonHeight,
+            0xffffff,
+            0
+          );
+          hitArea.setDepth(5);
+          hitArea.setInteractive({ useHandCursor: true });
+
+          // Hover effect
+          hitArea.on("pointerover", () => {
+            glow.clear();
+            glow.lineStyle(2, 0xffff00, 0.6);
+            glow.strokeRoundedRect(buttonX - 1, buttonY - 1, buttonWidth + 2, buttonHeight + 2, 4);
+          });
+
+          hitArea.on("pointerout", () => {
+            buttonText.setY(buttonY + buttonHeight / 2);
+            buttonBg.setY(0);
+            glow.clear();
+            glow.lineStyle(1, 0xffff00, 0.3);
+            glow.strokeRoundedRect(buttonX - 1, buttonY - 1, buttonWidth + 2, buttonHeight + 2, 4);
+          });
+
+          // Press down effect
+          hitArea.on("pointerdown", () => {
+            // Visual press
+            buttonText.setY(buttonY + buttonHeight / 2 + 1);
+            buttonBg.setY(1);
+
+            // Transition to Face1Scene after short delay
+            this.time.delayedCall(100, () => {
+              this.cameras.main.fadeOut(800, 0, 0, 0);
+            });
+            this.cameras.main.once("camerafadeoutcomplete", () => {
+              this.scene.start("Face1Scene");
+            });
+          });
+        } else {
+          // Normal non-clickable label
+          this.add.text(x + 16, lampY - 6, lampLabels[name as keyof typeof lampLabels], {
+            fontSize: "11px",
+            color: isOn ? "#ffffff" : "#666666",
+          }).setDepth(3);
+        }
+      } else {
+        // Normal non-clickable label for other lamps
+        this.add.text(x + 16, lampY - 6, lampLabels[name as keyof typeof lampLabels], {
+          fontSize: "11px",
+          color: isOn ? "#ffffff" : "#666666",
+        }).setDepth(3);
+      }
     });
   }
 
