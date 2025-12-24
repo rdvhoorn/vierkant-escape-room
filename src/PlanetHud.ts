@@ -112,11 +112,17 @@ export class Hud {
   private createControlsUI() {
     // Bottom-right controls hint ONLY on desktop
     if (this.opts.isDesktop) {
+      // Build controls text - only show ESC if escape handler exists
+      let controlsText = "Lopen: WASD / Pijltjes   |  E:  Interactie";
+      if (this.opts.onEscape) {
+        controlsText += "   |  ESC: Titel Scherm";
+      }
+
       this.controlsText = this.scene.add
         .text(
           this.scene.scale.width - 12,
           this.scene.scale.height - 10,
-          "Lopen: WASD / Pijltjes   |  E:  Interactie   |  ESC: Titel Scherm",
+          controlsText,
           { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
         )
         .setScrollFactor(0)

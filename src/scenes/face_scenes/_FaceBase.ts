@@ -60,6 +60,7 @@ type StandardFaceConfig = {
   backgroundColor?: string;
   showLabel?: boolean;
   disableEscape?: boolean; // Disable ESC key to title screen
+  disableTravel?: boolean; // Disable face-to-face travel (keeps visual colors)
 };
 
 export default abstract class FaceBase extends Phaser.Scene {
@@ -962,7 +963,10 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.createPlayerAt(spawnX, spawnY);
 
     // Now register edge travel interaction (requires HUD to exist)
-    this.registerEdgeTravelInteraction();
+    // Skip if disableTravel is set (e.g., in teaser mode)
+    if (!config.disableTravel) {
+      this.registerEdgeTravelInteraction();
+    }
   }
 
   /**

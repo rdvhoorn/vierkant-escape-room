@@ -64,7 +64,7 @@ export default class Face1Scene extends FaceBase {
 
     this.initStandardFace({
       radius,
-      faceTravelTargets: neighbors,
+      faceTravelTargets: neighbors, // Keep neighbors for visual colors
       mainFill: visuals.mainFill,
       neighborFill: visuals.neighborFill,
       colorMap,
@@ -72,6 +72,7 @@ export default class Face1Scene extends FaceBase {
       backgroundColor: visuals.backgroundColor,
       showLabel: visuals.showLabel, // false for Face1 in config
       disableEscape: true, // Disable ESC to title screen in teaser
+      disableTravel: true, // Disable face-to-face travel (keeps visual colors)
     });
 
     // Grab the created layers from FaceBase and map them to our local layer object
@@ -165,10 +166,10 @@ export default class Face1Scene extends FaceBase {
 
     // LOD approach: Use pre-scaled quadratus_small.webp (200x336) for gameplay
     // This avoids GPU downsampling artifacts from scaling down large images
-    // Scale 0.30 → 60x100 pixels (larger for better quality)
+    // setDisplaySize 42x70 pixels (30% smaller than previous 60x100)
     this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus_small")
       .setOrigin(0.5, 0.6)
-      .setScale(0.30) // Larger scale for better detail (200px → 60px)
+      .setDisplaySize(42, 70) // 30% smaller, similar to farmer size
       .setDepth(55)
       .setFlipX(true);
 
@@ -295,15 +296,17 @@ export default class Face1Scene extends FaceBase {
   private showTeaserCompletePopup() {
     const { width, height } = this.scale;
 
-    // Darken background
+    // Darken background - must cover entire screen
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
     overlay.setDepth(200);
+    overlay.setScrollFactor(0); // Fixed to camera, not world
 
     // Popup box
     const boxWidth = 400;
     const boxHeight = 200;
     const box = this.add.graphics();
     box.setDepth(201);
+    box.setScrollFactor(0);
     box.fillStyle(0x1b2748, 0.95);
     box.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
     box.lineStyle(3, 0x3c5a99, 1);
@@ -315,7 +318,7 @@ export default class Face1Scene extends FaceBase {
       fontSize: "32px",
       color: "#00ff88",
       fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(202);
+    }).setOrigin(0.5).setDepth(202).setScrollFactor(0);
 
     // Message
     const msg = this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in januari terug voor meer!", {
@@ -323,7 +326,7 @@ export default class Face1Scene extends FaceBase {
       fontSize: "18px",
       color: "#e7f3ff",
       align: "center",
-    }).setOrigin(0.5).setDepth(202);
+    }).setOrigin(0.5).setDepth(202).setScrollFactor(0);
 
     // Confetti effect
     const confettiColors = [0xffd700, 0x00ff00, 0x00ffff, 0xff00ff, 0xffffff, 0xffff00];
@@ -332,6 +335,7 @@ export default class Face1Scene extends FaceBase {
       const startY = height / 2 - 120;
       const particle = this.add.circle(x, startY, Phaser.Math.Between(3, 6), Phaser.Utils.Array.GetRandom(confettiColors));
       particle.setDepth(203);
+      particle.setScrollFactor(0);
 
       this.tweens.add({
         targets: particle,
@@ -348,6 +352,7 @@ export default class Face1Scene extends FaceBase {
     // Click on popup box to dismiss
     const hitArea = this.add.rectangle(width / 2, height / 2, boxWidth, boxHeight, 0xffffff, 0);
     hitArea.setDepth(204);
+    hitArea.setScrollFactor(0);
     hitArea.setInteractive({ useHandCursor: true });
     hitArea.once("pointerdown", () => {
       overlay.destroy();
