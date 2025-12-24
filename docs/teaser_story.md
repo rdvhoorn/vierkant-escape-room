@@ -5,7 +5,7 @@ Geschud, knal, alles donker (zwart scherm)
 Beeld alsof iemand de ogen open doet: binnenkant van raket, stofwolken door de ramen
 Gedachtewolkjes (elke bullit in los schermpje):
 “Waar ben ik? Wat is er gebeurd? Waar is iedereen?”
-"Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde terug gingen."
+"Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde teruggingen."
 “Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben.”
 
 Raket onderzoeken

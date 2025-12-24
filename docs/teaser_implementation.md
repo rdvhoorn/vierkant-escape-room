@@ -56,7 +56,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Gedachtewolkjes na wake-up (geïmplementeerd):**
 
 > "Waar ben ik? Wat is er gebeurd? Waar is iedereen?"
-> "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde terug gingen."
+> "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde teruggingen."
 > "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben."
 > "Wacht... het paneel! Alle draden zijn los!"
 
@@ -238,7 +238,7 @@ Kom in januari terug voor meer!
 | ------------- | ------ | ---------------------------------- |
 | PreloadScene  | ✅     | -                                  |
 | TitleScene    | ✅     | -                                  |
-| CockpitScene  | ✅     | Intro animatie, conditonele states |
+| CockpitScene  | ✅     | Intro animatie, conditionele states |
 | ShipFuelScene | ✅     | ESC naar CockpitScene (done)       |
 | Face1Scene    | ✅     | Quadratus dialoog toevoegen        |
 
