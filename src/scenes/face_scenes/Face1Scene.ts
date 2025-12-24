@@ -29,7 +29,6 @@ export default class Face1Scene extends FaceBase {
 
   // Quadratus character
   private quadratusSprite?: Phaser.GameObjects.Image;
-  private quadratusShadow?: Phaser.GameObjects.Graphics;
 
   // Quadratus dialog
   private quadratusDialogActive = false;
@@ -160,17 +159,20 @@ export default class Face1Scene extends FaceBase {
     const quadratusX = center.x + 100; // Further right to avoid overlap
     const quadratusY = center.y - 30; // Slightly higher, not too much
 
-    this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
-      .setOrigin(0.5, 0.6)
-      .setDisplaySize(70, 70)
-      .setDepth(55)
-      .setFlipX(true);
-
-    // Enable anti-aliasing for smooth rendering
+    // Enable anti-aliasing BEFORE creating the sprite
     const texture = this.textures.get("quadratus");
     texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-    this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 13, 0x000000, 0.28);
+    // Cropped image is 729x1224 (aspect ratio ~3:5)
+    // Use setScale to maintain aspect ratio
+    // With antialiasing enabled, Phaser smoothly downsamples the large PNG
+    this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
+      .setOrigin(0.5, 0.6)
+      .setScale(0.06) // Scale to about 44x73 game pixels
+      .setDepth(55)
+      .setFlipX(true);
+
+    this.addSoftShadowBelow(this.quadratusSprite, 18, 0x000000, 0.28);
     this.layer.actors?.add(this.quadratusSprite);
 
     // Create interaction zone around Quadratus

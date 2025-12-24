@@ -38,6 +38,11 @@ export const DEBUG = true;
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   backgroundColor: "#0b1020",
+  // Enable antialiasing for smooth sprite rendering
+  antialias: true,
+  antialiasGL: true,
+  pixelArt: false, // We want smooth scaling, not pixel-perfect
+  roundPixels: false, // Allow sub-pixel rendering
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
