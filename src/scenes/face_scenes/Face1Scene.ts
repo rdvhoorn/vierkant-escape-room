@@ -21,11 +21,11 @@ export default class Face1Scene extends FaceBase {
   private shipZone!: Phaser.GameObjects.Zone; // proximity window
   private shipHighlight!: Phaser.GameObjects.Graphics; // visual highlight around ship
 
-  private puzzleZone!: Phaser.GameObjects.Zone; // puzzle proximity
-  private puzzleHighlight!: Phaser.GameObjects.Graphics;
+  private quadratusZone!: Phaser.GameObjects.Zone; // Quadratus interaction zone
+  private quadratusHighlight!: Phaser.GameObjects.Graphics;
 
   private inShipRange = false;
-  private inPuzzleRange = false;
+  private inQuadratusRange = false;
 
   // Quadratus character
   private quadratusSprite?: Phaser.GameObjects.Image;
@@ -120,38 +120,12 @@ export default class Face1Scene extends FaceBase {
     this.shipHighlight.setAlpha(0.8);
     this.layer.fx?.add(this.shipHighlight);
 
-    // ---- Puzzle zone near ship
-    const puzzlePos = new Phaser.Math.Vector2(shipPos.x + 100, shipPos.y - 80);
-
-    this.puzzleZone = this.add.zone(puzzlePos.x, puzzlePos.y, 80, 80).setOrigin(0.5);
-    this.physics.add.existing(this.puzzleZone, true);
-
-    this.puzzleHighlight = this.add.graphics().setDepth(51).setVisible(false);
-    this.puzzleHighlight.lineStyle(2, 0xffff00, 0.6);
-    this.puzzleHighlight.strokeRoundedRect(
-      puzzlePos.x - 40,
-      puzzlePos.y - 40,
-      80,
-      80,
-      8
-    );
-    this.puzzleHighlight.setAlpha(0.8);
-    this.layer.fx?.add(this.puzzleHighlight);
-
-    const puzzleImage = this.add
-      .image(puzzlePos.x, puzzlePos.y, "letter")
-      .setOrigin(0.5, 0.5)
-      .setDisplaySize(48, 48)
-      .setDepth(50);
-    this.addSoftShadowBelow(puzzleImage, 22, 0x000000, 0.28);
-    this.layer.actors?.add(puzzleImage);
-
     const isDesktop = getIsDesktop(this);
     const hintText = "Interactie: " + (isDesktop ? "E" : "I");
 
-    // Interaction for ship/puzzle logic
+    // Interaction for ship/quadratus logic
     this.registerInteraction(
-      () => this.inShipRange || this.inPuzzleRange,
+      () => this.inShipRange || this.inQuadratusRange,
       () => {
         if (this.inShipRange) {
           // If puzzle already solved, go to cockpit instead of puzzle
@@ -160,22 +134,9 @@ export default class Face1Scene extends FaceBase {
           } else {
             this.scene.start("ShipFuelScene");
           }
-        } else if (this.inPuzzleRange) {
-          // In teaser: start Quadratus dialog or show popup
-          if (this.registry.get("electricitySolved")) {
-            if (!this.registry.get("quadratusDialogSeen")) {
-              this.startQuadratusDialog();
-            } else {
-              this.showTeaserCompletePopup();
-            }
-          } else {
-            // Normal game flow (not in teaser)
-            if (this.registry.get("logic1Solved")) {
-              this.scene.start("PuzzleLogicTwoScene");
-            } else {
-              this.scene.start("PuzzleLogicOneScene");
-            }
-          }
+        } else if (this.inQuadratusRange && !this.quadratusDialogActive) {
+          // Talk to Quadratus (repeatable)
+          this.startQuadratusDialog();
         }
       },
       { hintText }
@@ -184,9 +145,9 @@ export default class Face1Scene extends FaceBase {
     // Decorations etc.
     this.decorateCrashSite(radius);
 
-    // Start intro sequence (if electricity is solved and dialog not seen yet)
-    if (this.registry.get("electricitySolved") && !this.registry.get("quadratusDialogSeen")) {
-      this.startIntroSequence();
+    // Spawn Quadratus (if electricity is solved)
+    if (this.registry.get("electricitySolved")) {
+      this.spawnQuadratus();
     }
 
     // Dialog input handlers
@@ -194,33 +155,39 @@ export default class Face1Scene extends FaceBase {
     this.input.keyboard?.on("keydown-SPACE", () => this.advanceQuadratusDialog());
   }
 
-  private startIntroSequence() {
-    // Sequence: spawn Quadratus → dialog → Quadratus leaves
+  private spawnQuadratus() {
     const center = this.getPolygonCenter(this.poly);
+    const quadratusX = center.x + 100; // Further right to avoid overlap
+    const quadratusY = center.y - 30; // Slightly higher, not too much
 
-    // Spawn Quadratus to the right of player (after short delay)
-    this.time.delayedCall(1000, () => {
-      const quadratusX = center.x + 60; // Right of center
-      const quadratusY = center.y - 8; // Slightly higher than astronaut
+    this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
+      .setOrigin(0.5, 0.6)
+      .setDisplaySize(70, 70)
+      .setDepth(55)
+      .setFlipX(true);
 
-      this.quadratusSprite = this.add.image(quadratusX, quadratusY, "quadratus")
-        .setOrigin(0.5, 0.6)
-        .setDisplaySize(70, 70) // 40% larger than original (58 * 1.2 ≈ 70)
-        .setDepth(55)
-        .setFlipX(true); // Mirror sprite to face left
+    // Enable anti-aliasing for smooth rendering
+    const texture = this.textures.get("quadratus");
+    texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
 
-      // Enable anti-aliasing for smooth rendering
-      const texture = this.textures.get("quadratus");
-      texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 13, 0x000000, 0.28);
+    this.layer.actors?.add(this.quadratusSprite);
 
-      this.quadratusShadow = this.addSoftShadowBelow(this.quadratusSprite, 13, 0x000000, 0.28); // 50% smaller shadow (26 / 2)
-      this.layer.actors?.add(this.quadratusSprite);
+    // Create interaction zone around Quadratus
+    this.quadratusZone = this.add.zone(quadratusX, quadratusY, 80, 80);
+    this.physics.world.enable(this.quadratusZone);
 
-      // Start dialog after Quadratus appears
-      this.time.delayedCall(500, () => {
-        this.startQuadratusDialog();
-      });
-    });
+    this.quadratusHighlight = this.add.graphics().setDepth(51).setVisible(false);
+    this.quadratusHighlight.lineStyle(2, 0x66ff66, 0.6);
+    this.quadratusHighlight.strokeRoundedRect(
+      quadratusX - 40,
+      quadratusY - 40,
+      80,
+      80,
+      10
+    );
+    this.quadratusHighlight.setAlpha(0.8);
+    this.layer.fx?.add(this.quadratusHighlight);
   }
 
   private startQuadratusDialog() {
@@ -309,19 +276,18 @@ export default class Face1Scene extends FaceBase {
     this.quadratusDialogActive = false;
     this.registry.set("quadratusDialogSeen", true);
 
-    // Clean up dialog UI
+    // Clean up dialog UI only (Quadratus stays on the planet)
     this.quadratusOverlay?.destroy();
     this.quadratusBox?.destroy();
     this.quadratusText?.destroy();
     this.quadratusSpeaker?.destroy();
     this.children.getByName("quadratusHint")?.destroy();
 
-    // Quadratus leaves (destroy sprite and shadow)
-    this.quadratusSprite?.destroy();
-    this.quadratusShadow?.destroy();
-
-    // Show teaser complete popup after dialog
-    this.time.delayedCall(500, () => this.showTeaserCompletePopup());
+    // Show teaser complete popup after dialog (only first time)
+    if (!this.registry.get("teaserCompleteShown")) {
+      this.registry.set("teaserCompleteShown", true);
+      this.time.delayedCall(500, () => this.showTeaserCompletePopup());
+    }
   }
 
   private showTeaserCompletePopup() {
@@ -398,20 +364,22 @@ export default class Face1Scene extends FaceBase {
     this.inShipRange = isOverlappingShip;
     this.shipHighlight.setVisible(this.inShipRange);
 
-    // ---- Puzzle overlap
-    const isOverlappingPuzzle = this.physics.world.overlap(this.player, this.puzzleZone);
-    this.inPuzzleRange = isOverlappingPuzzle;
-    this.puzzleHighlight.setVisible(this.inPuzzleRange);
+    // ---- Quadratus overlap
+    if (this.quadratusZone) {
+      const isOverlappingQuadratus = this.physics.world.overlap(this.player, this.quadratusZone);
+      this.inQuadratusRange = isOverlappingQuadratus;
+      this.quadratusHighlight.setVisible(this.inQuadratusRange && !this.quadratusDialogActive);
+    }
   }
 
   /**
    * Override FaceBase's edge-based proximity:
-   * For this scene, "interaction in range" is defined by the ship/puzzle zones,
+   * For this scene, "interaction in range" is defined by the ship/quadratus zones,
    * OR a travel edge being active.
    */
   protected isNearEdge(_player: { x: number; y: number }, _e: Edge): boolean {
     // `activeTravelEdge` is managed by baseFaceUpdate() in FaceBase
-    return this.inShipRange || this.inPuzzleRange || this.activeTravelEdge !== null;
+    return this.inShipRange || this.inQuadratusRange || this.activeTravelEdge !== null;
   }
 
   // ---------------------------
