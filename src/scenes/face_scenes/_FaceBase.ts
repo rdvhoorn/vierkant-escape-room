@@ -9,6 +9,7 @@ import {
 import { Hud } from "../../PlanetHud";
 import { getIsDesktop } from "../../ControlsMode";
 import { TwinklingStars } from "../../utils/TwinklingStars";
+import { PUZZLE_REWARDS, PuzzleKey } from "./_FaceConfig";
 
 export type Edge = { a: Phaser.Math.Vector2; b: Phaser.Math.Vector2 };
 
@@ -129,18 +130,6 @@ export default abstract class FaceBase extends Phaser.Scene {
    * Ensure energy exists in the registry.
    * Call this in your face `create()` if you want this scene to use energy.
    */
-  protected ensureEnergyInitialized(initial: number = 0) {
-    const existing = this.registry.get(FaceBase.ENERGY_KEY);
-    if (typeof existing !== "number") {
-      const clamped = Phaser.Math.Clamp(initial, 0, this.maxEnergy);
-      this.registry.set(FaceBase.ENERGY_KEY, clamped);
-      this.events.emit("energyChanged", clamped);
-    } else {
-      // Emit event so HUD can sync to current value when entering this scene
-      this.events.emit("energyChanged", this.getEnergy());
-    }
-  }
-
   protected getEnergy(): number {
     let value = this.registry.get(FaceBase.ENERGY_KEY);
     if (typeof value !== "number") {
@@ -158,6 +147,18 @@ export default abstract class FaceBase extends Phaser.Scene {
 
   protected addEnergy(delta: number) {
     this.setEnergy(this.getEnergy() + delta);
+  }
+
+  protected addPuzzleRewardIfNotObtained(
+    puzzleKey: PuzzleKey
+  ) {
+    const rewardInfo = PUZZLE_REWARDS[puzzleKey];
+    if (!rewardInfo) return;
+    const obtainedKey = rewardInfo.rewardObtainedRegistryKey;
+    if (!this.registry.get(obtainedKey)) {
+      this.registry.set(obtainedKey, true);
+      this.addEnergy(rewardInfo.rewardEnergy);
+    }
   }
 
   // ---------------------------

@@ -1,5 +1,7 @@
 // faceConfig.ts
 
+import FaceBase from "./_FaceBase";
+
 // ============================================================================
 // DODECAHEDRON TOPOLOGY
 // ============================================================================
@@ -31,6 +33,20 @@ const DODECAHEDRON_TOPOLOGY: Record<TopoFace, TopoFace[]> = {
   J: ["D", "E", "K", "I", "L"],
   K: ["E", "A", "G", "J", "L"],
   L: ["K", "G", "H", "I", "J"],
+};
+
+// Puzzle keys
+export enum PuzzleKey {
+  KistVanQuadratus = "kist_van_quadratus",
+  Tangram = "tangram",
+  ShipFuel = "ship_fuel",
+}
+
+// Constant of puzzle key, reward, and reward obtained key
+export const PUZZLE_REWARDS: Record<PuzzleKey, { rewardEnergy: number; rewardObtainedRegistryKey: string; puzzleSolvedRegistryKey: string }> = {
+  [PuzzleKey.KistVanQuadratus]: { rewardEnergy: 20, rewardObtainedRegistryKey: "kvq_puzzle_solved_fuel_obtained", puzzleSolvedRegistryKey: "kvq_puzzle_solved" },
+  [PuzzleKey.Tangram]: { rewardEnergy: 10, rewardObtainedRegistryKey: "tangram_puzzle_solved_fuel_obtained" , puzzleSolvedRegistryKey: "tangram_puzzle_solved" },
+  [PuzzleKey.ShipFuel]: { rewardEnergy: 50, rewardObtainedRegistryKey: "ship_fuel_obtained", puzzleSolvedRegistryKey: "ship_fuel_solved" },
 };
 
 export type FaceKey =
