@@ -140,25 +140,29 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 **Sequence (automatisch, geen speler input):**
 
 1. **Astronaut is zichtbaar**
-   - Player al spawned door FaceBase
-   - Normaal camera view (geen zoom)
+
+    - Player al spawned door FaceBase
+    - Normaal camera view (geen zoom)
 
 2. **Quadratus verschijnt**
-   - Spawnt rechts van astronaut na 1 seconde
-   - Sprite gespiegeld (kijkt naar links)
-   - Optioneel later: inschuif-effect van rechts
+
+    - Spawnt rechts van astronaut na 1 seconde
+    - Sprite gespiegeld (kijkt naar links)
+    - Optioneel later: inschuif-effect van rechts
 
 3. **Dialoog textbox verschijnt**
-   - Textbox onderaan scherm
-   - Speler klikt door dialoog (10 regels)
+
+    - Textbox onderaan scherm
+    - Speler klikt door dialoog (10 regels)
 
 4. **Quadratus verdwijnt**
-   - Na laatste dialoog regel
-   - Optioneel later: uitschuif-effect naar rechts
+
+    - Na laatste dialoog regel
+    - Optioneel later: uitschuif-effect naar rechts
 
 5. **Teaser complete popup**
-   - 500ms na dialoog
-   - Speler kan daarna vrij rondlopen
+    - 500ms na dialoog
+    - Speler kan daarna vrij rondlopen
 
 **Implementatie details:**
 
@@ -168,6 +172,7 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 -   Geen speler controle tijdens sequence
 
 **Optioneel (later):**
+
 -   Camera zoom in/uit sequence
 -   Inschuif/uitschuif effecten voor Quadratus
 
@@ -182,15 +187,14 @@ PreloadScene → TitleScene → CockpitScene (intro) → ShipFuelScene (puzzel) 
 ```
 Q: "Hoi vreemdeling, ik ben Quadratus de Espirantus. Welkom op de planeet Dezonia!"
 Ik (gedachte): "Quadratus lijkt vriendelijk en ik kan wel wat hulp gebruiken."
-Ik: "Hoi Quadratus, ik ben ... en ik ben een beetje verdwaald geloof ik."
+Ik: "Hoi Quadratus, ik ben een beetje verdwaald geloof ik."
 Ik: "Ik was op weg naar de Aarde met mijn raket, maar nu ben ik ineens hier."
-Ik: "Mijn raket doet het nog, maar de energietank is helemaal leeg. Hoe kom ik nu naar huis?"
+Ik: "Mijn raket doet het nog, maar de energietank is bijna leeg. Hoe kom ik nu naar huis?"
 Q: "Ach vreemdeling toch, wat een pech. Gelukkig is er hier op Dezonia ook energie te vinden..."
-Ik: "Nou, dat biedt hoop, dank je wel Quadratus!"
-Q: "Veel succes, vreemdeling!"
-Q: "Het is aan jou of je de hele planeet wil ontdekken, of al eerder terug wil keren naar huis."
-Ik: "Wacht! Ga je niet met me mee?"
-Q: "Nee, maar ik denk niet dat dit de laatste keer is dat we elkaar zien."
+Ik: "Nou, dan ga ik meteen zoeken, dank je wel Quadratus!"
+Q: "Helaas, je moet nog even geduld hebben."
+Ik: "Waarom dan?"
+Q: "Omdat ik eerst nog het hele spel moet afmaken. Dit was de teaser en die heb je zojuist uitgespeeld."
 ```
 
 ---
@@ -234,13 +238,13 @@ Kom in januari terug voor meer!
 
 ## Bestaande Scenes
 
-| Scene         | Status | Aanpassingen nodig                 |
-| ------------- | ------ | ---------------------------------- |
-| PreloadScene  | ✅     | -                                  |
-| TitleScene    | ✅     | -                                  |
+| Scene         | Status | Aanpassingen nodig                  |
+| ------------- | ------ | ----------------------------------- |
+| PreloadScene  | ✅     | -                                   |
+| TitleScene    | ✅     | -                                   |
 | CockpitScene  | ✅     | Intro animatie, conditionele states |
-| ShipFuelScene | ✅     | ESC naar CockpitScene (done)       |
-| Face1Scene    | ✅     | Quadratus dialoog toevoegen        |
+| ShipFuelScene | ✅     | ESC naar CockpitScene (done)        |
+| Face1Scene    | ✅     | Quadratus dialoog toevoegen         |
 
 ---
 

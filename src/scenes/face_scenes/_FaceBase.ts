@@ -420,7 +420,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       const a = style?.alpha ?? 0.95;
       this.drawPolygon(this.gNeighbors, n, f, a, s);
     }
-    this.gNeighbors.setAlpha(0.88);
+    this.gNeighbors.setAlpha(1.0);
 
     // central face last
     this.drawPolygon(this.gMain, poly2D, mainFill, 1, 0x66a3ff);
@@ -921,7 +921,7 @@ export default abstract class FaceBase extends Phaser.Scene {
         config.colorMap && config.colorMap[key] !== undefined
           ? config.colorMap[key]!
           : neighborFill;
-      return { fill: color, stroke: 0x4b7ad1, alpha: 0.95 };
+      return { fill: color, stroke: 0x4b7ad1, alpha: 1.0 };
     });
 
     this.renderFaceAndNeighbors({

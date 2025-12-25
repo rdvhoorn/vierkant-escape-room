@@ -64,9 +64,9 @@ export default class TitleScene extends Phaser.Scene {
   private startGame() {
     this.pulseTween?.stop();
 
-    // Start normal teaser flow: TitleScene -> CockpitScene (intro)
+    // Debug: skip to Face1Scene, Normal: start teaser flow
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("CockpitScene");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 }

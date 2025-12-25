@@ -33,7 +33,7 @@ const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
 
 // Debug mode - set to false for release
-export const DEBUG = false;
+export const DEBUG = true;
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
 import { getIsDesktop } from "../../ControlsMode";
 import { resolveFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { DEBUG } from "../../main";
 
 export default class Face1Scene extends FaceBase {
   constructor() {
@@ -39,10 +40,10 @@ export default class Face1Scene extends FaceBase {
     { speaker: "IK", text: "Ik was op weg naar de Aarde met mijn raket, maar nu ben ik ineens hier." },
     { speaker: "IK", text: "Mijn raket doet het nog, maar de energietank is bijna leeg. Hoe kom ik nu naar huis?" },
     { speaker: "Q", text: "Ach vreemdeling toch, wat een pech. Gelukkig is er hier op Dezonia ook energie te vinden..." },
-    { speaker: "IK", text: "Nou, dat biedt hoop, dank je wel Quadratus!" },
-    { speaker: "Q", text: "Veel succes, vreemdeling! Het is aan jou of je de hele planeet wil ontdekken." },
-    { speaker: "IK", text: "Wacht! Ga je niet met me mee?" },
-    { speaker: "Q", text: "Nee, maar ik denk niet dat dit de laatste keer is dat we elkaar zien." },
+    { speaker: "IK", text: "Nou, dan ga ik meteen zoeken, dank je wel Quadratus!" },
+    { speaker: "Q", text: "Helaas, je moet nog even geduld hebben." },
+    { speaker: "IK", text: "Waarom dan?" },
+    { speaker: "Q", text: "Omdat ik eerst nog het hele spel moet afmaken. Dit was de teaser en die heb je zojuist uitgespeeld." },
   ];
   private quadratusIndex = 0;
   private quadratusBox?: Phaser.GameObjects.Graphics;
@@ -145,8 +146,8 @@ export default class Face1Scene extends FaceBase {
     // Decorations etc.
     this.decorateCrashSite(radius);
 
-    // Spawn Quadratus (if electricity is solved)
-    if (this.registry.get("electricitySolved")) {
+    // Spawn Quadratus (if electricity is solved, or in debug mode)
+    if (DEBUG || this.registry.get("electricitySolved")) {
       this.spawnQuadratus();
     }
 
