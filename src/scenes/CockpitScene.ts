@@ -584,14 +584,16 @@ export default class CockpitScene extends Phaser.Scene {
 
       this.lamps.set(name, lamp);
 
-      // Label - make DEUREN a visual button in repaired state
+      // Label - make DEUREN a visual button (always visible, active when repaired)
       if (name === "deuren") {
-        if (this.currentPhase === "repaired" && isOn) {
-          // Create visual button
-          const buttonX = x + 16;
-          const buttonY = lampY - 10;
-          const buttonWidth = 55; // Narrower button
-          const buttonHeight = 20;
+        const buttonX = x + 16;
+        const buttonY = lampY - 10;
+        const buttonWidth = 55; // Narrower button
+        const buttonHeight = 20;
+        const isActive = this.currentPhase === "repaired" && isOn;
+
+        if (isActive) {
+          // ACTIVE button (repaired state)
 
           // Subtle shadow
           const shadow = this.add.graphics();
@@ -668,11 +670,34 @@ export default class CockpitScene extends Phaser.Scene {
             });
           });
         } else {
-          // Normal non-clickable label
-          this.add.text(x + 16, lampY - 6, lampLabels[name as keyof typeof lampLabels], {
+          // INACTIVE button (damaged state)
+
+          // Subtle shadow (darker)
+          const shadow = this.add.graphics();
+          shadow.setDepth(2);
+          shadow.fillStyle(0x000000, 0.15);
+          shadow.fillRoundedRect(buttonX + 1, buttonY + 1, buttonWidth, buttonHeight, 3);
+
+          // Button background (darker, greyed out)
+          const buttonBg = this.add.graphics();
+          buttonBg.setDepth(3);
+
+          // Main button fill - very dark grey
+          buttonBg.fillStyle(0x2a2a2a, 1); // Dark grey
+          buttonBg.fillRoundedRect(buttonX, buttonY, buttonWidth, buttonHeight, 3);
+
+          // Border (darker)
+          buttonBg.lineStyle(1, 0x404040, 0.5); // Dark grey border
+          buttonBg.strokeRoundedRect(buttonX, buttonY, buttonWidth, buttonHeight, 3);
+
+          // Button text - aligned left, GREY color (disabled)
+          this.add.text(buttonX + 5, buttonY + buttonHeight / 2, "DEUREN", {
             fontSize: "11px",
-            color: isOn ? "#ffffff" : "#666666",
-          }).setDepth(3);
+            color: "#666666", // Grey text for disabled state
+            fontStyle: "normal",
+          }).setOrigin(0, 0.5).setDepth(4);
+
+          // No interactive hit area - button is disabled
         }
       } else {
         // Normal non-clickable label for other lamps
