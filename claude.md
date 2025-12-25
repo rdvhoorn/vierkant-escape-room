@@ -55,3 +55,15 @@ constructor() {
   super("MyScene");
 }
 ```
+
+### Production Builds
+
+Maak productie builds altijd in de `builds/` folder met timestamp:
+
+```bash
+npm run build
+mkdir -p builds
+zip -r "builds/teaser-$(date +%Y%m%d-%H%M%S).zip" dist/
+```
+
+De `builds/` folder en `*.zip` bestanden worden automatisch genegeerd door git.
