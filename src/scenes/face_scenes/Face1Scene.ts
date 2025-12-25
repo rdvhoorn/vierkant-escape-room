@@ -239,8 +239,8 @@ export default class Face1Scene extends FaceBase {
       wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
     }).setDepth(202).setScrollFactor(0);
 
-    // Hint
-    this.add.text(width - 50, height - 30, "Klik →", {
+    // Hint positioned bottom-right inside box
+    this.add.text(boxX + boxWidth - 10, boxY + boxHeight - 10, "Klik →", {
       fontFamily: "sans-serif",
       fontSize: "12px",
       color: "#888888",
