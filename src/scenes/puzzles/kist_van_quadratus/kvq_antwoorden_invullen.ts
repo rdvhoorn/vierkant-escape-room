@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { createBackButton } from "../../../utils/BackButton";
+import { PUZZLE_REWARDS, PuzzleKey } from "../../face_scenes/_FaceConfig";
 
 type Slot = {
   key: string;
@@ -31,7 +32,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
   }
 
   create() {
-    createBackButton(this, "Face7Scene");
+    createBackButton(this, "Face7Scene", { entry_from_puzzle: true });
 
     const cx = this.cameras.main.centerX;
     const cy = this.cameras.main.centerY;
@@ -262,16 +263,6 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
 
     const allCorrect = this.slots.every((s) => Number(s.value) === s.answer);
 
-    for (const s of this.slots) {
-      if (s.value.length === 0) {
-        s.fieldRect.setStrokeStyle(3, 0x888888);
-      } else if (Number(s.value) === s.answer) {
-        s.fieldRect.setStrokeStyle(4, 0x2ecc71);
-      } else {
-        s.fieldRect.setStrokeStyle(4, 0xe74c3c);
-      }
-    }
-
     if (allCorrect) {
       this.solved = true;
       this.onSolved();
@@ -279,14 +270,17 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
   }
 
   private onSolved() {
+    this.registry.set(PUZZLE_REWARDS[PuzzleKey.KistVanQuadratus].puzzleSolvedRegistryKey, true);
     this.add
-      .text(this.cameras.main.centerX, this.cameras.main.centerY + 170, "Correct!", {
+      .text(this.cameras.main.centerX, this.cameras.main.centerY + 170, "Hij opent!", {
         fontFamily: "Arial",
         fontSize: "32px",
         color: "#2ecc71",
       })
       .setOrigin(0.5);
 
-    this.scene.start("Face7Scene");
+    this.time.delayedCall(1500, () => {
+      this.scene.start("Face7Scene", { entry_from_puzzle: true });
+    });
   }
 }
