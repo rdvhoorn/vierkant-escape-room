@@ -165,7 +165,7 @@ export default class TitleScene extends Phaser.Scene {
     if (this.isStarting) return;
     this.isStarting = true;
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("kvq_vierkant");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 
