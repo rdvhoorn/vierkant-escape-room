@@ -21,7 +21,7 @@ import KVQSom1 from "./scenes/puzzles/kist_van_quadratus/kvq_som_1";
 import KVQEieren from "./scenes/puzzles/kist_van_quadratus/kvq_eieren";
 import KVQOneven from "./scenes/puzzles/kist_van_quadratus/kvq_oneven";
 import KVQfruit from "./scenes/puzzles/kist_van_quadratus/kvq_fruit";
-import KVQ12 from "./scenes/puzzles/kist_van_quadratus/kvq_12";
+import KVQVierkant from "./scenes/puzzles/kist_van_quadratus/kvq_vierkant";
 import KVQAntwoordenInvullen from "./scenes/puzzles/kist_van_quadratus/kvq_antwoorden_invullen";
 
 import TangramKikkerScene from "./scenes/puzzles/tangram/TangramKikkerScene";
@@ -82,7 +82,7 @@ const config: Phaser.Types.Core.GameConfig = {
   KVQSom1,
   KVQEieren,
   KVQOneven,
-  KVQ12,
+  KVQVierkant,
   KVQfruit,
   KVQAntwoordenInvullen,
   TangramKikkerScene,

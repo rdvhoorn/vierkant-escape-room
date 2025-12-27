@@ -1,9 +1,16 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { getFaceConfig, buildNeighborColorMap, PUZZLE_REWARDS, PuzzleKey } from "./_FaceConfig";
 
 export default class Face7Scene extends FaceBase {
+  private entry_from_puzzle: boolean = false;
+
   constructor() {
     super("Face7Scene");
+  }
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   create() {
@@ -24,10 +31,13 @@ export default class Face7Scene extends FaceBase {
       showLabel: visuals.showLabel ?? true,
     });
 
+    const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.KistVanQuadratus].puzzleSolvedRegistryKey)
+
+    const image_str = puzzleSolved ? "chest_2_open" : "chest_2";
     const center = this.getPolygonCenter(this.poly);
     const chest_pos = new Phaser.Math.Vector2(center.x, center.y);
     const chest = this.add
-      .image(chest_pos.x, chest_pos.y, "chest_2")
+      .image(chest_pos.x, chest_pos.y, image_str)
       .setOrigin(0.5, 0.6)
       .setDisplaySize(976/15, 781/15)
       .setDepth(50);
@@ -36,15 +46,53 @@ export default class Face7Scene extends FaceBase {
     const chestBlock1 = this.add.zone(chest_pos.x, chest_pos.y-20, 976/15, 25);
     this.physics.add.existing(chestBlock1, true);
     this.physics.add.collider(this.player, chestBlock1);
-    this.makeObjectInteractable(chest, {
+    
+
+    const handle = this.createDialogInteraction(chest, {
       hitRadius: 50,
-      paddingX: 10,
-      paddingY: 10,
       hintText: "Bekijk het slot op de kist",
-      onUse: () => {
-        this.scene.start("kvq_antwoorden_invullen");
+      buildLines: () => {
+        if (this.entry_from_puzzle && puzzleSolved) {
+          return [
+            "Quadratus: De kist is open! Dankjewel voor het helpen!",
+            "Quadratus: Zoals beloofd, hier is je beloning.",
+          ];
+        } else if (this.entry_from_puzzle && !puzzleSolved) {
+          return [
+            "Quadratus: Hm, het lijkt erop dat ik de kist nog niet kan openen.",
+            "Quadratus: Ik probeer zelf nog wel wat. Maar ik kan je hulp altijd nog gebruiken.",
+          ];
+        } else if (!this.entry_from_puzzle && puzzleSolved) {
+          return [
+            "Quadratus: Je hebt de kist al geopend! Heel erg bedankt voor je hulp!",
+          ];
+        } else {
+          return [
+            "Jij: Hoi Quadratus! Wat heb je hier?",
+            "Quadratus: Hoi! Dit is mijn schatkist, maar ik weet niet meer hoe hij open moet. Ik ben de code vergeten. Kun jij me helpen?",
+            "Quadratus: Als je me helpt hem te openen, dan krijg je alle energie die hier in zit."
+          ];
+        }
+
+      },
+      onComplete: () => {
+        if (this.entry_from_puzzle && puzzleSolved) {
+          this.addPuzzleRewardIfNotObtained(PuzzleKey.KistVanQuadratus)
+        }
+        if (!this.entry_from_puzzle && !puzzleSolved) {
+          this.scene.start("kvq_antwoorden_invullen");
+        }
+        if (this.entry_from_puzzle) {
+          this.entry_from_puzzle = false;
+        }
       }
     })
+
+    if (this.entry_from_puzzle) {
+      this.time.delayedCall(50, () => {
+        handle.start();
+      })
+    }
   }
 
   update(_time: number, delta: number) {

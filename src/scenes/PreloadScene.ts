@@ -49,11 +49,17 @@ export default class PreloadScene extends Phaser.Scene {
 
     // KVQ
     this.load.image("twelve", "/assets/decor/kvq/12.png");
+    this.load.image("twelve_sign", "/assets/decor/kvq/12_sign.png");
     this.load.image("ei", "/assets/decor/kvq/ei.png");
+    this.load.image("ei_sign", "/assets/decor/kvq/ei_sign.png");
     this.load.image("fruitmand", "/assets/decor/kvq/fruitmand.png");
+    this.load.image("fruitmand_sign", "/assets/decor/kvq/fruitmand_sign.png");
     this.load.image("vierkant_logo", "/assets/decor/kvq/vierkant_logo.png");
+    this.load.image("vierkant_logo_sign", "/assets/decor/kvq/vierkant_logo_sign.png");
     this.load.image("vraagtekens", "/assets/decor/kvq/vraagtekens.png");
+    this.load.image("vraagtekens_sign", "/assets/decor/kvq/vraagtekens_sign.png");
     this.load.image("driehoek", "/assets/decor/kvq/driehoek.png");
+    this.load.image("driehoek_sign", "/assets/decor/kvq/driehoek_sign.png");
     this.load.image("1kers", "/assets/decor/fruit/1kers.png");
     this.load.image("1peer", "/assets/decor/fruit/1peer.png");
     this.load.image("2kersen", "/assets/decor/fruit/2kersen.png");
@@ -67,6 +73,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("debris1", "/assets/decor/tuft.png");
     this.load.image("chest","/assets/decor/chest.png")
     this.load.image("chest_2","/assets/decor/chest_2.png")
+    this.load.image("chest_2_open","/assets/decor/chest_2_open.png")
     this.load.image("tower","/assets/decor/tower.png")
     this.load.image("tower","/assets/decor/brokenpanel.png")
     this.load.image("telescope","/assets/decor/telescope.png")
