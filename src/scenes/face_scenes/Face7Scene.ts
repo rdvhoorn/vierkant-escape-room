@@ -31,10 +31,13 @@ export default class Face7Scene extends FaceBase {
       showLabel: visuals.showLabel ?? true,
     });
 
+    const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.KistVanQuadratus].puzzleSolvedRegistryKey)
+
+    const image_str = puzzleSolved ? "chest_2_open" : "chest_2";
     const center = this.getPolygonCenter(this.poly);
     const chest_pos = new Phaser.Math.Vector2(center.x, center.y);
     const chest = this.add
-      .image(chest_pos.x, chest_pos.y, "chest_2")
+      .image(chest_pos.x, chest_pos.y, image_str)
       .setOrigin(0.5, 0.6)
       .setDisplaySize(976/15, 781/15)
       .setDepth(50);
@@ -43,7 +46,7 @@ export default class Face7Scene extends FaceBase {
     const chestBlock1 = this.add.zone(chest_pos.x, chest_pos.y-20, 976/15, 25);
     this.physics.add.existing(chestBlock1, true);
     this.physics.add.collider(this.player, chestBlock1);
-    const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.KistVanQuadratus].puzzleSolvedRegistryKey)
+    
 
     const handle = this.createDialogInteraction(chest, {
       hitRadius: 50,
