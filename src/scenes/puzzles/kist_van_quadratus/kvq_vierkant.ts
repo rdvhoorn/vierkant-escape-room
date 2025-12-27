@@ -1,9 +1,9 @@
 import Phaser from "phaser";
 import { createBackButton } from "../../../utils/BackButton";
 
-export default class KVQ12 extends Phaser.Scene {
+export default class KVQVierkant extends Phaser.Scene {
   constructor() {
-    super("kvq_12");
+    super("kvq_vierkant");
   }
 
   create() {
@@ -27,7 +27,7 @@ export default class KVQ12 extends Phaser.Scene {
 
     // --- Question text ---
     this.add
-      .text(centerX, centerY, "He niet 3 keer hetzelfde cijfer gebruiken in een plussom waarvan de uitkomst twaalf is. Je mag het cijfer 4 niet gebruiken. Welk cijfer heb je nodig?", {
+      .text(centerX, centerY-80, "Hoeveel vierkanten zijn er?", {
         fontFamily: "Arial",
         fontSize: "32px",
         color: "#000000",
@@ -37,5 +37,6 @@ export default class KVQ12 extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(2);
 
+    this.add.image(centerX, centerY + 50, "vierkant_logo").setOrigin(0.5).setScale(0.8);
   }
 }
