@@ -42,11 +42,11 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
 
     const puzzle = [
       { key: "vraagtekens", answer: 7 },
-      { key: "driehoek", answer: 3 },
-      { key: "vierkant_logo", answer: 9 },
-      { key: "fruitmand", answer: 4 },
-      { key: "ei", answer: 1 },
-      { key: "twelve", answer: 12 },
+      { key: "driehoek", answer: 27 },
+      { key: "vierkant_logo", answer: 6 },
+      { key: "fruitmand", answer: 14 },
+      { key: "ei", answer: 36 },
+      { key: "twelve", answer: 1 },
     ];
 
     // Layout
