@@ -32,8 +32,6 @@ import TangramSelectScene from "./scenes/puzzles/tangram/TangramSelectScene";
 // Puzzle scenes
 import ShipFuelScene from "./scenes/puzzles/ShipFuelScene";
 import MoreToComeScene from "./scenes/MoreToComeScene";
-import PuzzleLogicOneScene from "./scenes/puzzles/PuzzleLogicOneScene";
-import PuzzleLogicTwoScene from "./scenes/puzzles/PuzzleLogicTwoScene";
 import StreakMaze from "./scenes/puzzles/StreakMaze";
 import LogicTower from "./scenes/puzzles/LogicTower";
 import LogicTower_1 from "./scenes/puzzles/LogicTower_1";
@@ -80,8 +78,6 @@ const config: Phaser.Types.Core.GameConfig = {
   TitleScene,
   IntroScene,
   MoreToComeScene,
-  PuzzleLogicOneScene,
-  PuzzleLogicTwoScene,
   KVQDriehoeken,
   KVQSom1,
   KVQEieren,
