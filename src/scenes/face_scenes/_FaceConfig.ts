@@ -40,6 +40,7 @@ export enum PuzzleKey {
   KistVanQuadratus = "kist_van_quadratus",
   Tangram = "tangram",
   ShipFuel = "ship_fuel",
+  LogicTower= "logic_tower",
 }
 
 // Constant of puzzle key, reward, and reward obtained key
@@ -47,6 +48,7 @@ export const PUZZLE_REWARDS: Record<PuzzleKey, { rewardEnergy: number; rewardObt
   [PuzzleKey.KistVanQuadratus]: { rewardEnergy: 20, rewardObtainedRegistryKey: "kvq_puzzle_solved_fuel_obtained", puzzleSolvedRegistryKey: "kvq_puzzle_solved" },
   [PuzzleKey.Tangram]: { rewardEnergy: 10, rewardObtainedRegistryKey: "tangram_puzzle_solved_fuel_obtained" , puzzleSolvedRegistryKey: "tangram_puzzle_solved" },
   [PuzzleKey.ShipFuel]: { rewardEnergy: 50, rewardObtainedRegistryKey: "ship_fuel_obtained", puzzleSolvedRegistryKey: "ship_fuel_solved" },
+  [PuzzleKey.LogicTower]:{rewardEnergy:50, rewardObtainedRegistryKey: "tower_reward_obtained", puzzleSolvedRegistryKey: "tower_solved"},
 };
 
 export type FaceKey =

@@ -1,8 +1,10 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+// We import PuzzleKey and PUZZLE_REWARDS to use the central config
+import { getFaceConfig, buildNeighborColorMap, PuzzleKey, PUZZLE_REWARDS } from "./_FaceConfig";
 
 export default class Face4Scene extends FaceBase {
   private readonly birdSize = 20;
+
   constructor() {
     super("Face4Scene");
   }
@@ -24,35 +26,76 @@ export default class Face4Scene extends FaceBase {
       backgroundColor: visuals.backgroundColor,
       showLabel: visuals.showLabel ?? true,
     });
+
     this.addMorphingEscherPattern(radius);
+
     if (!this.faceLayers) return;
     const { actors } = this.faceLayers;
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
+
+    // --- TOWER ASSET ---
     const tower = this.add.image(centerX, centerY + 40, "tower");
     tower.setOrigin(0.5, 1);
     const scaleFactor = 0.15;
     tower.setScale(scaleFactor);
     actors.add(tower);
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
-    //interactie
+
+    // --- INTERACTION LOGIC ---
     const handle = this.createDialogInteraction(tower, {
       hitRadius: 40,
       hintText: "Druk op E om de toren in te gaan",
-      buildLines: () => [
-        "dialogue hier"
-      ],
+      
+      // 1. Build Lines
+      buildLines: () => {
+        // Retrieve the configuration for the Logic Tower
+        const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
+        
+        // Check if "tower_solved" is true in the registry
+        const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
+
+        if (isSolved) {
+          // If solved, try to give the reward using the FaceBase helper
+          // This checks "tower_reward_obtained", gives energy if needed, and marks it obtained
+          this.addPuzzleRewardIfNotObtained(PuzzleKey.LogicTower);
+
+          // Return the "Closed" dialogue
+          return [
+            "De lichten van de toren zijn gedoofd.",
+            "Het signaal is succesvol verzonden.",
+            "De ingang zit stevig op slot."
+          ];
+        }
+
+        // If NOT solved, Return the "Open" dialogue
+        return [
+          "Een mysterieuze toren rijst op uit het niets.",
+          "Binnen brandt een flauw licht...",
+          "Durf je naar binnen te gaan?"
+        ];
+      },
+
+      // 2. Action on Complete
       onComplete: () => {
-        this.scene.start("LogicTower", { entry_from_face: true });
+        const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
+        const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
+
+        // Only enter the puzzle scene if it hasn't been solved yet
+        if (!isSolved) {
+          this.scene.start("LogicTower", { entry_from_face: true });
+        }
       },
     });
+
     tower.setData("dialogHandle", handle);
   }
 
   update(_time: number, delta: number) {
     this.baseFaceUpdate(delta);
   }
-//basically dit werkt voor geen meter
+
+  // --- VISUALS (Standard Escher Pattern) ---
   private addMorphingEscherPattern(radius: number) {
     if (!this.faceLayers) return;
     const width = this.scale.width;

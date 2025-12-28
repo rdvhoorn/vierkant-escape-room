@@ -105,9 +105,11 @@ export default class LogicTower_3 extends Phaser.Scene {
     }
   }
 
-  private completePuzzle() {
+private completePuzzle() {
     console.log("Tower Level 3 Completed!");
-    this.exitScene(true);
+    this.scene.start("LogicTower_4", { 
+        returnScene: this.returnSceneKey 
+    });
   }
 
   private exitScene(solved = false) {
