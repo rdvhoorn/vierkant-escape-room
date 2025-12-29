@@ -328,7 +328,7 @@ export default class Face1Scene extends FaceBase {
     }).setOrigin(0.5).setDepth(202).setScrollFactor(0);
 
     // Message
-    const msg = this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in januari terug voor meer!", {
+    const msg = this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in februari terug voor meer!", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#e7f3ff",

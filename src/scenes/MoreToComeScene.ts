@@ -18,7 +18,7 @@ export default class MoreToComeScene extends Phaser.Scene {
       fontFamily: "sans-serif", fontSize: "24px", color: "#e7f3ff"
     }).setOrigin(0.5);
     
-    this.add.text(width/2, title.y + 36, "Kom in Januari terug voor nog veel meer!", {
+    this.add.text(width/2, title.y + 36, "Kom in februari terug voor nog veel meer!", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#cfe8ff"
     }).setOrigin(0.5);
   }

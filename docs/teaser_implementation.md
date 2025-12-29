@@ -215,7 +215,7 @@ Q: "Omdat ik eerst nog het hele spel moet afmaken. Dit was de teaser en die heb 
 ✨ Gelukt! ✨
 
 Dit was de teaser voor de escape room!
-Kom in januari terug voor meer!
+Kom in februari terug voor meer!
 ```
 
 **Interactie:**
