@@ -99,7 +99,6 @@ export class PlayerController {
   // Called each frame from the Scene
   update() {
     if (this.inputEnabled) {
-      console.log("updating player");
       this.updateMovement();
       this.updateOrientationAndAnimation();
     }
