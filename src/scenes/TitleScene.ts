@@ -11,7 +11,7 @@ import { TwinklingStars } from "../utils/TwinklingStars";
 // -----------------------------
 // TAB CONTENT
 // -----------------------------
-const INFO_TAB_BODY = `Deze escaperoom is gericht op leerlingen van groep 6, 7 en 8 van de basisschool die van puzzelen en logisch denken houden. Voor nu staat alleen de teaser nog online. Dit voorproefje geeft alvast een beeld van de escaperoom die in januari volledig online zal komen. Let op: als je de teaser afsluit, dan is je voortgang weg. Speel hem dus in 1x uit, of schrijf de antwoorden op zodat je de volgende keer er sneller doorheen kan.`;
+const INFO_TAB_BODY = `Deze escaperoom is gericht op leerlingen van groep 6, 7 en 8 van de basisschool die van puzzelen en logisch denken houden. Voor nu staat alleen de teaser nog online. Dit voorproefje geeft alvast een beeld van de escaperoom die in februari volledig online zal komen. Let op: als je de teaser afsluit, dan is je voortgang weg. Speel hem dus in 1x uit, of schrijf de antwoorden op zodat je de volgende keer er sneller doorheen kan.`;
 
 const ACHTERGROND_TAB_BODY = `Stichting [Vierkant voor Wiskunde](https://www.vierkantvoorwiskunde.nl/) organiseert al vanaf 1993 wiskundige activiteiten voor jongeren. Onder andere organiseert de stichting elk jaar wiskundezomerkampen voor groep 6 tot en met klas 6. Om dit mooie initiatief te ondersteunen, hebben de [bèta-vicedecanen van de Nederlandse universiteiten](https://www.vierkantvoorwiskunde.nl/2023/10/uitbouw-van-de-vierkant-voor-wiskunde-zomerkampen/) in 2024 een bijdrage toegekend om de zomerkampen uit te breiden.
 
