@@ -138,11 +138,11 @@ export default class Face3Scene extends FaceBase {
       hintText: "Ga door het deurtje: E",
       buildLines: () => {
         const solved = !!this.registry.get("streak_maze_solved");
-        if (solved) return ["Het deurtje staat open. Je bent hier al geweest."];
+        if (solved) return [{ speaker: "", text: "Het deurtje staat open. Je bent hier al geweest." }];
         return [
-          "Je staat voor een klein deurtje in de hoge heg.",
-          "Het lijkt op slot… of misschien toch niet?",
-          "Je bent nieuwsgierig en gaat naar binnen...",
+          { speaker: "", text: "Je staat voor een klein deurtje in de hoge heg." },
+          { speaker: "", text: "Het lijkt op slot… of misschien toch niet?" },
+          { speaker: "", text: "Je bent nieuwsgierig en gaat naar binnen..." },
         ];
       },
       onComplete: () => {

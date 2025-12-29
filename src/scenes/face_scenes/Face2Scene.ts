@@ -63,41 +63,42 @@ export default class Face2Scene extends FaceBase {
     const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(44, 56).setDepth(70);
     layers.actors.add(farmer);
 
-    let already_talked = false;
+    const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.Tangram].puzzleSolvedRegistryKey);
 
     const handle = this.createDialogInteraction(farmer, {
       hitRadius: 50,
       hintText: "Praat met reiziger: E",
       buildLines: () => {
-        const tangramSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.Tangram].puzzleSolvedRegistryKey);
-
-        if (tangramSolved) {
-          // Puzzle already solved → short thank-you dialog
-          this.addPuzzleRewardIfNotObtained(PuzzleKey.Tangram)
+        if (this.entry_from_puzzle && puzzleSolved) {
           return [
-            "Reiziger: Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!",
+            { speaker: "Henk", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!" },
+          ];
+        } else if (this.entry_from_puzzle && !puzzleSolved) {
+          return [
+            { speaker: "Henk", text: "Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!" }
+          ]
+        } else if (!this.entry_from_puzzle && puzzleSolved) {
+          return [
+            { speaker: "Henk", text: "Dankjewel voor je hulp! Ik ben zo blij dat al mijn dieren terug zijn!" },
+          ];
+        } else {
+          return [
+            { speaker: "Henk", text: "Hé, jij ziet er nieuw uit op dit vlak." },
+            { speaker: "Jij", text: "Net geland. Weet je waar ik wat energie kan vinden?" },
+            { speaker: "Henk", text: "Sommige vlakken verbergen meer dan ze laten zien… kijk goed rond." },
+            { speaker: "Henk", text: "Kom, dan laat ik je een puzzel zien." },
           ];
         }
-
-        if (this.entry_from_puzzle && !tangramSolved) {
-          already_talked = true;
-          return [
-            "Reiziger: Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!"
-          ]
-        }
-
-        // Puzzle not solved → dialog that leads into tangram select
-        return [
-          "Reiziger: Hé, jij ziet er nieuw uit op dit vlak.",
-          "Jij: Net geland. Weet je waar ik wat energie kan vinden?",
-          "Reiziger: Sommige vlakken verbergen meer dan ze laten zien… kijk goed rond.",
-          "Reiziger: Kom, dan laat ik je een puzzel zien.",
-        ];
       },
       onComplete: () => {
-        const tangramSolved = !!this.registry.get("tangram_puzzle_solved");
-        if (!tangramSolved && !already_talked) {
+        if (this.entry_from_puzzle && puzzleSolved) {
+          this.addPuzzleRewardIfNotObtained(PuzzleKey.Tangram);
+        }
+        if (!this.entry_from_puzzle && !puzzleSolved) {
           this.scene.start("TangramSelectScene");
+        }
+        if (this.entry_from_puzzle) {
+          this.entry_from_puzzle = false;
         }
       },
     });
