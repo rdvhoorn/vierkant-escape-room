@@ -199,6 +199,9 @@ export default class Face1Scene extends FaceBase {
     this.quadratusDialogActive = true;
     this.quadratusIndex = 0;
 
+    // Stop player movement and disable input during dialog
+    this.playerController.setInputEnabled(false);
+
     const { width, height } = this.scale;
 
     // No dark overlay - keep Quadratus visible
@@ -279,6 +282,9 @@ export default class Face1Scene extends FaceBase {
   private endQuadratusDialog() {
     this.quadratusDialogActive = false;
     this.registry.set("quadratusDialogSeen", true);
+
+    // Re-enable player movement
+    this.playerController.setInputEnabled(true);
 
     // Clean up dialog UI only (Quadratus stays on the planet)
     this.quadratusOverlay?.destroy();

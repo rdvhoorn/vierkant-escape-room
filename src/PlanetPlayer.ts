@@ -111,10 +111,12 @@ export class PlayerController {
   public setInputEnabled(enabled: boolean) {
     this.inputEnabled = enabled;
 
-    // Optional: immediately stop movement when disabling
     if (!enabled) {
+      this.sprite.setAcceleration(0, 0);
       this.sprite.setVelocity(0, 0);
-      this.sprite.anims.play("idle", true); // or whatever your idle anim is
+      this.sprite.play("player-idle");
+      this.sprite.anims.timeScale = 0.6;
+      this.sprite.setAngle(0);
     }
   }
 
