@@ -49,6 +49,11 @@ type TravelEdgeZone = {
   height: number;
 };
 
+type DialogLine = {
+  speaker: string;
+  text: string;
+};
+
 type StandardFaceConfig = {
   radius: number;
   faceTravelTargets: (string | null)[]; // for the 5 edges, null = no travel
@@ -104,10 +109,16 @@ export default abstract class FaceBase extends Phaser.Scene {
   // ---- Shared dialog system ----
   private dialogBox?: Phaser.GameObjects.Rectangle;
   private dialogText?: Phaser.GameObjects.Text;
-  private dialogLines: string[] = [];
+  private dialogLines: DialogLine[] = [];
   private dialogIndex = 0;
+  private dialogNameText?: Phaser.GameObjects.Text;
   private dialogActive = false;
   private dialogOnComplete?: () => void;
+  protected dialogSpeakerStyles: Record<string, string> = {
+    "Jij" : "#4bff72ff",
+    "Quadratus": "#ffb74cff",
+  };
+  protected defaultDialogSpeakerColor: string = "#ffffffff";
 
   // ------------------------------------
   // Lifecycle
@@ -494,7 +505,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       hintText?: string;
       paddingX?: number;
       paddingY?: number;
-      buildLines: () => string[];      // called each time you start talking
+      buildLines: () => DialogLine[];      // called each time you start talking
       onComplete?: () => void;         // called after dialog finishes
     }
   ): { start: () => void } {
@@ -603,17 +614,29 @@ export default abstract class FaceBase extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.dialogBox?.destroy();
+    this.dialogNameText?.destroy();
     this.dialogText?.destroy();
 
     this.dialogBox = this.add
-      .rectangle(width / 2 + 100, height - 80, width - 100, 100, 0x1b2748, 0.9)
+      .rectangle(width / 2, height - 80, width - 100, 120, 0x1b2748, 0.9)
       .setStrokeStyle(2, 0x3c5a99)
-      .setDepth(999);
+      .setDepth(999)
+      .setScrollFactor(0);
+
+    const leftX = this.dialogBox.x - this.dialogBox.width / 2 + 20;
+    const topY = this.dialogBox.y - this.dialogBox.height / 2 + 14;
+
+    this.dialogNameText = this.add.text(leftX, topY, "", {
+      fontFamily: "sans-serif",
+      fontSize: "16px",
+      fontStyle: "bold",
+      color: "#ffffff",
+    }).setDepth(1000).setScrollFactor(0);
 
     this.dialogText = this.add
       .text(
-        this.dialogBox.x - this.dialogBox.width / 2 + 20,
-        this.dialogBox.y - 40,
+        leftX,
+        topY + 24,
         "",
         {
           fontFamily: "sans-serif",
@@ -625,13 +648,14 @@ export default abstract class FaceBase extends Phaser.Scene {
           },
         }
       )
-      .setDepth(1000);
+      .setDepth(1000).setScrollFactor(0);
 
     this.dialogBox.setVisible(false);
+    this.dialogNameText.setVisible(false);
     this.dialogText.setVisible(false);
   }
 
-  protected startDialog(lines: string[], onComplete?: () => void) {
+  protected startDialog(lines: DialogLine[], onComplete?: () => void) {
     if (!lines.length) return;
 
     this.ensureDialogUi();
@@ -662,8 +686,9 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.dialogActive = false;
     this.playerController.setInputEnabled(true);
 
-    if (this.dialogBox) this.dialogBox.setVisible(false);
-    if (this.dialogText) this.dialogText.setVisible(false);
+    this.dialogBox?.setVisible(false);
+    this.dialogNameText?.setVisible(false);
+    this.dialogText?.setVisible(false);
 
     const cb = this.dialogOnComplete;
     this.dialogOnComplete = undefined;
@@ -671,11 +696,24 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   private showCurrentDialogLine() {
-    if (!this.dialogBox || !this.dialogText) return;
+    if (!this.dialogBox || !this.dialogText || !this.dialogNameText) return;
+
+    const line: DialogLine = this.dialogLines[this.dialogIndex];
+    if (!line) return;
+
+    const speakerColor =
+      this.dialogSpeakerStyles[line.speaker] ??
+      this.defaultDialogSpeakerColor;
+    
 
     this.dialogBox.setVisible(true);
+    
+    this.dialogNameText.setVisible(true);
+    this.dialogNameText.setText(line.speaker);
+    this.dialogNameText.setColor(speakerColor);
+
     this.dialogText.setVisible(true);
-    this.dialogText.setText(this.dialogLines[this.dialogIndex] ?? "");
+    this.dialogText.setText(line.text);
   }
 
 

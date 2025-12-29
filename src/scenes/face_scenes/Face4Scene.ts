@@ -62,17 +62,17 @@ export default class Face4Scene extends FaceBase {
 
           // Return the "Closed" dialogue
           return [
-            "De lichten van de toren zijn gedoofd.",
-            "Het signaal is succesvol verzonden.",
-            "De ingang zit stevig op slot."
+            { speaker: "", text: "De lichten van de toren zijn gedoofd." },
+            { speaker: "", text: "Het signaal is succesvol verzonden." },
+            { speaker: "", text: "De ingang zit stevig op slot." }
           ];
         }
 
         // If NOT solved, Return the "Open" dialogue
         return [
-          "Een mysterieuze toren rijst op uit het niets.",
-          "Binnen brandt een flauw licht...",
-          "Durf je naar binnen te gaan?"
+          { speaker: "", text: "Een mysterieuze toren rijst op uit het niets." },
+          { speaker: "", text: "Binnen brandt een flauw licht..." },
+          { speaker: "", text: "Durf je naar binnen te gaan?" }
         ];
       },
 

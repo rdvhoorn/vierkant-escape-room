@@ -75,23 +75,23 @@ export default class Face2Scene extends FaceBase {
           // Puzzle already solved → short thank-you dialog
           this.addPuzzleRewardIfNotObtained(PuzzleKey.Tangram)
           return [
-            "Reiziger: Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!",
+            { speaker: "Henk", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!" },
           ];
         }
 
         if (this.entry_from_puzzle && !tangramSolved) {
           already_talked = true;
           return [
-            "Reiziger: Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!"
+            { speaker: "Henk", text: "Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!" }
           ]
         }
 
         // Puzzle not solved → dialog that leads into tangram select
         return [
-          "Reiziger: Hé, jij ziet er nieuw uit op dit vlak.",
-          "Jij: Net geland. Weet je waar ik wat energie kan vinden?",
-          "Reiziger: Sommige vlakken verbergen meer dan ze laten zien… kijk goed rond.",
-          "Reiziger: Kom, dan laat ik je een puzzel zien.",
+          { speaker: "Henk", text: "Hé, jij ziet er nieuw uit op dit vlak." },
+          { speaker: "Jij", text: "Net geland. Weet je waar ik wat energie kan vinden?" },
+          { speaker: "Henk", text: "Sommige vlakken verbergen meer dan ze laten zien… kijk goed rond." },
+          { speaker: "Henk", text: "Kom, dan laat ik je een puzzel zien." },
         ];
       },
       onComplete: () => {

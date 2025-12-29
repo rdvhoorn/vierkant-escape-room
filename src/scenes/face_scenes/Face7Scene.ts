@@ -54,23 +54,23 @@ export default class Face7Scene extends FaceBase {
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
           return [
-            "Quadratus: De kist is open! Dankjewel voor het helpen!",
-            "Quadratus: Zoals beloofd, hier is je beloning.",
+            { speaker: "Quadratus", text: "De kist is open! Dankjewel voor het helpen!" },
+            { speaker: "Quadratus", text: "Zoals beloofd, hier is je beloning." },
           ];
         } else if (this.entry_from_puzzle && !puzzleSolved) {
           return [
-            "Quadratus: Hm, het lijkt erop dat ik de kist nog niet kan openen.",
-            "Quadratus: Ik probeer zelf nog wel wat. Maar ik kan je hulp altijd nog gebruiken.",
+            { speaker: "Quadratus", text: "Hm, het lijkt erop dat ik de kist nog niet kan openen." },
+            { speaker: "Quadratus", text: "Ik probeer zelf nog wel wat. Maar ik kan je hulp altijd nog gebruiken." },
           ];
         } else if (!this.entry_from_puzzle && puzzleSolved) {
           return [
-            "Quadratus: Je hebt de kist al geopend! Heel erg bedankt voor je hulp!",
+            { speaker: "Quadratus", text: "Je hebt de kist al geopend! Heel erg bedankt voor je hulp!" },
           ];
         } else {
           return [
-            "Jij: Hoi Quadratus! Wat heb je hier?",
-            "Quadratus: Hoi! Dit is mijn schatkist, maar ik weet niet meer hoe hij open moet. Ik ben de code vergeten. Kun jij me helpen?",
-            "Quadratus: Als je me helpt hem te openen, dan krijg je alle energie die hier in zit."
+            { speaker: "Jij", text: "Hoi Quadratus! Wat heb je hier?" },
+            { speaker: "Quadratus", text: "Hoi! Dit is mijn schatkist, maar ik weet niet meer hoe hij open moet. Ik ben de code vergeten. Kun jij me helpen?" },
+            { speaker: "Quadratus", text: "Als je me helpt hem te openen, dan krijg je alle energie die hier in zit." }
           ];
         }
 
