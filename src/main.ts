@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import TitleScene from "./scenes/TitleScene";
+import CockpitScene from "./scenes/CockpitScene";
 import IntroScene from "./scenes/IntroScene";
 import Face1Scene from "./scenes/face_scenes/Face1Scene";
 import Face2Scene from "./scenes/face_scenes/Face2Scene";
@@ -39,6 +40,9 @@ import LogicTower_2 from "./scenes/puzzles/LogicTower_2";
 import LogicTower_3 from "./scenes/puzzles/LogicTower_3";
 import LogicTower_4 from "./scenes/puzzles/LogicTower_4";
 import LogicTower_5 from "./scenes/puzzles/LogicTower_5";
+
+// Debug mode - set to false for release
+export const DEBUG = false;
 
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 540;
@@ -79,6 +83,7 @@ const config: Phaser.Types.Core.GameConfig = {
   Face12Scene,
   BootScene,
   TitleScene,
+  CockpitScene,
   IntroScene,
   MoreToComeScene,
   KVQDriehoeken,

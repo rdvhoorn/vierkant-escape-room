@@ -115,6 +115,7 @@ export class PlayerController {
       this.sprite.setAcceleration(0, 0);
       this.sprite.setVelocity(0, 0);
       this.sprite.play("player-idle");
+      this.sprite.anims.timeScale = 0.6;
       this.sprite.setAngle(0);
     }
   }

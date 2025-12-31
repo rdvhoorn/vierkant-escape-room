@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../../utils/TwinklingStars";
+import { DEBUG } from "../../main";
 
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
@@ -68,14 +69,8 @@ export default class ShipFuelScene extends Phaser.Scene {
       { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" })
       .setOrigin(1, 1).setAlpha(0.85);
 
-    // Lines to click through
-    this.lines = [
-      "Impact detected. Hull stable. Navigation nominal.",
-      "Fuel's low, but we'll figure it out planetside.",
-      "Let's get moving…",
-      "DOOO PUZZLE HERE!!!"
-    ];
-    this.show(this.lines[this.i]);
+    // Start puzzle immediately
+    this.startPuzzle();
 
     // Input for dialog advance (disabled while puzzle is active)
     this.input.on("pointerdown", () => this.advance());
@@ -84,7 +79,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     //terug met escape (rondlopen)
     this.input.keyboard?.on("keydown-ESC", () => {
       this.scene.stop(this.scene.key);
-      this.scene.start("Face1Scene");
+      this.scene.start("CockpitScene");
     });
   }
 
@@ -127,22 +122,10 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
-    const currentEnergy = this.registry.get("energy") || 0;
-
-    if (currentEnergy < 5) {
-      // Not enough energy — show warning message
-      this.tweens.killTweensOf(this.dialogText);
-      this.dialogText.setAlpha(1).setText("Vind minstens 5 energie voor je mag vertrekken! (druk ESCAPE)");
-      this.advanceHint.setVisible(false);
-
-      // Optional: after a short time, show the hint again
-      this.time.delayedCall(3000, () => this.advanceHint.setVisible(true));
-      return;
-    }
-
-    // Enough energy — proceed normally
+    // Set flag that electricity puzzle is solved, then go back to cockpit
+    this.registry.set("electricitySolved", true);
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("MoreToComeScene");
+      if (p === 1) this.scene.start("CockpitScene");
     });
   }
 
@@ -187,6 +170,16 @@ export default class ShipFuelScene extends Phaser.Scene {
 
     this.restartBtn.on("pointerdown", () => this.resetPuzzle());
     this.tweens.add({ targets: this.restartBtn, alpha: 1, duration: 220 });
+
+    // DEBUG: Skip button (gold) at top-left of grid
+    if (DEBUG) {
+      const skipBtn = this.add.text(this.gridOrigin.x - 40, this.gridOrigin.y + 20, "⚡", {
+        fontFamily: "sans-serif",
+        fontSize: "28px",
+        color: "#ffd700"
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      skipBtn.on("pointerdown", () => this.solvePuzzle());
+    }
 
     // Graphics
     this.gridGfx = this.add.graphics().setAlpha(0);
@@ -505,6 +498,37 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.redrawPaths();
   }
 
+  // DEBUG: Instantly solve the puzzle
+  private solvePuzzle() {
+    // Hardcoded solution for the 6x6 puzzle
+    this.paths.set(0x9b59b6, [ // Purple
+      {x:0,y:0},{x:0,y:1},{x:0,y:2},{x:0,y:3},{x:0,y:4}
+    ]);
+    this.paths.set(0xf0c419, [ // Yellow
+      {x:2,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:1,y:4},{x:1,y:5},{x:0,y:5}
+    ]);
+    this.paths.set(0xe74c3c, [ // Red
+      {x:3,y:0},{x:3,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}
+    ]);
+    this.paths.set(0x29abe2, [ // Blue
+      {x:4,y:1},{x:5,y:1},{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:2,y:1},{x:2,y:2},{x:2,y:3},{x:3,y:3},{x:4,y:3}
+    ]);
+    this.paths.set(0x2ecc71, [ // Green
+      {x:5,y:3},{x:5,y:4},{x:5,y:5}
+    ]);
+    this.paths.set(0xe67e22, [ // Orange
+      {x:4,y:2},{x:4,y:3},{x:4,y:4},{x:4,y:5},{x:3,y:5},{x:2,y:5},{x:2,y:4},{x:3,y:4}
+    ]);
+
+    // Lock all colors
+    for (const p of this.pairs) {
+      this.lockedColors.add(p.color);
+    }
+
+    this.redrawPaths();
+    this.triggerVictory();
+  }
+
   private getColorAtCell(c: Cell): number | null {
     for (const [color, cells] of this.paths) {
       if (cells.some(p => this.equal(p, c))) return color;
@@ -685,7 +709,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.cameras.main.flash(300, 100, 255, 100);
 
     // Confetti explosion from grid center
-    const width = this.scale.width;
+    const { width } = this.scale;
     const cx = width / 2;
     const cy = this.gridOrigin.y + (this.gridSize * this.cell) / 2;
 
