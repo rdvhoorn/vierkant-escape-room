@@ -302,6 +302,7 @@ export default class Face1Scene extends FaceBase {
 
   private showTeaserCompletePopup() {
     const { width, height } = this.scale;
+    this.playerController.setInputEnabled(false);
 
     // Darken background - must cover entire screen
     const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7);
@@ -320,7 +321,7 @@ export default class Face1Scene extends FaceBase {
     box.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
 
     // Title
-    const title = this.add.text(width / 2, height / 2 - 50, "Gelukt!", {
+    this.add.text(width / 2, height / 2 - 50, "Gelukt!", {
       fontFamily: "sans-serif",
       fontSize: "32px",
       color: "#00ff88",
@@ -328,7 +329,7 @@ export default class Face1Scene extends FaceBase {
     }).setOrigin(0.5).setDepth(202).setScrollFactor(0);
 
     // Message
-    const msg = this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in februari terug voor meer!", {
+    this.add.text(width / 2, height / 2 + 10, "Dit was de teaser voor de escape room!\nKom in februari terug voor meer!", {
       fontFamily: "sans-serif",
       fontSize: "18px",
       color: "#e7f3ff",
@@ -355,19 +356,6 @@ export default class Face1Scene extends FaceBase {
         onComplete: () => particle.destroy(),
       });
     }
-
-    // Click on popup box to dismiss
-    const hitArea = this.add.rectangle(width / 2, height / 2, boxWidth, boxHeight, 0xffffff, 0);
-    hitArea.setDepth(204);
-    hitArea.setScrollFactor(0);
-    hitArea.setInteractive({ useHandCursor: true });
-    hitArea.once("pointerdown", () => {
-      overlay.destroy();
-      box.destroy();
-      title.destroy();
-      msg.destroy();
-      hitArea.destroy();
-    });
   }
 
   update(_time: number, delta: number) {
