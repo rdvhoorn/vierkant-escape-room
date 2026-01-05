@@ -41,11 +41,11 @@ export default class Face2Scene extends FaceBase {
     const farm = this.add
       .image(farmPos.x, farmPos.y, "farm")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(100, 100)
+      .setDisplaySize(200, 200)
       .setDepth(50);
     baseLayers.deco?.add(farm);
 
-    const farmBlock = this.add.zone(farmPos.x, farmPos.y-40, 60, 70);
+    const farmBlock = this.add.zone(farmPos.x, farmPos.y-60, 100, 100);
     this.physics.add.existing(farmBlock, true);
     this.physics.add.collider(this.player, farmBlock);
   }
@@ -60,13 +60,13 @@ export default class Face2Scene extends FaceBase {
 
     const center= this.getPolygonCenter(this.poly);
     const farmerPos = new Phaser.Math.Vector2(center.x + 40, center.y);
-    const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(44, 56).setDepth(70);
+    const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(44*2.5, 56*2.5).setDepth(70);
     layers.actors.add(farmer);
 
     const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.Tangram].puzzleSolvedRegistryKey);
 
     const handle = this.createDialogInteraction(farmer, {
-      hitRadius: 50,
+      hitRadius: 100,
       hintText: "Praat met reiziger: E",
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {

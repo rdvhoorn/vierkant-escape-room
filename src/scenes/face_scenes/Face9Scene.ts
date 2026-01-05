@@ -33,14 +33,15 @@ export default class Face9Scene extends FaceBase {
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
     const phonebox = this.add.image(centerX, centerY + 20, "phonebox");
-    const scaleFactor = 0.2; 
+    const scaleFactor = 0.5; 
     phonebox.setScale(scaleFactor);
     phonebox.setOrigin(0.5, 1);
     actors.add(phonebox);
     this.addSoftShadowBelow(phonebox, 60 * scaleFactor, 0x000000, 0.4);
 
     const handle = this.createDialogInteraction(phonebox, {
-      hitRadius: 60,
+      hitRadius: 100,
+      paddingX: -80,
       hintText: "Druk op E",
       buildLines: () => [
         { text: "De tekst komt hier", speaker: "Telefooncel" },

@@ -50,7 +50,8 @@ export default class Face10Scene extends FaceBase {
 
     //sudokuscene tijd
     const handle = this.createDialogInteraction(energyCube, {
-      hitRadius: 80 * scaleFactor,
+      hitRadius: 120,
+      paddingX: -60,
       hintText: "Druk op E om te verbinden",
       buildLines: () => [
         { text: "de tekst komt hier", speaker: "???" },
