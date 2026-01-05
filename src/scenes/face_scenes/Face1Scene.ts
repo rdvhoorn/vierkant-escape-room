@@ -99,7 +99,7 @@ export default class Face1Scene extends FaceBase {
     this.registerInteraction(
       () => this.inShipRange || this.inPuzzleRange,
       () => {
-        this.scene.start("ShipFuelScene");
+        this.scene.start("CockpitScene");
       },
       { hintText }
     );

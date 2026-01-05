@@ -68,7 +68,7 @@ export class PlayerController {
     this.sprite = this.scene.physics.add
       .sprite(spawn.x, spawn.y, startTexture)
       .setOrigin(0.5, 0.8)
-      .setDisplaySize(48, 48)
+      .setDisplaySize(120, 120)
       .setDepth(35)
       .setCollideWorldBounds(false);
 

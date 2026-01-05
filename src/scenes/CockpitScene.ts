@@ -67,7 +67,7 @@ export default class CockpitScene extends Phaser.Scene {
     // Starfield visible through windows
     const windowTop = 80;
     const windowBottom = height * 0.5;
-    this.stars = new TwinklingStars(this, 150, width, windowBottom - windowTop, windowTop);
+    this.stars = new TwinklingStars(this, 150, width, windowBottom - windowTop);
     this.stars.graphics.setDepth(0);
 
     // Draw cockpit elements

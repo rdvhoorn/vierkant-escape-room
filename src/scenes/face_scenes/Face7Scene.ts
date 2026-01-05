@@ -39,17 +39,20 @@ export default class Face7Scene extends FaceBase {
     const chest = this.add
       .image(chest_pos.x, chest_pos.y, image_str)
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(976/15, 781/15)
+      .setDisplaySize(976/9, 781/9)
       .setDepth(50);
     this.faceLayers?.deco.add(chest);
 
-    const chestBlock1 = this.add.zone(chest_pos.x, chest_pos.y-20, 976/15, 25);
+    const quadratus = this.add.image(chest_pos.x + 40, chest_pos.y + 20, "quadratus_small")
+      .setDepth(50).setDisplaySize(-200/2, 336/2);
+    this.faceLayers?.deco.add(quadratus);
+
+    const chestBlock1 = this.add.zone(chest_pos.x, chest_pos.y-40, 976/15, 25);
     this.physics.add.existing(chestBlock1, true);
     this.physics.add.collider(this.player, chestBlock1);
     
-
     const handle = this.createDialogInteraction(chest, {
-      hitRadius: 50,
+      hitRadius: 100,
       hintText: "Bekijk het slot op de kist",
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
