@@ -65,7 +65,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: { gravity: { x: 0, y: 0 }, debug: false },  
   },
-  render: { pixelArt: true, antialias: false},
+  render: { pixelArt: true},
 
   scene: [
   PreloadScene,

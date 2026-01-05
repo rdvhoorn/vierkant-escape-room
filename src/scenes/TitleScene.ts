@@ -100,7 +100,7 @@ export default class TitleScene extends Phaser.Scene {
     this.add
       .text(width / 2, height * 0.28, "Verzamelmania op Dezonia!", {
         fontFamily: "sans-serif",
-        fontSize: "42px",
+        fontSize: "80px",
         fontStyle: "900",
         color: "#e7f3ff",
         stroke: "#66a3ff",
@@ -111,7 +111,7 @@ export default class TitleScene extends Phaser.Scene {
     this.add
       .text(width / 2, height * 0.38, "Lukt het jou om terug te keren naar Aarde?", {
         fontFamily: "sans-serif",
-        fontSize: "18px",
+        fontSize: "35px",
         color: "#b6d5ff",
       })
       .setOrigin(0.5);
@@ -120,8 +120,8 @@ export default class TitleScene extends Phaser.Scene {
     const btnX = width / 2;
     const firstBtnY = height * 0.62;
     const btnGap = 18;
-    const BTN_W = 420;
-    const BTN_H = 70;
+    const BTN_W = 600;
+    const BTN_H = 120;
 
     const startButton = this.makeMenuButton({
       x: btnX,
@@ -188,7 +188,7 @@ export default class TitleScene extends Phaser.Scene {
       .setStrokeStyle(2, 0x3c5a99);
 
     const text = this.add
-      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "22px", color: "#cfe8ff" })
+      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "40px", color: "#cfe8ff" })
       .setOrigin(0.5);
 
     const canInteract = () => !(lockWhenStarting && this.isStarting);
