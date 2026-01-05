@@ -6,7 +6,7 @@ export default class Face3Scene extends FaceBase {
   private doorDialogHandle?: { start: () => void };
 
   // --- CONFIGURATION ---
-  private readonly doorScale = 0.08; 
+  private readonly doorScale = 0.2; 
 
   // Grass Visuals
   // 0.5 = Smaller blades (more detailed), 1.0 = Larger blades
@@ -134,7 +134,7 @@ export default class Face3Scene extends FaceBase {
 
     // Add interaction to the image
     const handle = this.createDialogInteraction(door, {
-      hitRadius: 40, 
+      hitRadius: 100, 
       hintText: "Ga door het deurtje: E",
       buildLines: () => {
         const solved = !!this.registry.get("streak_maze_solved");

@@ -88,7 +88,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected maxEnergy = 100;
 
   // ---- CAMERA & 3D preview fields ----
-  private camZ = 1800; // camera position on +Z
+  private camZ = 2200; // camera position on +Z
   private tilt = -DIHEDRAL; // rotate neighbors away from viewer (negative z)
 
   // drawing caches

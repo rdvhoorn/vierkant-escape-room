@@ -18,12 +18,6 @@ export default class Face1Scene extends FaceBase {
     ui: null as Phaser.GameObjects.Container | null,
   };
 
-  private shipZone!: Phaser.GameObjects.Zone; // proximity window
-  private shipHighlight!: Phaser.GameObjects.Graphics; // visual highlight around ship
-
-  private puzzleZone!: Phaser.GameObjects.Zone; // puzzle proximity
-  private puzzleHighlight!: Phaser.GameObjects.Graphics;
-
   private inShipRange = false;
   private inPuzzleRange = false;
 
@@ -66,43 +60,25 @@ export default class Face1Scene extends FaceBase {
     const ship = this.add
       .image(shipPos.x, shipPos.y, "ship")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(48, 48)
+      .setDisplaySize(200, 200)
       .setDepth(50);
     ship.setAngle(-18);
-    this.addSoftShadowBelow(ship, 22, 0x000000, 0.28);
     this.layer.actors?.add(ship);
 
-    const shipBlock = this.add.zone(shipPos.x, shipPos.y, 44, 28);
+    const shipBlock = this.add.zone(shipPos.x, shipPos.y-80, 70, 150);
     this.physics.add.existing(shipBlock, true);
     this.physics.add.collider(this.player, shipBlock);
 
     // ---- Ship zone & highlight
-    this.shipZone = this.add.zone(shipPos.x, shipPos.y, 90, 70).setOrigin(0.5);
-    this.physics.add.existing(this.shipZone, true);
-
-    this.shipHighlight = this.add.graphics().setDepth(51).setVisible(false);
-    this.shipHighlight.lineStyle(2, 0xffffff, 0.6);
-    this.shipHighlight.strokeRoundedRect(
-      shipPos.x - 45,
-      shipPos.y - 35,
-      90,
-      70,
-      10
-    );
-    this.shipHighlight.setAlpha(0.8);
-    this.layer.fx?.add(this.shipHighlight);
-
-    const isDesktop = getIsDesktop(this);
-    const hintText = "Interactie: " + (isDesktop ? "E" : "I");
-
-    // Interaction for ship/puzzle logic
-    this.registerInteraction(
-      () => this.inShipRange || this.inPuzzleRange,
-      () => {
-        this.scene.start("ShipFuelScene");
-      },
-      { hintText }
-    );
+    this.makeObjectInteractable(ship, {
+      hitRadius: 150,
+      paddingX: 0,
+      paddingY: 0,
+      hintText: "Interactie: " + (getIsDesktop(this) ? "E" : "I"),
+      onUse: () => {
+        this.scene.start("CockpitScene");
+      }
+    })
 
     // Decorations etc.
     this.decorateCrashSite(radius);
@@ -110,11 +86,6 @@ export default class Face1Scene extends FaceBase {
 
   update(_time: number, delta: number) {
     this.baseFaceUpdate(delta);
-
-    // ---- Ship overlap
-    const isOverlappingShip = this.physics.world.overlap(this.player, this.shipZone);
-    this.inShipRange = isOverlappingShip;
-    this.shipHighlight.setVisible(this.inShipRange);
   }
 
   /**

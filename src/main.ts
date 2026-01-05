@@ -45,8 +45,8 @@ import PhoneBoxScene from "./scenes/puzzles/PhoneBoxScene";
 // Debug mode - set to false for release
 export const DEBUG = false;
 
-const GAME_WIDTH = 960;
-const GAME_HEIGHT = 540;
+const GAME_WIDTH = 1280;
+const GAME_HEIGHT = 720;
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -65,7 +65,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: { gravity: { x: 0, y: 0 }, debug: false },  
   },
-  render: { pixelArt: true, antialias: false},
+  render: { pixelArt: true},
 
   scene: [
   PreloadScene,

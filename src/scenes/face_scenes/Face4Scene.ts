@@ -37,14 +37,14 @@ export default class Face4Scene extends FaceBase {
     // --- TOWER ASSET ---
     const tower = this.add.image(centerX, centerY + 40, "tower");
     tower.setOrigin(0.5, 1);
-    const scaleFactor = 0.15;
+    const scaleFactor = 0.3;
     tower.setScale(scaleFactor);
     actors.add(tower);
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
 
     // --- INTERACTION LOGIC ---
     const handle = this.createDialogInteraction(tower, {
-      hitRadius: 40,
+      hitRadius: 100,
       hintText: "Druk op E om de toren in te gaan",
       
       // 1. Build Lines

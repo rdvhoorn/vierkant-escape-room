@@ -12,21 +12,21 @@ export default class PreloadScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Loading UI
-    this.progressBar = this.add.rectangle((width / 2) - 175, height / 2, 0, 20, 0x8fd5ff, 1).setOrigin(0, 0.5);
-    this.percentText = this.add.text(width / 2, height / 2 + 40, "0%", {
+    this.progressBar = this.add.rectangle((width / 2) - 250, height / 2 + 20, 0, 50, 0x8fd5ff, 1).setOrigin(0, 0.5);
+    this.percentText = this.add.text(width / 2, height / 2 + 90, "0%", {
       fontFamily: "sans-serif",
-      fontSize: "14px",
+      fontSize: "20px",
       color: "#cfe8ff",
     }).setOrigin(0.5);
     this.add.text(width / 2, height / 2 - 60, "Lancering voorbereiden...", {
       fontFamily: "sans-serif",
-      fontSize: "18px",
+      fontSize: "32px",
       color: "#cfe8ff",
     }).setOrigin(0.5);
 
     // Progress handlers
     this.load.on("progress", (value: number) => {
-      this.progressBar.width = 350 * value;
+      this.progressBar.width = 500 * value;
       this.percentText.setText(`${Math.round(value * 100)}%`);
     });
     this.load.on("complete", () => {

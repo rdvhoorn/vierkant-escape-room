@@ -27,11 +27,11 @@ export default class Face5Scene extends FaceBase {
 
 
     const center = this.getPolygonCenter(this.poly);
-    const sign1Pos = new Phaser.Math.Vector2(center.x, center.y + 50);
+    const sign1Pos = new Phaser.Math.Vector2(center.x, center.y + 100);
     const sign1 = this.add
       .image(sign1Pos.x, sign1Pos.y, "driehoek_sign")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(48, 48)
+      .setDisplaySize(70, 70)
       .setDepth(50);
     sign1.setAngle(-18);
     this.addSoftShadowBelow(sign1, 22, 0x000000, 0.28);
@@ -42,7 +42,7 @@ export default class Face5Scene extends FaceBase {
     this.physics.add.collider(this.player, signBlock1);
 
     this.makeObjectInteractable(sign1, {
-      hitRadius: 40,
+      hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
       hintText: "E: Bekijk het bord",
@@ -51,11 +51,11 @@ export default class Face5Scene extends FaceBase {
       }
     })
 
-    const sign2Pos = new Phaser.Math.Vector2(center.x + 80, center.y - 50);
+    const sign2Pos = new Phaser.Math.Vector2(center.x + 100, center.y - 70);
     const sign2 = this.add
       .image(sign2Pos.x, sign2Pos.y, "twelve_sign")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(48, 48)
+      .setDisplaySize(70, 70)
       .setDepth(50);
     sign2.setAngle(-18);
     this.addSoftShadowBelow(sign2, 22, 0x000000, 0.28);
@@ -66,7 +66,7 @@ export default class Face5Scene extends FaceBase {
     this.physics.add.collider(this.player, signBlock2);
 
     this.makeObjectInteractable(sign2, {
-      hitRadius: 40,
+      hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
       hintText: "E: Bekijk het bord",
