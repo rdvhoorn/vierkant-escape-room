@@ -65,7 +65,7 @@ export default class Face10Scene extends FaceBase {
 
     energyCube.setData("dialogHandle", handle);
   }
-  
+
   update(_time: number, delta: number) {
     this.baseFaceUpdate(delta);
   }
@@ -90,7 +90,7 @@ export default class Face10Scene extends FaceBase {
              ));
         }
     }
-    const numCables = 40; 
+    const numCables = 40; //40 is misschien nog wat veel maar prima voor nu
     for (let i = 0; i < numCables; i++) {
         const start = Phaser.Utils.Array.GetRandom(edgePoints);
         let end = Phaser.Utils.Array.GetRandom(edgePoints);
