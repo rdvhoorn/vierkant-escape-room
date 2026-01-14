@@ -38,6 +38,12 @@ export default class CockpitScene extends Phaser.Scene {
   private dialogText?: Phaser.GameObjects.Text;
   private dialogLines: string[] = [];
   private dialogIndex: number = 0;
+  private dialogOnClose?: () => void;
+
+  // Joystick (needs to be animatable)
+  private joystickPressT = 0; // 0..1
+  private joystickBusy = false;
+
 
   constructor() {
     super("CockpitScene");
@@ -47,8 +53,8 @@ export default class CockpitScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Determine current phase based on registry
-    const introDone = this.registry.get("introDone") || false;
-    const electricitySolved = this.registry.get("electricitySolved") || false;
+    var introDone = this.registry.get("introDone") || false;
+    var electricitySolved = this.registry.get("electricitySolved") || false;
 
     if (electricitySolved) {
       this.currentPhase = "repaired";
@@ -59,6 +65,7 @@ export default class CockpitScene extends Phaser.Scene {
     }
 
     // Set initial state based on phase
+    this.syncEnergyFromRegistry();
     this.applyPhaseState();
 
     // Background color (dark space)
@@ -120,6 +127,11 @@ export default class CockpitScene extends Phaser.Scene {
       this.selectedDestination = Math.min(this.destinations.length - 1, this.selectedDestination + 1);
       this.updateNavigationPanel();
     });
+
+    this.registry.events.on("changedata-energy", this.syncEnergyFromRegistry, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.registry.events.off("changedata-energy", this.syncEnergyFromRegistry, this);
+    });
   }
 
   private applyPhaseState() {
@@ -154,7 +166,6 @@ export default class CockpitScene extends Phaser.Scene {
 
       case "repaired":
         // After puzzle solved - things back on, 10% energy
-        this.energyLevel = 10;
         this.selectedDestination = 4; // DEZONIA (index 4)
         // Set DEZONIA distance to 0 to show "HIER"
         this.distances["DEZONIA"] = 0;
@@ -422,21 +433,15 @@ export default class CockpitScene extends Phaser.Scene {
 
     // Remove hint
     this.children.getAll().forEach((child) => {
-      if (child.name === "thoughtHint") {
-        child.destroy();
-      }
+      if (child.name === "thoughtHint") child.destroy();
     });
 
-    // If in repaired state, transition to Face1Scene after dialog closes
-    if (this.currentPhase === "repaired") {
-      this.time.delayedCall(500, () => {
-        this.cameras.main.fadeOut(800, 0, 0, 0);
-      });
-      this.cameras.main.once("camerafadeoutcomplete", () => {
-        this.scene.start("Face1Scene");
-      });
-    }
+    // Run optional callback (used for post puzzle transition etc.)
+    const cb = this.dialogOnClose;
+    this.dialogOnClose = undefined;
+    if (cb) cb();
   }
+
 
   private showPostPuzzleThoughts() {
     // Mark as shown so it doesn't repeat
@@ -485,6 +490,16 @@ export default class CockpitScene extends Phaser.Scene {
       fontSize: "12px",
       color: "#888888",
     }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
+
+    this.dialogOnClose = () => {
+      this.time.delayedCall(500, () => {
+        this.cameras.main.fadeOut(800, 0, 0, 0);
+      });
+      this.cameras.main.once("camerafadeoutcomplete", () => {
+        this.scene.start("Face1Scene");
+      });
+    };
+
 
     this.showDialogLine();
 
@@ -1041,29 +1056,283 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private drawStickControl(width: number, height: number) {
-    const gfx = this.add.graphics();
-    gfx.setDepth(3);
     const cx = width / 2;
     const cy = height - 80;
 
-    // Base
-    gfx.fillStyle(0x2d2d44, 1);
-    gfx.fillRect(cx - 30, cy + 30, 60, 20);
+    const hitW = 90;
+    const hitH = 140;
 
-    // Stick
-    gfx.fillStyle(0x444455, 1);
-    gfx.fillRect(cx - 8, cy - 30, 16, 60);
+    // Root container
+    const root = this.add.container(cx, cy).setDepth(3);
 
-    // Grip
-    gfx.fillStyle(0xff6b35, 1);
-    gfx.fillCircle(cx, cy - 30, 15);
+    // --- BASE (never moves) ---
+    const baseGfx = this.add.graphics();
+    baseGfx.fillStyle(0x2d2d44, 1);
+    baseGfx.fillRect(-30, 30, 60, 20);
+    root.add(baseGfx);
 
-    // Grip detail
-    gfx.lineStyle(2, 0x333344, 1);
-    for (let i = 0; i < 3; i++) {
-      gfx.lineBetween(cx - 10, cy - 35 + i * 8, cx + 10, cy - 35 + i * 8);
+    // --- HANDLE container (moves) ---
+    const handle = this.add.container(0, 0);
+    root.add(handle);
+
+    // Shaft + knob are separate so we can redraw shaft length
+    const shaftGfx = this.add.graphics();
+    const knobGfx = this.add.graphics();
+    handle.add([shaftGfx, knobGfx]);
+
+    // Optional glow (still around knob)
+    const glow = this.add.graphics().setDepth(2);
+    root.addAt(glow, 0);
+
+    let hoverBoost = 1.0;
+    const glowState = { a: 0.35 };
+
+    const drawGlow = () => {
+      glow.clear();
+      if (this.currentPhase === "damaged" || this.currentPhase === "repaired") {
+        const a = glowState.a * hoverBoost;
+        // keep glow centered on knob position (handle moves)
+        const knobY = -30 + this.joystickPressT * 8;
+        glow.fillStyle(0x00ffff, a * 0.18);
+        glow.fillCircle(0, knobY, 26);
+        glow.fillStyle(0x00ffff, a * 0.12);
+        glow.fillCircle(0, knobY, 34);
+        glow.fillStyle(0x00ffff, a * 0.08);
+        glow.fillCircle(0, knobY, 44);
+      }
+    };
+
+    // Draw shaft+knob based on press amount t (0..1)
+    const renderHandle = (t: number) => {
+      this.joystickPressT = Phaser.Math.Clamp(t, 0, 1);
+
+      // Visual idea:
+      // - knob moves down a bit
+      // - shaft becomes shorter (top comes down toward base)
+      // - shaft also becomes slightly thicker to sell perspective (optional)
+      const knobY = -30 + this.joystickPressT * 8;          // knob travel
+      const shaftTopY = -30 + this.joystickPressT * 10;     // top of shaft drops more
+      const shaftBottomY = 30;                              // base connection stays
+      const shaftW = 16;                                    // thickness stable
+
+      shaftGfx.clear();
+      shaftGfx.fillStyle(0x444455, 1);
+      shaftGfx.fillRect(-shaftW / 2, shaftTopY, shaftW, shaftBottomY - shaftTopY);
+
+      knobGfx.clear();
+      knobGfx.fillStyle(0xff6b35, 1);
+      knobGfx.fillCircle(0, knobY, 15);
+
+      knobGfx.lineStyle(2, 0x333344, 1);
+      for (let i = 0; i < 3; i++) {
+        knobGfx.lineBetween(-10, knobY - 5 + i * 8, 10, knobY - 5 + i * 8);
+      }
+
+      drawGlow();
+    };
+
+    // Initial render
+    renderHandle(0);
+
+    // Glow pulse
+    this.tweens.add({
+      targets: glowState,
+      a: 0.75,
+      duration: 700,
+      yoyo: true,
+      repeat: -1,
+      onUpdate: drawGlow,
+    });
+
+    // Hit area (screen coords)
+    const hitArea = this.add
+      .rectangle(cx, cy - 10, hitW, hitH, 0xffffff, 0)
+      .setDepth(4)
+      .setInteractive({ useHandCursor: true });
+
+    hitArea.on("pointerover", () => {
+      hoverBoost = 1.6;
+      drawGlow();
+    });
+
+    hitArea.on("pointerout", () => {
+      hoverBoost = 1.0;
+      drawGlow();
+    });
+
+    // Store a reference so animation helpers can call renderHandle
+    (this as any)._renderJoystickHandle = renderHandle;
+
+    hitArea.on("pointerdown", () => this.onStickControlClicked());
+  }
+
+  private animateJoystickDownUp(onComplete: () => void) {
+    if (this.joystickBusy) return;
+    this.joystickBusy = true;
+
+    const renderHandle: (t: number) => void = (this as any)._renderJoystickHandle;
+    if (!renderHandle) {
+      this.joystickBusy = false;
+      onComplete();
+      return;
     }
 
+    const state = { t: 0 };
+
+    this.tweens.add({
+      targets: state,
+      t: 1,
+      duration: 140,
+      ease: "Power2",
+      onUpdate: () => renderHandle(state.t),
+      onComplete: () => {
+        this.tweens.add({
+          targets: state,
+          t: 0,
+          duration: 160,
+          ease: "Power2",
+          onUpdate: () => renderHandle(state.t),
+          onComplete: () => {
+            this.joystickBusy = false;
+            onComplete();
+          },
+        });
+      },
+    });
+  }
+
+  private animateJoystickDownOnly(onComplete: () => void) {
+    if (this.joystickBusy) return;
+    this.joystickBusy = true;
+
+    const renderHandle: (t: number) => void = (this as any)._renderJoystickHandle;
+    if (!renderHandle) {
+      this.joystickBusy = false;
+      onComplete();
+      return;
+    }
+
+    const state = { t: 0 };
+
+    this.tweens.add({
+      targets: state,
+      t: 1,
+      duration: 140,
+      ease: "Power2",
+      onUpdate: () => renderHandle(state.t),
+      onComplete: () => {
+        this.joystickBusy = false;
+        onComplete();
+      },
+    });
+  }
+
+
+
+  private onStickControlClicked() {
+    if (this.joystickBusy) return;
+
+    // Only allow joystick use in the same phases you described
+    if (this.currentPhase !== "damaged" && this.currentPhase !== "repaired") return;
+
+    // Case 1: Damaged (electricity hatch clickable)
+    if (this.currentPhase === "damaged") {
+      this.animateJoystickDownUp(() => {
+        this.dialogIndex = 0;
+        this.dialogLines = ["Hmm dit lijkt niet te werken..."];
+        this.dialogOnClose = undefined; // no transitions
+        this.showWakeUpThoughtsStyleDialog(); // helper below
+      });
+      return;
+    }
+
+    // Case 2: Repaired (electricity solved) => branch by energy level
+    const regFuel = this.registry.get("energy");
+    const fuel = typeof regFuel === "number" ? regFuel : 0;
+
+    if (fuel >= 90) {
+      this.animateJoystickDownOnly(() => {
+        this.cameras.main.shake(800, 0.02);
+
+        // Go to new scene after the shake starts (pick your scene name)
+        this.time.delayedCall(500, () => {
+          this.cameras.main.fadeOut(600, 0, 0, 0);
+        });
+
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+          this.scene.start("YourNewSceneName"); // <-- change this
+        });
+      });
+    } else {
+      // Not enough fuel/energy
+      this.animateJoystickDownOnly(() => {
+        this.cameras.main.shake(200, 0.01);
+        this.animateJoystickDownUp(() => {
+          this.dialogIndex = 0;
+          this.dialogLines = ["Hmm ik heb nog niet genoeg energie om weer op te stijgen..."];
+          this.dialogOnClose = undefined;
+          this.showWakeUpThoughtsStyleDialog();
+        });
+      });
+    }
+  }
+
+  private showWakeUpThoughtsStyleDialog() {
+    // This uses the same UI style as your thoughts dialogs, but uses this.dialogLines
+    this.showWakeUpThoughts = this.showWakeUpThoughts.bind(this); // keep TS happy if needed
+
+    const { width, height } = this.scale;
+
+    // Semi-transparent overlay
+    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
+    this.dialogOverlay.setDepth(200);
+
+    // Dialog box
+    const boxHeight = 120;
+    const boxWidth = 640;
+    const boxY = height * 0.35;
+    const boxX = width / 2 - boxWidth / 2;
+
+    this.dialogBox = this.add.graphics();
+    this.dialogBox.setDepth(201);
+    this.dialogBox.fillStyle(0x1b2748, 0.95);
+    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
+    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
+    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
+
+    this.dialogText = this.add.text(boxX + 20, boxY - 30, "", {
+      fontFamily: "sans-serif",
+      fontSize: "18px",
+      color: "#e7f3ff",
+      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
+    }).setDepth(202);
+
+    this.add.text(boxX + boxWidth - 10, boxY + boxHeight / 2 - 10, "Klik →", {
+      fontFamily: "sans-serif",
+      fontSize: "12px",
+      color: "#888888",
+    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
+
+    this.showDialogLine();
+
+    this.time.delayedCall(300, () => {
+      if (this.dialogOverlay) {
+        this.dialogOverlay.setInteractive();
+        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
+      }
+    });
+  }
+
+
+  private syncEnergyFromRegistry() {
+    const regEnergy = this.registry.get("energy");
+    const energy = typeof regEnergy === "number" ? regEnergy : 0;
+
+    // clamp 0-100
+    this.energyLevel = Phaser.Math.Clamp(energy, 0, 100);
+
+    // if UI already exists, refresh it
+    this.updateEnergyBar();
   }
 
   private drawElectricityHatch(width: number, height: number) {
