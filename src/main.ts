@@ -42,6 +42,7 @@ import LogicTower_4 from "./scenes/puzzles/LogicTower_4";
 import LogicTower_5 from "./scenes/puzzles/LogicTower_5";
 import PhoneBoxScene from "./scenes/puzzles/PhoneBoxScene";
 import SudokuScene from "./scenes/puzzles/SudokuScene";
+import DominoScene from "./scenes/puzzles/DominoScene";
 
 // Debug mode - set to false for release
 export const DEBUG = false;
@@ -107,7 +108,8 @@ const config: Phaser.Types.Core.GameConfig = {
   LogicTower_4,
   LogicTower_5,
   PhoneBoxScene,
-  SudokuScene
+  SudokuScene,
+  DominoScene,
 ],
 };
 
