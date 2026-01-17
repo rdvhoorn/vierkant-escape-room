@@ -3,7 +3,7 @@ import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import TitleScene from "./scenes/TitleScene";
 import CockpitScene from "./scenes/CockpitScene";
-import IntroScene from "./scenes/IntroScene";
+import EndCreditsScene from "./scenes/EndCreditsScene";
 import Face1Scene from "./scenes/face_scenes/Face1Scene";
 import Face2Scene from "./scenes/face_scenes/Face2Scene";
 import Face3Scene from "./scenes/face_scenes/Face3Scene";
@@ -32,7 +32,6 @@ import TangramSelectScene from "./scenes/puzzles/tangram/TangramSelectScene";
 
 // Puzzle scenes
 import ShipFuelScene from "./scenes/puzzles/ShipFuelScene";
-import MoreToComeScene from "./scenes/MoreToComeScene";
 import StreakMaze from "./scenes/puzzles/StreakMaze";
 import LogicTower from "./scenes/puzzles/LogicTower";
 import LogicTower_1 from "./scenes/puzzles/LogicTower_1";
@@ -42,7 +41,6 @@ import LogicTower_4 from "./scenes/puzzles/LogicTower_4";
 import LogicTower_5 from "./scenes/puzzles/LogicTower_5";
 import PhoneBoxScene from "./scenes/puzzles/PhoneBoxScene";
 import SudokuScene from "./scenes/puzzles/SudokuScene";
-import DominoScene from "./scenes/puzzles/DominoScene";
 
 // Debug mode - set to false for release
 export const DEBUG = false;
@@ -72,6 +70,7 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [
   PreloadScene,
   ShipFuelScene,
+  EndCreditsScene,
   Face1Scene,
   Face2Scene,
   Face3Scene,
@@ -87,8 +86,6 @@ const config: Phaser.Types.Core.GameConfig = {
   BootScene,
   TitleScene,
   CockpitScene,
-  IntroScene,
-  MoreToComeScene,
   KVQDriehoeken,
   KVQSom1,
   KVQEieren,
@@ -109,7 +106,6 @@ const config: Phaser.Types.Core.GameConfig = {
   LogicTower_5,
   PhoneBoxScene,
   SudokuScene,
-  DominoScene,
 ],
 };
 

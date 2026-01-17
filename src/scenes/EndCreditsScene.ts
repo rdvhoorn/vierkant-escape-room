@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { WarpStars } from "../utils/TwinklingStars";
+import { submitKampA } from "../firebase/firestore";
+
 
 export default class EndCreditsScene extends Phaser.Scene {
   private stars?: WarpStars;
@@ -417,7 +419,7 @@ export default class EndCreditsScene extends Phaser.Scene {
   // =========================================================
   // Submit logic
   // =========================================================
-  private handleSubmit() {
+  private async handleSubmit() {
     if (this.isSubmitting) return;
 
     const name = (this.inputName?.value ?? "").trim();
@@ -438,15 +440,17 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.setSubmittingVisual(true);
 
     // Integration point
-    const payload = { name, age, email, submittedAt: new Date().toISOString() };
-    console.log("[ESCAPEROOM SUBMISSION]", payload);
-
-    // Fake success
-    this.time.delayedCall(450, () => {
+    try {
+      await submitKampA({ name, age, email });
+      this.setStatus("Dankjewel! Je gegevens zijn ontvangen.", false);
+    } catch (err) {
+      console.error("[SUBMIT FAILED]", err);
+      this.setStatus("Oeps! Versturen mislukte. Probeer opnieuw.", true);
+    } finally {
       this.isSubmitting = false;
       this.setSubmittingVisual(false);
-      this.setStatus("Dankjewel! Je gegevens zijn ontvangen.", false);
-    });
+    }
+
   }
 
   private setSubmittingVisual(submitting: boolean) {
