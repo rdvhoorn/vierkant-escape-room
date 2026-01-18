@@ -1,7 +1,8 @@
 import Phaser from "phaser";
 import { WarpStars } from "../utils/TwinklingStars";
-import { submitKampA } from "../firebase/firestore";
+import { submitLeaderboard, submitPrizes } from "../firebase/firestore";
 
+type Mode = "leaderboard" | "prizes";
 
 export default class EndCreditsScene extends Phaser.Scene {
   private stars?: WarpStars;
@@ -11,17 +12,40 @@ export default class EndCreditsScene extends Phaser.Scene {
   private titleText?: Phaser.GameObjects.Text;
   private bodyText?: Phaser.GameObjects.Text;
 
-  // DOM UI (scrolling form inside panel)
+  // DOM UI
   private domRoot?: HTMLDivElement;
   private domForm?: HTMLDivElement;
   private domStatus?: HTMLDivElement;
 
-  private inputName?: HTMLInputElement;
-  private inputAge?: HTMLInputElement;
-  private inputEmail?: HTMLInputElement;
-  private submitBtn?: HTMLButtonElement;
+  // mode UI
+  private mode: Mode = "leaderboard";
+  private tabLeaderboardBtn?: HTMLButtonElement;
+  private tabPrizesBtn?: HTMLButtonElement;
 
+  // sections
+  private lbSection?: HTMLDivElement;
+  private prizesSection?: HTMLDivElement;
+
+  // leaderboard fields
+  private lbFirstName?: HTMLInputElement;
+  private lbAge?: HTMLInputElement;
+
+  // prizes fields
+  private pFirst?: HTMLInputElement;
+  private pLast?: HTMLInputElement;
+  private pEmail?: HTMLInputElement;
+  private pAge?: HTMLInputElement;
+  private pGroup?: HTMLSelectElement; // "6"/"7"/"8"/"nee"/""
+  private pBeenBefore?: HTMLSelectElement; // ja/nee
+  private pParentsPhone?: HTMLInputElement;
+
+  // prizes extra option
+  private pAlsoLeaderboard?: HTMLInputElement; // checkbox
+
+  // shared
+  private submitBtn?: HTMLButtonElement;
   private isSubmitting = false;
+  private hasSubmitted = false;
 
   private onResizeBound = () => this.onResize();
 
@@ -70,7 +94,7 @@ export default class EndCreditsScene extends Phaser.Scene {
       .text(
         width / 2,
         0,
-        "Je hebt de escaperoom voltooid en bent teruggekeerd naar Aarde.\n\nVul hieronder je gegevens in om je deelname te registreren.",
+        "Je hebt de escaperoom voltooid en bent teruggekeerd naar Aarde.\n\nKies hieronder: alleen leaderboard, of meedoen met prijzen (met extra gegevens).",
         {
           fontFamily: "sans-serif",
           fontSize: "22px",
@@ -100,6 +124,7 @@ export default class EndCreditsScene extends Phaser.Scene {
 
     // Initial layout
     this.onResize();
+    this.setMode("leaderboard");
   }
 
   // =========================================================
@@ -108,16 +133,14 @@ export default class EndCreditsScene extends Phaser.Scene {
   private onResize() {
     const { width, height } = this.scale;
 
-    // Panel sizing
     const panelW = Math.min(980, width * 0.92);
-    const panelH = Math.min(720, height * 0.90);
+    const panelH = Math.min(740, height * 0.90);
 
     const panelX = width / 2;
     const panelY = height / 2;
 
     this.panel?.setPosition(panelX, panelY).setSize(panelW, panelH);
 
-    // Responsive typography (simple scaling)
     const s = Phaser.Math.Clamp(width / 1100, 0.72, 1.0);
     const titleSize = Math.round(56 * s);
     const bodySize = Math.round(22 * s);
@@ -151,9 +174,8 @@ export default class EndCreditsScene extends Phaser.Scene {
     // DOM overlay pinned to canvas and DOM form placed inside panel
     this.syncDomRootToCanvas();
 
-    // Compute form rectangle under the body text, inside panel
     const bodyBounds = this.bodyText?.getBounds();
-    const formTop = (bodyBounds?.bottom ?? bodyY + 140) + 20 * s;
+    const formTop = (bodyBounds?.bottom ?? bodyY + 140) + 18 * s;
 
     const innerLeft = panelX - panelW / 2 + pad;
     const innerRight = panelX + panelW / 2 - pad;
@@ -166,9 +188,8 @@ export default class EndCreditsScene extends Phaser.Scene {
 
     this.placeDomInGameRect(this.domForm, formX, formY, formW, formH);
 
-    // Tweak input/button sizes for small screens
     const isSmall = width < 520;
-    const inputH = isSmall ? 64 : 72;
+    const inputH = isSmall ? 60 : 70;
     const font = isSmall ? 18 : 20;
     const labelFont = isSmall ? 14 : 16;
 
@@ -178,7 +199,7 @@ export default class EndCreditsScene extends Phaser.Scene {
   private applyFormSizing(opts: { inputH: number; font: number; labelFont: number }) {
     const { inputH, font, labelFont } = opts;
 
-    const styleInput = (el?: HTMLInputElement) => {
+    const styleControl = (el?: HTMLInputElement | HTMLSelectElement) => {
       if (!el) return;
       el.style.height = `${inputH}px`;
       el.style.fontSize = `${font}px`;
@@ -186,11 +207,17 @@ export default class EndCreditsScene extends Phaser.Scene {
       el.style.borderRadius = "14px";
     };
 
-    styleInput(this.inputName);
-    styleInput(this.inputAge);
-    styleInput(this.inputEmail);
+    styleControl(this.lbFirstName);
+    styleControl(this.lbAge);
 
-    // Labels inside the form are simple divs; update via query
+    styleControl(this.pFirst);
+    styleControl(this.pLast);
+    styleControl(this.pEmail);
+    styleControl(this.pAge);
+    styleControl(this.pGroup);
+    styleControl(this.pBeenBefore);
+    styleControl(this.pParentsPhone);
+
     if (this.domForm) {
       const labels = this.domForm.querySelectorAll<HTMLDivElement>("[data-label]");
       labels.forEach((l) => (l.style.fontSize = `${labelFont}px`));
@@ -200,8 +227,18 @@ export default class EndCreditsScene extends Phaser.Scene {
       this.submitBtn.style.fontSize = `${font}px`;
       this.submitBtn.style.padding = "14px 18px";
       this.submitBtn.style.borderRadius = "14px";
-      this.submitBtn.style.minWidth = "160px";
+      this.submitBtn.style.minWidth = "180px";
     }
+
+    const tabFont = Math.max(14, Math.round(font * 0.85));
+    const tabPadV = Math.max(10, Math.round(inputH * 0.2));
+    const tabPadH = Math.max(12, Math.round(inputH * 0.26));
+    [this.tabLeaderboardBtn, this.tabPrizesBtn].forEach((b) => {
+      if (!b) return;
+      b.style.fontSize = `${tabFont}px`;
+      b.style.padding = `${tabPadV}px ${tabPadH}px`;
+      b.style.borderRadius = "999px";
+    });
   }
 
   // =========================================================
@@ -211,7 +248,6 @@ export default class EndCreditsScene extends Phaser.Scene {
     const canvas = this.game.canvas;
     if (!canvas) return;
 
-    // Root pinned to canvas rect (fixed in viewport coordinates)
     const root = document.createElement("div");
     root.style.position = "fixed";
     root.style.pointerEvents = "none";
@@ -223,7 +259,6 @@ export default class EndCreditsScene extends Phaser.Scene {
     document.body.appendChild(root);
     this.domRoot = root;
 
-    // Scroll container that sits inside the panel
     const form = document.createElement("div");
     form.style.position = "absolute";
     form.style.pointerEvents = "auto";
@@ -234,15 +269,30 @@ export default class EndCreditsScene extends Phaser.Scene {
     form.style.display = "flex";
     form.style.flexDirection = "column";
     form.style.gap = "14px";
-
-    // (nice on iOS)
     (form.style as any).webkitOverflowScrolling = "touch";
-
     root.appendChild(form);
     this.domForm = form;
 
-    // Build fields
-    const makeField = (labelText: string, placeholder: string, type: string) => {
+    const setControlStyle = (el: HTMLInputElement | HTMLSelectElement) => {
+      el.style.width = "100%";
+      el.style.boxSizing = "border-box";
+      el.style.borderRadius = "14px";
+      el.style.border = "2px solid rgba(60, 90, 153, 0.95)";
+      el.style.outline = "none";
+      el.style.background = "rgba(17, 26, 46, 0.92)";
+      el.style.color = "#e7f3ff";
+
+      el.addEventListener("focus", () => {
+        el.style.border = "2px solid rgba(102, 163, 255, 1)";
+        el.style.background = "rgba(38, 54, 95, 0.92)";
+      });
+      el.addEventListener("blur", () => {
+        el.style.border = "2px solid rgba(60, 90, 153, 0.95)";
+        el.style.background = "rgba(17, 26, 46, 0.92)";
+      });
+    };
+
+    const makeField = (labelText: string, target: HTMLElement) => {
       const wrap = document.createElement("div");
       wrap.style.display = "flex";
       wrap.style.flexDirection = "column";
@@ -257,53 +307,205 @@ export default class EndCreditsScene extends Phaser.Scene {
       label.style.opacity = "0.95";
       label.style.userSelect = "none";
 
+      wrap.appendChild(label);
+      target.appendChild(wrap);
+
+      return wrap;
+    };
+
+    const makeInput = (labelText: string, placeholder: string, type: string, target: HTMLElement) => {
+      const wrap = makeField(labelText, target);
       const input = document.createElement("input");
       input.type = type;
       input.placeholder = placeholder;
       input.autocapitalize = "off";
       input.autocomplete = "off";
       input.spellcheck = false;
-
-      // game-like styling
-      input.style.width = "100%";
-      input.style.boxSizing = "border-box";
-      input.style.borderRadius = "14px";
-      input.style.border = "2px solid rgba(60, 90, 153, 0.95)";
-      input.style.outline = "none";
-      input.style.background = "rgba(17, 26, 46, 0.92)";
-      input.style.color = "#e7f3ff";
-
-      input.addEventListener("focus", () => {
-        input.style.border = "2px solid rgba(102, 163, 255, 1)";
-        input.style.background = "rgba(38, 54, 95, 0.92)";
-      });
-      input.addEventListener("blur", () => {
-        input.style.border = "2px solid rgba(60, 90, 153, 0.95)";
-        input.style.background = "rgba(17, 26, 46, 0.92)";
-      });
-
-      wrap.appendChild(label);
+      setControlStyle(input);
       wrap.appendChild(input);
-      form.appendChild(wrap);
-
       return input;
     };
 
-    this.inputName = makeField("Naam", "Bijv. Sam", "text");
-    this.inputAge = makeField("Leeftijd", "Bijv. 11", "number");
-    this.inputAge.min = "1";
-    this.inputAge.max = "120";
-    this.inputAge.inputMode = "numeric";
+    const makeSelect = (
+      labelText: string,
+      options: Array<{ value: string; label: string }>,
+      target: HTMLElement
+    ) => {
+      const wrap = makeField(labelText, target);
+      const sel = document.createElement("select");
+      setControlStyle(sel);
+      options.forEach((o) => {
+        const opt = document.createElement("option");
+        opt.value = o.value;
+        opt.textContent = o.label;
+        sel.appendChild(opt);
+      });
+      wrap.appendChild(sel);
+      return sel;
+    };
 
-    this.inputEmail = makeField("E-mailadres", "Bijv. sam@email.nl", "email");
-    this.inputEmail.autocomplete = "email";
+    // ---------- tabs ----------
+    const tabs = document.createElement("div");
+    tabs.style.display = "flex";
+    tabs.style.gap = "10px";
+    tabs.style.alignItems = "center";
+    tabs.style.justifyContent = "center";
+    tabs.style.marginBottom = "4px";
+    form.appendChild(tabs);
 
-    // Button row (right-aligned)
+    const makeTabBtn = (text: string) => {
+      const b = document.createElement("button");
+      b.textContent = text;
+      b.style.cursor = "pointer";
+      b.style.border = "2px solid rgba(60, 90, 153, 0.95)";
+      b.style.background = "rgba(30, 42, 74, 0.60)";
+      b.style.color = "#cfe8ff";
+      b.style.fontFamily = "sans-serif";
+      b.style.fontWeight = "800";
+      b.style.userSelect = "none";
+      b.style.transition = "transform 120ms ease, background 120ms ease, border-color 120ms ease";
+      b.addEventListener("mouseenter", () => {
+        if (this.isSubmitting || this.hasSubmitted) return;
+        b.style.borderColor = "rgba(102, 163, 255, 1)";
+        b.style.background = "rgba(38, 54, 95, 0.80)";
+        b.style.transform = "scale(1.02)";
+        b.style.color = "#ffffff";
+      });
+      b.addEventListener("mouseleave", () => {
+        b.style.transform = "scale(1)";
+        this.refreshTabStyles();
+      });
+      return b;
+    };
+
+    this.tabLeaderboardBtn = makeTabBtn("Leaderboard");
+    this.tabPrizesBtn = makeTabBtn("Prijzen");
+
+    this.tabLeaderboardBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (this.hasSubmitted) return;
+      this.setMode("leaderboard");
+    });
+    this.tabPrizesBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (this.hasSubmitted) return;
+      this.setMode("prizes");
+    });
+
+    tabs.appendChild(this.tabLeaderboardBtn);
+    tabs.appendChild(this.tabPrizesBtn);
+
+    // ---------- sections ----------
+    const lbSection = document.createElement("div");
+    lbSection.setAttribute("data-section", "leaderboard");
+    lbSection.style.display = "flex";
+    lbSection.style.flexDirection = "column";
+    lbSection.style.gap = "14px";
+    form.appendChild(lbSection);
+    this.lbSection = lbSection;
+
+    const prizesSection = document.createElement("div");
+    prizesSection.setAttribute("data-section", "prizes");
+    prizesSection.style.display = "flex";
+    prizesSection.style.flexDirection = "column";
+    prizesSection.style.gap = "14px";
+    form.appendChild(prizesSection);
+    this.prizesSection = prizesSection;
+
+    // ---------- leaderboard fields (voornaam + leeftijd) ----------
+    this.lbFirstName = makeInput("Voornaam", "Bijv. Sam", "text", lbSection);
+
+    this.lbAge = makeInput("Leeftijd", "Bijv. 11", "number", lbSection);
+    this.lbAge.min = "1";
+    this.lbAge.max = "120";
+    this.lbAge.inputMode = "numeric";
+
+    // ---------- prizes fields ----------
+    this.pFirst = makeInput("Voornaam", "Bijv. Sam", "text", prizesSection);
+    this.pLast = makeInput("Achternaam", "Bijv. Jansen", "text", prizesSection);
+
+    this.pEmail = makeInput("E-mailadres", "Bijv. sam@email.nl", "email", prizesSection);
+    this.pEmail.autocomplete = "email";
+
+    this.pAge = makeInput("Leeftijd", "Bijv. 11", "number", prizesSection);
+    this.pAge.min = "1";
+    this.pAge.max = "120";
+    this.pAge.inputMode = "numeric";
+
+    // UPDATED: no group 5; labels "Ik zit in groep X"; includes "Nee"
+    this.pGroup = makeSelect(
+      "Zit je in groep 6, 7 of 8?",
+      [
+        { value: "", label: "Kies…" },
+        { value: "6", label: "Ik zit in groep 6" },
+        { value: "7", label: "Ik zit in groep 7" },
+        { value: "8", label: "Ik zit in groep 8" },
+        { value: "nee", label: "Nee" },
+      ],
+      prizesSection
+    );
+
+    this.pBeenBefore = makeSelect(
+      "Ben je ooit eerder op kamp mee geweest?",
+      [
+        { value: "", label: "Kies…" },
+        { value: "ja", label: "Ja" },
+        { value: "nee", label: "Nee" },
+      ],
+      prizesSection
+    );
+
+    this.pParentsPhone = makeInput("Telefoonnummer ouders", "Bijv. 06 12345678", "tel", prizesSection);
+    this.pParentsPhone.autocomplete = "tel";
+
+    // Checkbox: also submit to leaderboard
+    const cbWrap = document.createElement("label");
+    cbWrap.style.display = "flex";
+    cbWrap.style.alignItems = "center";
+    cbWrap.style.gap = "10px";
+    cbWrap.style.padding = "10px 6px";
+    cbWrap.style.border = "2px solid rgba(60, 90, 153, 0.55)";
+    cbWrap.style.borderRadius = "14px";
+    cbWrap.style.background = "rgba(17, 26, 46, 0.55)";
+    cbWrap.style.cursor = "pointer";
+    cbWrap.style.userSelect = "none";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.style.transform = "scale(1.15)";
+    cb.style.cursor = "pointer";
+    this.pAlsoLeaderboard = cb;
+
+    const cbText = document.createElement("div");
+    cbText.textContent = "Ook toevoegen aan leaderboard (voornaam + leeftijd)";
+    cbText.setAttribute("data-label", "1");
+    cbText.style.fontFamily = "sans-serif";
+    cbText.style.fontSize = "16px";
+    cbText.style.color = "#cfe8ff";
+    cbText.style.opacity = "0.95";
+
+    cbWrap.appendChild(cb);
+    cbWrap.appendChild(cbText);
+    prizesSection.appendChild(cbWrap);
+
+    // Prize eligibility messaging row
+    const eligibility = document.createElement("div");
+    eligibility.setAttribute("data-eligibility", "1");
+    eligibility.style.fontFamily = "sans-serif";
+    eligibility.style.fontSize = "15px";
+    eligibility.style.color = "#b6d5ff";
+    eligibility.style.opacity = "0.95";
+    eligibility.style.marginTop = "4px";
+    eligibility.style.minHeight = "20px";
+    prizesSection.appendChild(eligibility);
+
+    // ---------- submit row ----------
     const row = document.createElement("div");
     row.style.display = "flex";
     row.style.justifyContent = "flex-end";
     row.style.gap = "12px";
     row.style.marginTop = "6px";
+    form.appendChild(row);
 
     const btn = document.createElement("button");
     btn.textContent = "Verstuur";
@@ -312,12 +514,12 @@ export default class EndCreditsScene extends Phaser.Scene {
     btn.style.background = "rgba(30, 42, 74, 0.88)";
     btn.style.color = "#cfe8ff";
     btn.style.fontFamily = "sans-serif";
-    btn.style.fontWeight = "700";
+    btn.style.fontWeight = "800";
     btn.style.transition = "transform 120ms ease, background 120ms ease, border-color 120ms ease";
     btn.style.userSelect = "none";
 
     btn.addEventListener("mouseenter", () => {
-      if (this.isSubmitting) return;
+      if (this.isSubmitting || this.hasSubmitted) return;
       btn.style.borderColor = "rgba(102, 163, 255, 1)";
       btn.style.background = "rgba(38, 54, 95, 0.92)";
       btn.style.transform = "scale(1.02)";
@@ -325,7 +527,7 @@ export default class EndCreditsScene extends Phaser.Scene {
     });
     btn.addEventListener("mouseleave", () => {
       btn.style.transform = "scale(1)";
-      if (this.isSubmitting) return;
+      if (this.isSubmitting || this.hasSubmitted) return;
       btn.style.borderColor = "rgba(60, 90, 153, 0.95)";
       btn.style.background = "rgba(30, 42, 74, 0.88)";
       btn.style.color = "#cfe8ff";
@@ -333,14 +535,14 @@ export default class EndCreditsScene extends Phaser.Scene {
 
     btn.addEventListener("click", (e) => {
       e.preventDefault();
+      if (this.hasSubmitted) return;
       this.handleSubmit();
     });
 
     this.submitBtn = btn;
     row.appendChild(btn);
-    form.appendChild(row);
 
-    // Status message (inside scroll area, so it never overlaps)
+    // ---------- status message ----------
     const status = document.createElement("div");
     status.style.fontFamily = "sans-serif";
     status.style.fontSize = "16px";
@@ -352,20 +554,130 @@ export default class EndCreditsScene extends Phaser.Scene {
     form.appendChild(status);
     this.domStatus = status;
 
-    // Enter submits (from any input)
+    // keep eligibility up to date when prizes inputs change
+    const updateEligibility = () => this.updatePrizeEligibilityUI();
+    this.pAge?.addEventListener("input", updateEligibility);
+    this.pGroup?.addEventListener("change", updateEligibility);
+
+    // Enter submits
     const onKey = (e: KeyboardEvent) => {
+      if (this.hasSubmitted) return;
       if (e.key === "Enter") {
         e.preventDefault();
         this.handleSubmit();
       }
     };
-    this.inputName.addEventListener("keydown", onKey);
-    this.inputAge.addEventListener("keydown", onKey);
-    this.inputEmail.addEventListener("keydown", onKey);
+
+    [
+      this.lbFirstName,
+      this.lbAge,
+      this.pFirst,
+      this.pLast,
+      this.pEmail,
+      this.pAge,
+      this.pParentsPhone,
+    ].forEach((el) => el?.addEventListener("keydown", onKey));
+
+    this.pGroup?.addEventListener("keydown", onKey);
+    this.pBeenBefore?.addEventListener("keydown", onKey);
+
     (root as any).__onKey = onKey;
 
-    // Initial pin
+    // Initial pin + initial eligibility check
     this.syncDomRootToCanvas();
+    this.updatePrizeEligibilityUI();
+  }
+
+  private setMode(mode: Mode) {
+    this.mode = mode;
+    this.setStatus("", false);
+
+    if (!this.domForm) return;
+
+    const lb = this.domForm.querySelector<HTMLElement>('[data-section="leaderboard"]');
+    const pr = this.domForm.querySelector<HTMLElement>('[data-section="prizes"]');
+
+    if (lb) lb.style.display = mode === "leaderboard" ? "flex" : "none";
+    if (pr) pr.style.display = mode === "prizes" ? "flex" : "none";
+
+    this.refreshTabStyles();
+
+    if (mode === "prizes" && this.pAlsoLeaderboard) this.pAlsoLeaderboard.checked = true;
+
+    // ensure button reflects eligibility when switching to prizes
+    if (mode === "prizes") this.updatePrizeEligibilityUI();
+    else this.setSubmitEnabled(true);
+  }
+
+  private refreshTabStyles() {
+    const active = (b?: HTMLButtonElement, isActive?: boolean) => {
+      if (!b) return;
+
+      b.disabled = this.hasSubmitted || this.isSubmitting;
+
+      if (isActive) {
+        b.style.borderColor = "rgba(102, 163, 255, 1)";
+        b.style.background = "rgba(38, 54, 95, 0.92)";
+        b.style.color = "#ffffff";
+      } else {
+        b.style.borderColor = "rgba(60, 90, 153, 0.95)";
+        b.style.background = "rgba(30, 42, 74, 0.60)";
+        b.style.color = "#cfe8ff";
+      }
+      b.style.transform = "scale(1)";
+      b.style.cursor = this.hasSubmitted || this.isSubmitting ? "default" : "pointer";
+      b.style.opacity = this.hasSubmitted ? "0.6" : "1";
+    };
+
+    active(this.tabLeaderboardBtn, this.mode === "leaderboard");
+    active(this.tabPrizesBtn, this.mode === "prizes");
+  }
+
+  private updatePrizeEligibilityUI() {
+    if (this.mode !== "prizes") return;
+
+    const ageRaw = (this.pAge?.value ?? "").trim();
+    const age = Number(ageRaw);
+    const group = (this.pGroup?.value ?? "").trim();
+
+    const eligible =
+      Number.isFinite(age) &&
+      age >= 8 &&
+      (group === "6" || group === "7" || group === "8");
+
+    const msgEl = this.prizesSection?.querySelector<HTMLDivElement>('[data-eligibility="1"]');
+    if (msgEl) {
+      if (ageRaw.length === 0 && !group) {
+        msgEl.textContent = "Voor prijzen: minimaal 8 jaar én in groep 6, 7 of 8.";
+        msgEl.style.color = "#b6d5ff";
+      } else if (!eligible) {
+        msgEl.textContent =
+          "Je kunt helaas niet meedoen met de prijzen. (Minimaal 8 jaar én in groep 6, 7 of 8.)";
+        msgEl.style.color = "#ffb3b3";
+      } else {
+        msgEl.textContent = "Je voldoet aan de voorwaarden voor de prijzen.";
+        msgEl.style.color = "#b6d5ff";
+      }
+    }
+
+    // Disable submit entirely in prizes mode if not eligible
+    this.setSubmitEnabled(eligible);
+  }
+
+  private setSubmitEnabled(enabled: boolean) {
+    if (!this.submitBtn) return;
+    if (this.hasSubmitted) {
+      this.submitBtn.disabled = true;
+      return;
+    }
+    if (this.isSubmitting) {
+      this.submitBtn.disabled = true;
+      return;
+    }
+    this.submitBtn.disabled = !enabled;
+
+    this.submitBtn.style.opacity = enabled ? "1" : "0.6";
+    this.submitBtn.style.cursor = enabled ? "pointer" : "not-allowed";
   }
 
   private syncDomRootToCanvas() {
@@ -400,9 +712,17 @@ export default class EndCreditsScene extends Phaser.Scene {
 
     const onKey = (root as any).__onKey as ((e: KeyboardEvent) => void) | undefined;
     if (onKey) {
-      this.inputName?.removeEventListener("keydown", onKey);
-      this.inputAge?.removeEventListener("keydown", onKey);
-      this.inputEmail?.removeEventListener("keydown", onKey);
+      [
+        this.lbFirstName,
+        this.lbAge,
+        this.pFirst,
+        this.pLast,
+        this.pEmail,
+        this.pAge,
+        this.pParentsPhone,
+      ].forEach((el) => el?.removeEventListener("keydown", onKey));
+      this.pGroup?.removeEventListener("keydown", onKey);
+      this.pBeenBefore?.removeEventListener("keydown", onKey);
     }
 
     root.remove();
@@ -410,9 +730,25 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.domRoot = undefined;
     this.domForm = undefined;
     this.domStatus = undefined;
-    this.inputName = undefined;
-    this.inputAge = undefined;
-    this.inputEmail = undefined;
+
+    this.tabLeaderboardBtn = undefined;
+    this.tabPrizesBtn = undefined;
+
+    this.lbSection = undefined;
+    this.prizesSection = undefined;
+
+    this.lbFirstName = undefined;
+    this.lbAge = undefined;
+
+    this.pFirst = undefined;
+    this.pLast = undefined;
+    this.pEmail = undefined;
+    this.pAge = undefined;
+    this.pGroup = undefined;
+    this.pBeenBefore = undefined;
+    this.pParentsPhone = undefined;
+    this.pAlsoLeaderboard = undefined;
+
     this.submitBtn = undefined;
   }
 
@@ -420,41 +756,132 @@ export default class EndCreditsScene extends Phaser.Scene {
   // Submit logic
   // =========================================================
   private async handleSubmit() {
-    if (this.isSubmitting) return;
-
-    const name = (this.inputName?.value ?? "").trim();
-    const ageRaw = (this.inputAge?.value ?? "").trim();
-    const email = (this.inputEmail?.value ?? "").trim();
-
-    const age = Number(ageRaw);
-
-    if (!name) return this.setStatus("Vul je naam in.", true);
-    if (!ageRaw || !Number.isFinite(age) || age < 6 || age > 120) {
-      return this.setStatus("Vul een geldige leeftijd in.", true);
-    }
-    if (!this.isValidEmail(email)) return this.setStatus("Vul een geldig e-mailadres in.", true);
+    if (this.isSubmitting || this.hasSubmitted) return;
 
     this.setStatus("", false);
 
     this.isSubmitting = true;
     this.setSubmittingVisual(true);
 
-    // Integration point
     try {
-      await submitKampA({ name, age, email });
-      this.setStatus("Dankjewel! Je gegevens zijn ontvangen.", false);
+      if (this.mode === "leaderboard") {
+        const firstName = (this.lbFirstName?.value ?? "").trim();
+        const ageRaw = (this.lbAge?.value ?? "").trim();
+        const age = Number(ageRaw);
+
+        if (!firstName) return this.setStatus("Vul je voornaam in.", true);
+        if (!ageRaw || !Number.isFinite(age) || age < 6 || age > 120) {
+          return this.setStatus("Vul een geldige leeftijd in.", true);
+        }
+
+        await submitLeaderboard({ name: firstName, age });
+
+        this.finishSubmittedScreen();
+        return;
+      }
+
+      // prizes mode: enforce eligibility
+      const ageRaw = (this.pAge?.value ?? "").trim();
+      const age = Number(ageRaw);
+      const group = (this.pGroup?.value ?? "").trim();
+
+      const eligible =
+        Number.isFinite(age) &&
+        age >= 8 &&
+        (group === "6" || group === "7" || group === "8");
+
+      if (!eligible) {
+        this.setStatus("Je kunt niet meedoen met de prijzen. Gebruik eventueel het leaderboard.", true);
+        this.isSubmitting = false;
+        this.setSubmittingVisual(false);
+        this.updatePrizeEligibilityUI();
+        return;
+      }
+
+      const firstName = (this.pFirst?.value ?? "").trim();
+      const lastName = (this.pLast?.value ?? "").trim();
+      const email = (this.pEmail?.value ?? "").trim();
+      const beenBefore = (this.pBeenBefore?.value ?? "").trim();
+      const parentsPhone = (this.pParentsPhone?.value ?? "").trim();
+
+      if (!firstName) return this.setStatus("Vul je voornaam in.", true);
+      if (!lastName) return this.setStatus("Vul je achternaam in.", true);
+      if (!this.isValidEmail(email)) return this.setStatus("Vul een geldig e-mailadres in.", true);
+
+      if (!ageRaw || !Number.isFinite(age) || age < 6 || age > 120) {
+        return this.setStatus("Vul een geldige leeftijd in.", true);
+      }
+      if (!group) return this.setStatus("Kies je groep (6, 7 of 8) of Nee.", true);
+      if (!beenBefore) return this.setStatus("Geef aan of je eerder mee op kamp bent geweest.", true);
+      if (!parentsPhone) return this.setStatus("Vul het telefoonnummer van je ouders in.", true);
+
+      const createdAt = new Date();
+
+      await submitPrizes({
+        firstName,
+        lastName,
+        email,
+        age,
+        createdAt,
+        group: Number(group) as 6 | 7 | 8,
+        beenBefore: beenBefore === "ja",
+        parentsPhone,
+      });
+
+      // Optional: also leaderboard (voornaam only)
+      const alsoLb = !!this.pAlsoLeaderboard?.checked;
+      if (alsoLb) {
+        await submitLeaderboard({ name: firstName, age });
+      }
+
+      this.finishSubmittedScreen();
     } catch (err) {
       console.error("[SUBMIT FAILED]", err);
       this.setStatus("Oeps! Versturen mislukte. Probeer opnieuw.", true);
     } finally {
-      this.isSubmitting = false;
-      this.setSubmittingVisual(false);
+      // finishSubmittedScreen sets hasSubmitted and disables UI; if we didn't submit, unlock
+      if (!this.hasSubmitted) {
+        this.isSubmitting = false;
+        this.setSubmittingVisual(false);
+        if (this.mode === "prizes") this.updatePrizeEligibilityUI();
+      }
     }
+  }
 
+  // After successful submit, lock everything + show thanks screen
+  private finishSubmittedScreen() {
+    this.hasSubmitted = true;
+    this.isSubmitting = false;
+
+    // remove/hide DOM form completely
+    if (this.domRoot) this.domRoot.style.display = "none";
+
+    // show a simple thanks message in Phaser
+    this.titleText?.setText("Bedankt!");
+    this.bodyText?.setText("Bedankt voor het spelen!\n\nJe inzending is ontvangen.");
+
+    // optional: soften panel glow
+    this.panel?.setStrokeStyle(2, 0x66a3ff, 0.6);
+
+    this.setSubmittingVisual(false);
   }
 
   private setSubmittingVisual(submitting: boolean) {
+    if (this.tabLeaderboardBtn) this.tabLeaderboardBtn.disabled = submitting || this.hasSubmitted;
+    if (this.tabPrizesBtn) this.tabPrizesBtn.disabled = submitting || this.hasSubmitted;
+    this.refreshTabStyles();
+
     if (!this.submitBtn) return;
+
+    if (this.hasSubmitted) {
+      this.submitBtn.disabled = true;
+      this.submitBtn.textContent = "Verstuurd";
+      this.submitBtn.style.opacity = "0.6";
+      this.submitBtn.style.cursor = "default";
+      this.submitBtn.style.transform = "scale(1)";
+      return;
+    }
+
     if (submitting) {
       this.submitBtn.disabled = true;
       this.submitBtn.textContent = "Bezig...";
@@ -462,10 +889,15 @@ export default class EndCreditsScene extends Phaser.Scene {
       this.submitBtn.style.cursor = "default";
       this.submitBtn.style.transform = "scale(1)";
     } else {
-      this.submitBtn.disabled = false;
       this.submitBtn.textContent = "Verstuur";
-      this.submitBtn.style.opacity = "1";
-      this.submitBtn.style.cursor = "pointer";
+      // enabled/disabled is controlled by setSubmitEnabled in prizes mode
+      if (this.mode === "leaderboard") {
+        this.submitBtn.disabled = false;
+        this.submitBtn.style.opacity = "1";
+        this.submitBtn.style.cursor = "pointer";
+      } else {
+        this.updatePrizeEligibilityUI();
+      }
     }
   }
 

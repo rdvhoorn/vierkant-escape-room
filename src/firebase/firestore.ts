@@ -12,24 +12,40 @@ import { app } from "./firebase";
 
 export const db = getFirestore(app);
 
-export type KampASubmission = {
+// Collections (Kamp A)
+const LEADERBOARD = "leaderbord-kamp-a";     // public readable
+const PRIZES = "prizes-kamp-a";              // private (contains PII)
+
+export type LeaderboardEntry = {
+  id?: string;
   name: string;
   age: number;
-  email: string;
+  createdAt?: Timestamp;
 };
 
-const SUBMISSIONS = "submissions-kamp-a";
-const LEADERBOARD = "leaderbord-kamp-a";
+export type PrizeEntry = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  age: number;
+  createdAt: Date;          // you pass Date from the scene
+  group: 6 | 7 | 8;
+  beenBefore: boolean;
+  parentsPhone: string;
+};
 
-export async function submitKampA(data: KampASubmission) {
+function toTimestamp(d: Date) {
+  // Ensure it is a valid date
+  const ms = d?.getTime?.();
+  if (!Number.isFinite(ms)) return Timestamp.now();
+  return Timestamp.fromDate(d);
+}
+
+// ---------------------------
+// Write: Leaderboard (public)
+// ---------------------------
+export async function submitLeaderboard(data: LeaderboardEntry) {
   const createdAt = Timestamp.now();
-
-  await addDoc(collection(db, SUBMISSIONS), {
-    name: data.name,
-    age: data.age,
-    email: data.email,
-    createdAt,
-  });
 
   await addDoc(collection(db, LEADERBOARD), {
     name: data.name,
@@ -38,8 +54,37 @@ export async function submitKampA(data: KampASubmission) {
   });
 }
 
-export async function getLeaderboardKampA(max = 50) {
+// ---------------------------
+// Write: Prizes (private)
+// ---------------------------
+export async function submitPrizes(data: PrizeEntry) {
+  const createdAt = toTimestamp(data.createdAt);
+
+  await addDoc(collection(db, PRIZES), {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    age: data.age,
+    group: data.group,
+    beenBefore: data.beenBefore,
+    parentsPhone: data.parentsPhone,
+    createdAt,
+  });
+}
+
+// ---------------------------
+// Read: Leaderboard (public)
+// ---------------------------
+export async function getLeaderboardKampA(max = 50): Promise<LeaderboardEntry[]> {
   const q = query(collection(db, LEADERBOARD), orderBy("createdAt", "desc"), limit(max));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => {
+    const data = d.data() as any;
+    return {
+      id: d.id,
+      name: String(data.name ?? ""),
+      age: Number(data.age ?? 0),
+      createdAt: data.createdAt,
+    };
+  });
 }

@@ -14,27 +14,13 @@ service cloud.firestore {
       return e is string && e.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$');
     }
 
-    // -----------------------------------------
-    // Kamp A: PRIVATE submissions (contains email)
-    // -----------------------------------------
-    match /submissions-kamp-a/{docId} {
-      allow read, list: if false;
-
-      allow create: if
-        request.resource.data.keys().hasOnly([
-          "name", "age", "email", "createdAt"
-        ]) &&
-        isNonEmptyString(request.resource.data.name, 1, 60) &&
-        isValidAge(request.resource.data.age) &&
-        isValidEmail(request.resource.data.email) &&
-        (request.resource.data.createdAt is timestamp);
-
-      allow update, delete: if false;
+    function isValidGroup(g) {
+      return g is int && (g == 5 || g == 6 || g == 7 || g == 8);
     }
 
-    // -----------------------------------------
-    // Kamp A: PUBLIC leaderboard (no email)
-    // -----------------------------------------
+    // ----------------------------
+    // Kamp A: PUBLIC leaderboard
+    // ----------------------------
     match /leaderbord-kamp-a/{docId} {
       allow read, list: if true;
 
@@ -44,6 +30,37 @@ service cloud.firestore {
         ]) &&
         isNonEmptyString(request.resource.data.name, 1, 60) &&
         isValidAge(request.resource.data.age) &&
+        (request.resource.data.createdAt is timestamp);
+
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
+    // Kamp A: PRIVATE prizes (PII)
+    // ----------------------------
+    match /prizes-kamp-a/{docId} {
+      // do NOT allow client reads
+      allow read, list: if false;
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          "firstName",
+          "lastName",
+          "email",
+          "age",
+          "group",
+          "beenBefore",
+          "parentsPhone",
+          "createdAt"
+        ]) &&
+        isNonEmptyString(request.resource.data.firstName, 1, 60) &&
+        isNonEmptyString(request.resource.data.lastName, 1, 80) &&
+        isValidEmail(request.resource.data.email) &&
+        isValidAge(request.resource.data.age) &&
+        isValidGroup(request.resource.data.group) &&
+        (request.resource.data.beenBefore is bool) &&
+        // keep this lenient; phone formats vary
+        isNonEmptyString(request.resource.data.parentsPhone, 6, 32) &&
         (request.resource.data.createdAt is timestamp);
 
       allow update, delete: if false;
