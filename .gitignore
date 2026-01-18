@@ -26,3 +26,6 @@ builds/
 *.njsproj
 *.sln
 *.sw?
+
+
+.firebase/*
