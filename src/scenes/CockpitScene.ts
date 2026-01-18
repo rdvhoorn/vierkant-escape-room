@@ -56,6 +56,11 @@ export default class CockpitScene extends Phaser.Scene {
     var introDone = this.registry.get("introDone") || false;
     var electricitySolved = this.registry.get("electricitySolved") || false;
 
+    // Temp to skip to end credits
+    // introDone = true;
+    // electricitySolved = true;
+    // this.registry.set("postPuzzleThoughtsShown", true);
+
     if (electricitySolved) {
       this.currentPhase = "repaired";
     } else if (introDone) {
@@ -1260,7 +1265,7 @@ export default class CockpitScene extends Phaser.Scene {
         });
 
         this.cameras.main.once("camerafadeoutcomplete", () => {
-          this.scene.start("YourNewSceneName"); // <-- change this
+          this.scene.start("EndCreditsScene");
         });
       });
     } else {

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { TwinklingStars } from "../utils/TwinklingStars";
+import { TwinklingStars, WarpStars } from "../utils/TwinklingStars";
 import { getLeaderboardKampA } from "../firebase/firestore";
 
 /**
@@ -86,6 +86,7 @@ type PopupState = {
 
 export default class TitleScene extends Phaser.Scene {
   private twinklingStars?: TwinklingStars;
+  private warpStars?: WarpStars;
   private isStarting = false;
   private popup?: PopupState;
 
@@ -96,7 +97,21 @@ export default class TitleScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.twinklingStars = new TwinklingStars(this, 140, width, height);
+    // -------------------------
+    // Background: Warp Stars
+    // -------------------------
+    const stars = new WarpStars(this, 600, width, height, {
+      baseSpeed: 700,
+      depth: 1400,
+      fov: 280,
+      fadeInZPortion: 0.25,
+    });
+    stars.setDepth(-10);
+    this.warpStars = stars;
+
+    this.events.on("update", (_time: number, delta: number) => {
+      this.warpStars?.update(delta);
+    });
 
     this.add
       .text(width / 2, height * 0.28, "Verzamelmania op Dezonia!", {
@@ -180,7 +195,7 @@ export default class TitleScene extends Phaser.Scene {
     if (this.isStarting) return;
     this.isStarting = true;
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("EndCreditsScene");
+      if (p === 1) this.scene.start("Face1Scene");
     });
   }
 

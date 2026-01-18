@@ -23,7 +23,6 @@ export default class EndCreditsScene extends Phaser.Scene {
   private tabPrizesBtn?: HTMLButtonElement;
 
   // sections
-  private lbSection?: HTMLDivElement;
   private prizesSection?: HTMLDivElement;
 
   // leaderboard fields
@@ -402,7 +401,6 @@ export default class EndCreditsScene extends Phaser.Scene {
     lbSection.style.flexDirection = "column";
     lbSection.style.gap = "14px";
     form.appendChild(lbSection);
-    this.lbSection = lbSection;
 
     const prizesSection = document.createElement("div");
     prizesSection.setAttribute("data-section", "prizes");
@@ -734,7 +732,6 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.tabLeaderboardBtn = undefined;
     this.tabPrizesBtn = undefined;
 
-    this.lbSection = undefined;
     this.prizesSection = undefined;
 
     this.lbFirstName = undefined;
