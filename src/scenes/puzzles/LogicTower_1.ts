@@ -14,7 +14,6 @@ export default class LogicTower_1 extends Phaser.Scene {
   private telescope!: Phaser.GameObjects.Image;
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
-  private riddleText!: Phaser.GameObjects.Text;
   private answerInput?: Phaser.GameObjects.DOMElement;
 
   // --- Dialog Data ---
@@ -202,7 +201,7 @@ export default class LogicTower_1 extends Phaser.Scene {
     
     const riddle = "Je vindt mij in Mercurius, Aarde, Mars en Jupiter,\nmaar niet in Venus of Neptunus.\nWat ben ik?";
     
-    this.riddleText = this.add.text(w / 2, textY, riddle, {
+    this.add.text(w / 2, textY, riddle, {
         fontSize: "20px", fontFamily: "sans-serif", color: "#c6e2ff",
         align: "center", wordWrap: { width: 500 },
       })

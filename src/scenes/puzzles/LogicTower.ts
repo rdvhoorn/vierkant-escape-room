@@ -17,7 +17,6 @@ export default class LogicTowerScene extends Phaser.Scene {
   private panel!: Phaser.GameObjects.Image;
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
-  private riddleText!: Phaser.GameObjects.Text;
   
   // Keep this undefined initially
   private answerInput: Phaser.GameObjects.DOMElement | undefined; 
@@ -225,7 +224,7 @@ export default class LogicTowerScene extends Phaser.Scene {
     
     const riddle = "I shine without a light\nI burn without burning\nYou only see me when the night is dark\nand adventurers use me to find their way";
 
-    this.riddleText = this.add.text(this.panel.x, panelY - panelHeight * 0.7, riddle, {
+    this.add.text(this.panel.x, panelY - panelHeight * 0.7, riddle, {
         fontSize: "20px",
         fontFamily: "sans-serif",
         color: "#c6e2ff",

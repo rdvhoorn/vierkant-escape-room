@@ -107,8 +107,8 @@ export default class DominoScene extends Phaser.Scene {
     this.add.text(20, 20, "ESC: Terug", { fontSize: "16px", color: "#8fd5ff" });
     this.add.text(width - 250, 20, "Druk op R om een steen te 90 graden te draaien", { fontSize: "16px", color: "#ffffff" });
     this.createGrid(width, height);
-    this.createRuleUI(width);
-    this.spawnDominos(width, height);
+    this.createRuleUI();
+    this.spawnDominos(height);
     this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
     this.input.keyboard?.on("keydown-R", () => {
         if (this.activeDomino) {
@@ -149,7 +149,7 @@ export default class DominoScene extends Phaser.Scene {
         });
     });
   }
-  private createRuleUI(width: number) {
+  private createRuleUI() {
     let y = 60;
     const x = 20;
     this.add.text(x, y - 25, "Regels:", { fontSize: "18px", color: "#fff", fontStyle: "bold" });
@@ -160,7 +160,7 @@ export default class DominoScene extends Phaser.Scene {
             color: colorHex,
             fontStyle: "bold"
         });
-        const indicator = this.add.rectangle(x - 10, y + 7, 8, 8, rule.color).setStrokeStyle(1, 0xffffff);
+        this.add.rectangle(x - 10, y + 7, 8, 8, rule.color).setStrokeStyle(1, 0xffffff);
         this.ruleLabels.set(rule.id, txt);
         y += 30;
     });
@@ -221,7 +221,7 @@ export default class DominoScene extends Phaser.Scene {
 
         const label = this.ruleLabels.get(rule.id);
         if (label) {
-            const baseColor = rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#ffffff";
+            rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#ffffff";
             //misschien gedimd als het nog niet goed is
             label.setText(`[${passed ? "✔" : " "}] ${rule.description}`);
             label.setAlpha(passed ? 1.0 : 0.7);
@@ -267,7 +267,7 @@ export default class DominoScene extends Phaser.Scene {
     return bestPos;
   }
 
-  private spawnDominos(width: number, height: number) {
+  private spawnDominos(height: number) {
     const startX = 100; const startY = height - 100; const gap = 80;
     this.initialDominos.forEach((data, index) => {
       const x = startX + index * gap; const y = startY;
@@ -284,12 +284,12 @@ export default class DominoScene extends Phaser.Scene {
       this.input.setDraggable(container);
       this.dominos.push(container);
     });
-    this.input.on('dragstart', (p: any, obj: any) => {
+    this.input.on('dragstart', (_p: any, obj: any) => {
       this.children.bringToTop(obj); this.activeDomino = obj;
       this.tweens.add({ targets: obj, scale: 1.1, duration: 100 });
     });
-    this.input.on('drag', (p: any, obj: any, x: number, y: number) => { obj.x = x; obj.y = y; });
-    this.input.on('dragend', (p: any, obj: any) => {
+    this.input.on('drag', (_p: any, obj: any, x: number, y: number) => { obj.x = x; obj.y = y; });
+    this.input.on('dragend', (_p: any, obj: any) => {
       this.tweens.add({ targets: obj, scale: 1.0, duration: 100 });
       const snapPos = this.getSnapPosition(obj);
       if (snapPos) { obj.x = snapPos.x; obj.y = snapPos.y; }

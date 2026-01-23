@@ -33,7 +33,7 @@ export default class LogicTower_2 extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    const bg = this.add.image(width / 2, height / 2, "background_tower")
+    this.add.image(width / 2, height / 2, "background_tower")
       .setScale(this.backgroundScale) 
       .setInteractive();
 

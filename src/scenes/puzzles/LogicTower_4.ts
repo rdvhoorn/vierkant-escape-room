@@ -150,12 +150,12 @@ export default class LogicTower_4 extends Phaser.Scene {
       const { width, height } = this.scale;
 
       // Simple placeholder dialogue box
-      const bg = this.add.rectangle(width/2, height - 100, width - 100, 150, 0x000000, 0.8)
+      this.add.rectangle(width/2, height - 100, width - 100, 150, 0x000000, 0.8)
           .setStrokeStyle(2, 0xffffff);
       
       const textContent = "Dat is juist! 'Vierkant voor wiskunde'.\n\n[Hier komt het vervolg van het verhaal...]\n\n(Druk op E om verder te gaan)";
       
-      const text = this.add.text(width/2, height - 100, textContent, {
+      this.add.text(width/2, height - 100, textContent, {
           fontFamily: 'sans-serif',
           fontSize: '20px',
           color: '#ffffff',

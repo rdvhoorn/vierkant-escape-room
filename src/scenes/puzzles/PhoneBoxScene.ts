@@ -3,7 +3,6 @@ import Phaser from "phaser";
 export default class PhoneBoxScene extends Phaser.Scene {
   private returnSceneKey: string = "Face9Scene";
   private readonly correctCode = "6294";
-  private currentView: "numpad" | "wall" = "numpad";
   private currentWallIndex = 0; // 0 tot 3 (aantal muren (4 dan maar hey 0-index))
   private enteredCode = "";
   private numpadContainer!: Phaser.GameObjects.Container;
@@ -171,7 +170,6 @@ export default class PhoneBoxScene extends Phaser.Scene {
   }
 
   private switchView(view: "numpad" | "wall") {
-    this.currentView = view;
     if (view === "numpad") {
       this.numpadContainer.setVisible(true);
       this.wallContainer.setVisible(false);
