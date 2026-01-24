@@ -9,6 +9,8 @@ type Slot = {
 
   cell: Phaser.GameObjects.Container;
 
+  iconBox: Phaser.GameObjects.Rectangle;
+
   fieldRect: Phaser.GameObjects.Rectangle;
   fieldText: Phaser.GameObjects.Text;
   fieldHit: Phaser.GameObjects.Zone;
@@ -26,6 +28,14 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
 
   private minValue = 0;
   private maxValue = 99;
+
+  private normalStroke = 0x888888;
+  private okStroke = 0x2ecc71;
+  private activeStroke = 0x2d7cff;
+
+  private okFill = 0xe8f8ef;     // light green
+  private normalFill = 0xffffff; // field fill
+  private iconFill = 0xf2f2f2;   // icon box fill
 
   constructor() {
     super("kvq_antwoorden_invullen");
@@ -136,6 +146,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         answer: p.answer,
         value: "",
         cell,
+        iconBox,
         fieldRect,
         fieldText,
         fieldHit,
@@ -148,6 +159,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
 
     // default selection
     this.setActiveSlot(0);
+    this.updateRowIndicators();
 
     // Keyboard typing (selected field)
     this.input.keyboard!.on("keydown", (ev: KeyboardEvent) => {
@@ -160,6 +172,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         this.appendDigit(slot, ev.key);
         this.refreshSlot(slot);
         this.checkSolved();
+        this.updateRowIndicators();
         return;
       }
 
@@ -167,6 +180,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         slot.value = slot.value.slice(0, -1);
         this.refreshSlot(slot);
         this.checkSolved();
+        this.updateRowIndicators();
         return;
       }
 
@@ -174,6 +188,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         slot.value = "";
         this.refreshSlot(slot);
         this.checkSolved();
+        this.updateRowIndicators();
         return;
       }
 
@@ -197,13 +212,30 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
   private setActiveSlot(index: number) {
     if (this.solved) return;
 
-    this.activeSlotIndex = index;
+    // if the clicked slot is in a correct row, just deselect
+    const top = [0, 1, 2];
+    const bottom = [3, 4, 5];
 
-    for (const s of this.slots) {
-      s.fieldRect.setStrokeStyle(3, 0x888888);
+    const rowCorrect =
+      (top.includes(index) && this.isRowCorrect(top)) ||
+      (bottom.includes(index) && this.isRowCorrect(bottom));
+
+    if (rowCorrect) {
+      this.activeSlotIndex = null;
+      this.updateRowIndicators();
+      return;
     }
-    this.slots[index].fieldRect.setStrokeStyle(4, 0x2d7cff);
+
+    this.activeSlotIndex = index;
+    this.updateRowIndicators(); // will apply highlight if allowed
   }
+
+
+  private applyActiveHighlight(index: number) {
+    const s = this.slots[index];
+    s.fieldRect.setStrokeStyle(4, this.activeStroke);
+  }
+
 
   private makeArrowButtonVisual(label: string, x: number, y: number, w: number, h: number) {
     const rect = this.add.rectangle(x, y, w, h, 0xffffff, 1).setStrokeStyle(2, 0x666666);
@@ -247,6 +279,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
 
     this.refreshSlot(slot);
     this.checkSolved();
+    this.updateRowIndicators();
   }
 
   private refreshSlot(slot: Slot) {
@@ -282,5 +315,62 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
       this.scene.start("Face7Scene", { entry_from_puzzle: true });
     });
+  }
+
+  private updateRowIndicators() {
+    const top = [0, 1, 2];
+    const bottom = [3, 4, 5];
+
+    const topCorrect = this.isRowCorrect(top);
+    const bottomCorrect = this.isRowCorrect(bottom);
+
+    // paint rows
+    this.applyRowIndicator(top);
+    this.applyRowIndicator(bottom);
+
+    // if active slot is inside a correct row, deselect it
+    if (this.activeSlotIndex !== null) {
+      const inTop = top.includes(this.activeSlotIndex);
+      const inBottom = bottom.includes(this.activeSlotIndex);
+
+      if ((inTop && topCorrect) || (inBottom && bottomCorrect)) {
+        this.activeSlotIndex = null; // ✅ deselect
+        return; // ✅ do NOT re-apply active highlight
+      }
+
+      // otherwise keep highlight
+      this.applyActiveHighlight(this.activeSlotIndex);
+    }
+  }
+
+
+  private applyRowIndicator(indices: number[]) {
+    const rowSlots = indices.map((i) => this.slots[i]);
+
+    const allFilled = rowSlots.every((s) => s.value.length > 0);
+    const allCorrect = allFilled && rowSlots.every((s) => Number(s.value) === s.answer);
+
+    for (const s of rowSlots) {
+      if (allCorrect) {
+        s.fieldRect.setFillStyle(this.okFill, 1);
+        s.fieldRect.setStrokeStyle(3, this.okStroke);
+
+        s.iconBox.setFillStyle(0xdff5e7, 1);
+        s.iconBox.setStrokeStyle(3, this.okStroke);
+      } else {
+        // revert to normal row style (selection highlight handled elsewhere)
+        s.fieldRect.setFillStyle(this.normalFill, 1);
+        s.fieldRect.setStrokeStyle(3, this.normalStroke);
+
+        s.iconBox.setFillStyle(this.iconFill, 1);
+        s.iconBox.setStrokeStyle(3, this.normalStroke);
+      }
+    }
+  }
+
+  private isRowCorrect(indices: number[]) {
+    const rowSlots = indices.map((i) => this.slots[i]);
+    const allFilled = rowSlots.every((s) => s.value.length > 0);
+    return allFilled && rowSlots.every((s) => Number(s.value) === s.answer);
   }
 }
