@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { PlayerController } from "./PlanetPlayer";
 import { toggleControlsMode } from "./ControlsMode";
+import { DEBUG } from "./main";
 
 type V2Like = { x: number; y: number };
 
@@ -167,7 +168,9 @@ export class Hud {
   };
 
   private bindModeToggle() {
-    // Secret dev key: backtick (`) toggles control mode and restarts the scene.
+    // Dev-only: backtick (`) toggles control mode and restarts the scene.
+    if (!DEBUG) return;
+
     this.scene.input.keyboard?.on("keydown-BACKTICK", () => {
       const isNowDesktop = toggleControlsMode(this.scene);
 

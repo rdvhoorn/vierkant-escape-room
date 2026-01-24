@@ -14,14 +14,11 @@ export function getIsDesktop(scene: Phaser.Scene): boolean {
 
   const device = scene.sys.game.device;
 
-  const isTouch = device.input.touch;
-  const isDesktopOS = device.os.desktop;
-
-  // Heuristic:
-  // - If it has touch, prefer "touch" mode by default.
-  // - Otherwise, use desktop controls.
-  if (isTouch) return false;
-  return isDesktopOS;
+  // Only iOS/Android get touch controls.
+  // Everything else (Windows, Mac, Linux, ChromeOS) gets desktop controls,
+  // even if they have a touchscreen (e.g. Surface, touchscreen laptops).
+  const isMobileOS = device.os.iOS || device.os.android;
+  return !isMobileOS;
 }
 
 /**
