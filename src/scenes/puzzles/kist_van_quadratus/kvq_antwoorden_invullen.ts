@@ -26,6 +26,8 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
   private activeSlotIndex: number | null = null;
   private solved = false;
 
+  private readonly SAVE_KEY = "kvq_antwoorden_invullen_values";
+
   private minValue = 0;
   private maxValue = 99;
 
@@ -124,12 +126,14 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         if (this.solved) return;
         this.setActiveSlot(i);
         this.stepSlotValue(i, +1);
+        this.saveValues();        
       });
 
       downHit.on("pointerdown", () => {
         if (this.solved) return;
         this.setActiveSlot(i);
         this.stepSlotValue(i, -1);
+        this.saveValues();
       });
 
       // (Optional hover feedback)
@@ -157,6 +161,21 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
       };
     });
 
+    // Restore saved values (if any)
+    const saved = this.loadValues();
+    if (saved) {
+      this.slots.forEach((slot, i) => {
+        slot.value = saved[i] ?? "";
+        this.refreshSlot(slot);
+      });
+    }
+
+    // default selection + indicators
+    this.setActiveSlot(0);
+    this.updateRowIndicators();
+    this.checkSolved(); // in case everything was already correct
+
+
     // default selection
     this.setActiveSlot(0);
     this.updateRowIndicators();
@@ -173,6 +192,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         this.refreshSlot(slot);
         this.checkSolved();
         this.updateRowIndicators();
+        this.saveValues();
         return;
       }
 
@@ -181,6 +201,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         this.refreshSlot(slot);
         this.checkSolved();
         this.updateRowIndicators();
+        this.saveValues();
         return;
       }
 
@@ -189,15 +210,18 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         this.refreshSlot(slot);
         this.checkSolved();
         this.updateRowIndicators();
+        this.saveValues();
         return;
       }
 
       if (ev.key === "ArrowUp") {
         this.stepSlotValue(this.activeSlotIndex, +1);
+        this.saveValues();
         return;
       }
       if (ev.key === "ArrowDown") {
         this.stepSlotValue(this.activeSlotIndex, -1);
+        this.saveValues();
         return;
       }
 
@@ -372,5 +396,17 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
     const rowSlots = indices.map((i) => this.slots[i]);
     const allFilled = rowSlots.every((s) => s.value.length > 0);
     return allFilled && rowSlots.every((s) => Number(s.value) === s.answer);
+  }
+
+  private saveValues() {
+    // store in the same order as this.slots
+    const values = this.slots.map((s) => s.value);
+    this.registry.set(this.SAVE_KEY, values);
+  }
+
+  private loadValues(): string[] | null {
+    const v = this.registry.get(this.SAVE_KEY);
+    if (Array.isArray(v)) return v as string[];
+    return null;
   }
 }
