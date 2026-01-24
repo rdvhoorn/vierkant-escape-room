@@ -1,9 +1,16 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { getFaceConfig, buildNeighborColorMap, PuzzleKey } from "./_FaceConfig";
 
 export default class Face12Scene extends FaceBase {
+  private entry_from_puzzle = false;
+
   constructor() {
     super("Face12Scene");
+  }
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   preload() {
@@ -63,6 +70,11 @@ export default class Face12Scene extends FaceBase {
     });
 
     plok.setData("dialogHandle", handle);
+
+    // Give reward if returning from solved puzzle
+    if (this.entry_from_puzzle && this.registry.get("domino_solved")) {
+      this.addPuzzleRewardIfNotObtained(PuzzleKey.Domino);
+    }
   }
 
   update(_time: number, delta: number) {

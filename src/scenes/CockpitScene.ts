@@ -1255,7 +1255,7 @@ export default class CockpitScene extends Phaser.Scene {
     const regFuel = this.registry.get("energy");
     const fuel = typeof regFuel === "number" ? regFuel : 0;
 
-    if (fuel >= 90) {
+    if (fuel >= 80) {
       this.animateJoystickDownOnly(() => {
         this.cameras.main.shake(800, 0.02);
 

@@ -206,6 +206,7 @@ export default class PhoneBoxScene extends Phaser.Scene {
       spawnX,
       spawnY,
       cameFromScene: "PhoneBoxScene",
+      entry_from_puzzle: true,
     });
   }
 }

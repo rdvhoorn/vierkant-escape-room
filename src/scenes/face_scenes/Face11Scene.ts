@@ -2,8 +2,15 @@ import FaceBase from "./_FaceBase";
 import { getFaceConfig, buildNeighborColorMap, PuzzleKey, PUZZLE_REWARDS } from "./_FaceConfig";
 
 export default class Face11Scene extends FaceBase {
+  private entry_from_puzzle = false;
+
   constructor() {
     super("Face11Scene");
+  }
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   preload() {
@@ -48,11 +55,11 @@ export default class Face11Scene extends FaceBase {
 
     this.addSoftShadowBelow(ufo, 60, 0x000000, 0.3);
 
-    // Check if puzzle is solved and give reward
     const rewardConfig = PUZZLE_REWARDS[PuzzleKey.Slot];
     const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
 
-    if (isSolved) {
+    // Give reward if returning from solved puzzle
+    if (this.entry_from_puzzle && isSolved) {
       this.addPuzzleRewardIfNotObtained(PuzzleKey.Slot);
     }
 

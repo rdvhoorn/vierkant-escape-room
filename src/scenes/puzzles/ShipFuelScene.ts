@@ -126,12 +126,14 @@ export default class ShipFuelScene extends Phaser.Scene {
     // Set flag that electricity puzzle is solved
     this.registry.set("electricitySolved", true);
 
-    // Add energy reward
+    // Add energy reward (only if not already obtained)
     const config = PUZZLE_REWARDS[PuzzleKey.ShipFuel];
     this.registry.set(config.puzzleSolvedRegistryKey, true);
-    this.registry.set(config.rewardObtainedRegistryKey, true);
-    const currentEnergy = this.registry.get("energy") ?? 0;
-    this.registry.set("energy", currentEnergy + config.rewardEnergy);
+    if (!this.registry.get(config.rewardObtainedRegistryKey)) {
+      this.registry.set(config.rewardObtainedRegistryKey, true);
+      const currentEnergy = this.registry.get("energy") ?? 0;
+      this.registry.set("energy", currentEnergy + config.rewardEnergy);
+    }
 
     // Go back to cockpit
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {

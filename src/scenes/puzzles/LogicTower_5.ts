@@ -324,7 +324,8 @@ export default class LogicTower_5 extends Phaser.Scene {
       spawnX,
       spawnY,
       cameFromScene: "LogicTower_5",
-      towerSolved: solved 
+      towerSolved: solved,
+      entry_from_puzzle: true,
     });
   }
 }

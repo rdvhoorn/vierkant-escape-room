@@ -233,8 +233,8 @@ export default class DominoScene extends Phaser.Scene {
   }
 
   private puzzleSolved() {
-    if (this.registry.get("domino_complete")) return;
-    this.registry.set("domino_complete", true);
+    if (this.registry.get("domino_solved")) return;
+    this.registry.set("domino_solved", true);
 
     const txt = this.add.text(this.scale.width/2, this.scale.height/2, "OPGELOST!", {
         fontSize: "40px", color: "#00ff00", backgroundColor: "#000", padding: { x: 20, y: 20 }
@@ -324,6 +324,6 @@ export default class DominoScene extends Phaser.Scene {
   }
 
   private exitScene() {
-    this.scene.start(this.returnSceneKey, { spawnX: this.scale.width/2, spawnY: this.scale.height/2 + 60, cameFromScene: "DominoScene" });
+    this.scene.start(this.returnSceneKey, { spawnX: this.scale.width/2, spawnY: this.scale.height/2 + 60, cameFromScene: "DominoScene", entry_from_puzzle: true });
   }
 }

@@ -350,7 +350,7 @@ export default class SudokuScene extends Phaser.Scene {
     const spawnX = this.scale.width / 2;
     const spawnY = this.scale.height / 2 + 60;
     this.scene.start(this.returnSceneKey, {
-      spawnX, spawnY, cameFromScene: "SudokuScene",
+      spawnX, spawnY, cameFromScene: "SudokuScene", entry_from_puzzle: true,
     });
   }
 }

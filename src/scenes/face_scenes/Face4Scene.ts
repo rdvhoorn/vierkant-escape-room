@@ -4,9 +4,15 @@ import { getFaceConfig, buildNeighborColorMap, PuzzleKey, PUZZLE_REWARDS } from 
 
 export default class Face4Scene extends FaceBase {
   private readonly birdSize = 20;
+  private entry_from_puzzle = false;
 
   constructor() {
     super("Face4Scene");
+  }
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   create() {
@@ -43,24 +49,22 @@ export default class Face4Scene extends FaceBase {
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
 
     // --- INTERACTION LOGIC ---
+    const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
+    const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
+
+    // Give reward if returning from solved puzzle
+    if (this.entry_from_puzzle && isSolved) {
+      this.addPuzzleRewardIfNotObtained(PuzzleKey.LogicTower);
+    }
+
     const handle = this.createDialogInteraction(tower, {
       hitRadius: 100,
       hintText: "Druk op E om de toren in te gaan",
-      
-      // 1. Build Lines
+
       buildLines: () => {
-        // Retrieve the configuration for the Logic Tower
-        const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
-        
-        // Check if "tower_solved" is true in the registry
-        const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
+        const solved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
 
-        if (isSolved) {
-          // If solved, try to give the reward using the FaceBase helper
-          // This checks "tower_reward_obtained", gives energy if needed, and marks it obtained
-          this.addPuzzleRewardIfNotObtained(PuzzleKey.LogicTower);
-
-          // Return the "Closed" dialogue
+        if (solved) {
           return [
             { speaker: "", text: "De lichten van de toren zijn gedoofd." },
             { speaker: "", text: "Het signaal is succesvol verzonden." },
@@ -68,7 +72,6 @@ export default class Face4Scene extends FaceBase {
           ];
         }
 
-        // If NOT solved, Return the "Open" dialogue
         return [
           { speaker: "", text: "Een mysterieuze toren rijst op uit het niets." },
           { speaker: "", text: "Binnen brandt een flauw licht..." },
@@ -76,13 +79,9 @@ export default class Face4Scene extends FaceBase {
         ];
       },
 
-      // 2. Action on Complete
       onComplete: () => {
-        const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
-        const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
-
-        // Only enter the puzzle scene if it hasn't been solved yet
-        if (!isSolved) {
+        const solved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
+        if (!solved) {
           this.scene.start("LogicTower", { entry_from_face: true });
         }
       },

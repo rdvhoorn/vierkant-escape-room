@@ -1,5 +1,5 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { getFaceConfig, buildNeighborColorMap, PuzzleKey } from "./_FaceConfig";
 
 export default class Face3Scene extends FaceBase {
   private entry_from_puzzle: boolean = false;
@@ -48,6 +48,11 @@ export default class Face3Scene extends FaceBase {
 
     // 2. Add the Door (Foreground)
     this.addDoorNpc();
+
+    // 3. Give reward if returning from solved puzzle
+    if (this.entry_from_puzzle && this.registry.get("streak_maze_solved")) {
+      this.addPuzzleRewardIfNotObtained(PuzzleKey.StreakMaze);
+    }
   }
 
   /**

@@ -143,6 +143,7 @@ export default class SlotScene extends Phaser.Scene {
           spawnX: this.scale.width / 2,
           spawnY: this.scale.height / 2 + 60,
           cameFromScene: "SlotScene",
+          entry_from_puzzle: true,
         });
       });
     } else {
@@ -156,6 +157,7 @@ export default class SlotScene extends Phaser.Scene {
       spawnX: this.scale.width / 2,
       spawnY: this.scale.height / 2 + 60,
       cameFromScene: "SlotScene",
+      entry_from_puzzle: true,
     });
   }
 }

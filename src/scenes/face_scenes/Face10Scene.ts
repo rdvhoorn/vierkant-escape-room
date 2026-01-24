@@ -1,9 +1,16 @@
 import FaceBase from "./_FaceBase";
-import { getFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { getFaceConfig, buildNeighborColorMap, PuzzleKey } from "./_FaceConfig";
 
 export default class Face10Scene extends FaceBase {
+  private entry_from_puzzle = false;
+
   constructor() {
     super("Face10Scene");
+  }
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_puzzle = !!data?.entry_from_puzzle;
   }
 
   preload() {
@@ -64,6 +71,11 @@ export default class Face10Scene extends FaceBase {
     });
 
     energyCube.setData("dialogHandle", handle);
+
+    // Give reward if returning from solved puzzle
+    if (this.entry_from_puzzle && this.registry.get("sudoku_solved")) {
+      this.addPuzzleRewardIfNotObtained(PuzzleKey.Sudoku);
+    }
   }
 
   update(_time: number, delta: number) {

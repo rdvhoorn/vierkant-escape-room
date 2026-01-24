@@ -173,7 +173,35 @@ export default abstract class FaceBase extends Phaser.Scene {
     if (!this.registry.get(obtainedKey)) {
       this.registry.set(obtainedKey, true);
       this.addEnergy(rewardInfo.rewardEnergy);
+      this.playEnergyRewardAnimation(rewardInfo.rewardEnergy);
     }
+  }
+
+  private playEnergyRewardAnimation(amount: number) {
+    // Floating "+X energie" text near the energy bar (top-right)
+    const x = this.scale.width - 70;
+    const y = 60;
+
+    const text = this.add.text(x, y, `+${amount} energie`, {
+      fontFamily: "sans-serif",
+      fontSize: "20px",
+      color: "#00ff00",
+      stroke: "#003300",
+      strokeThickness: 3,
+    })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Float up and fade out
+    this.tweens.add({
+      targets: text,
+      y: y - 40,
+      alpha: 0,
+      duration: 1500,
+      ease: "Power2",
+      onComplete: () => text.destroy(),
+    });
   }
 
   // ---------------------------
