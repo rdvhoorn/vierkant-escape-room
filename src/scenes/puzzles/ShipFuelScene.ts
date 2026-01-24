@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../../utils/TwinklingStars";
 import { DEBUG } from "../../main";
+import { PUZZLE_REWARDS, PuzzleKey } from "../face_scenes/_FaceConfig";
 
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
@@ -122,8 +123,17 @@ export default class ShipFuelScene extends Phaser.Scene {
   }
 
   private toNext() {
-    // Set flag that electricity puzzle is solved, then go back to cockpit
+    // Set flag that electricity puzzle is solved
     this.registry.set("electricitySolved", true);
+
+    // Add energy reward
+    const config = PUZZLE_REWARDS[PuzzleKey.ShipFuel];
+    this.registry.set(config.puzzleSolvedRegistryKey, true);
+    this.registry.set(config.rewardObtainedRegistryKey, true);
+    const currentEnergy = this.registry.get("energy") ?? 0;
+    this.registry.set("energy", currentEnergy + config.rewardEnergy);
+
+    // Go back to cockpit
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
       if (p === 1) this.scene.start("CockpitScene");
     });

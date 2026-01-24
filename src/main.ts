@@ -44,8 +44,10 @@ import PhoneBoxScene from "./scenes/puzzles/PhoneBoxScene";
 import SudokuScene from "./scenes/puzzles/SudokuScene";
 import DominoScene from "./scenes/puzzles/DominoScene";
 import SlotScene from "./scenes/puzzles/SlotScene";
+import { DebugMenu } from "./ui/DebugMenu";
+
 // Debug mode - set to false for release
-export const DEBUG = false;
+export const DEBUG = true;
 
 const GAME_WIDTH = 1280;
 const GAME_HEIGHT = 720;
@@ -114,4 +116,9 @@ const config: Phaser.Types.Core.GameConfig = {
 ],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Initialize debug menu (F1 to toggle)
+if (DEBUG) {
+  new DebugMenu(game);
+}

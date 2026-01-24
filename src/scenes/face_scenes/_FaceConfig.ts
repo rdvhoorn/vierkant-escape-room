@@ -40,15 +40,23 @@ export enum PuzzleKey {
   ShipFuel = "ship_fuel",
   LogicTower = "logic_tower",
   Slot = "slot",
+  StreakMaze = "streak_maze",
+  PhoneBox = "phone_box",
+  Sudoku = "sudoku",
+  Domino = "domino",
 }
 
 // Constant of puzzle key, reward, and reward obtained key
 export const PUZZLE_REWARDS: Record<PuzzleKey, { rewardEnergy: number; rewardObtainedRegistryKey: string; puzzleSolvedRegistryKey: string }> = {
-  [PuzzleKey.KistVanQuadratus]: { rewardEnergy: 20, rewardObtainedRegistryKey: "kvq_puzzle_solved_fuel_obtained", puzzleSolvedRegistryKey: "kvq_puzzle_solved" },
+  [PuzzleKey.KistVanQuadratus]: { rewardEnergy: 25, rewardObtainedRegistryKey: "kvq_puzzle_solved_fuel_obtained", puzzleSolvedRegistryKey: "kvq_puzzle_solved" },
   [PuzzleKey.Tangram]: { rewardEnergy: 10, rewardObtainedRegistryKey: "tangram_puzzle_solved_fuel_obtained" , puzzleSolvedRegistryKey: "tangram_puzzle_solved" },
-  [PuzzleKey.ShipFuel]: { rewardEnergy: 50, rewardObtainedRegistryKey: "ship_fuel_obtained", puzzleSolvedRegistryKey: "ship_fuel_solved" },
-  [PuzzleKey.LogicTower]: { rewardEnergy: 50, rewardObtainedRegistryKey: "tower_reward_obtained", puzzleSolvedRegistryKey: "tower_solved" },
+  [PuzzleKey.ShipFuel]: { rewardEnergy: 10, rewardObtainedRegistryKey: "ship_fuel_obtained", puzzleSolvedRegistryKey: "ship_fuel_solved" },
+  [PuzzleKey.LogicTower]: { rewardEnergy: 30, rewardObtainedRegistryKey: "tower_reward_obtained", puzzleSolvedRegistryKey: "tower_solved" },
   [PuzzleKey.Slot]: { rewardEnergy: 10, rewardObtainedRegistryKey: "slot_reward_obtained", puzzleSolvedRegistryKey: "slot_solved" },
+  [PuzzleKey.StreakMaze]: { rewardEnergy: 10, rewardObtainedRegistryKey: "streak_maze_reward_obtained", puzzleSolvedRegistryKey: "streak_maze_solved" },
+  [PuzzleKey.PhoneBox]: { rewardEnergy: 10, rewardObtainedRegistryKey: "phonebox_reward_obtained", puzzleSolvedRegistryKey: "phonebox_solved" },
+  [PuzzleKey.Sudoku]: { rewardEnergy: 25, rewardObtainedRegistryKey: "sudoku_reward_obtained", puzzleSolvedRegistryKey: "sudoku_solved" },
+  [PuzzleKey.Domino]: { rewardEnergy: 10, rewardObtainedRegistryKey: "domino_reward_obtained", puzzleSolvedRegistryKey: "domino_solved" },
 };
 
 export type FaceKey =

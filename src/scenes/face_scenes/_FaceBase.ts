@@ -98,7 +98,9 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected twinklingStars?: TwinklingStars;
   protected travelEdgeZones: TravelEdgeZone[] = [];
   protected activeTravelEdge: string | null = null;
+  // @ts-ignore - reserved for stripe pattern feature
   private faceStripeOverlay?: Phaser.GameObjects.TileSprite;
+  // @ts-ignore - reserved for stripe pattern feature
   private faceStripeMaskGfx?: Phaser.GameObjects.Graphics;
 
   // ---- Interaction highlights ----
