@@ -11,7 +11,7 @@ export default class TangramSchildpadScene extends BaseTangramScene {
   }
 
   protected getSubtitleText(): string {
-    return "Sleep de stukken op de schaduw. Selecteer en roteer per 45°. Druk op 'Check'.";
+    return "Sleep de stukken op de schaduw."
   }
 
   protected onPuzzleSolved(): void {

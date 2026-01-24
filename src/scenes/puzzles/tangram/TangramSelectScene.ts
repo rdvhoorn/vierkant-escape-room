@@ -44,14 +44,20 @@ export default class TangramSelectScene extends Phaser.Scene {
     this.levelTextObjects = [];
 
     this.add
-        .text(width / 2, height * 0.2, "Kun jij de dieren terugvinden?", {
+        .text(width / 2, height * 0.2, "Kun jij mijn dieren terugvinden?", {
         fontFamily: "sans-serif",
         fontSize: "36px",
         color: "#ffffff",
         })
         .setOrigin(0.5);
 
-    const startY = height * 0.4;
+    this.add.text(width / 2, height * 0.3, "Klik een van de dieren om de schaduw na te maken", {
+        fontFamily: "sans-serif",
+        fontSize: "24px",
+        color: "#ffffff",
+    }).setOrigin(0.5);
+
+    const startY = height * 0.5;
     const gap = 70;
 
     this.levels.forEach((level, index) => {

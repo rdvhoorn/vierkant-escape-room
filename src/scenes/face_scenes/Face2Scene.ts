@@ -67,7 +67,7 @@ export default class Face2Scene extends FaceBase {
 
     const handle = this.createDialogInteraction(farmer, {
       hitRadius: 100,
-      hintText: "Praat met reiziger: E",
+      hintText: "Praat met de boer: E",
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
           return [
@@ -80,13 +80,15 @@ export default class Face2Scene extends FaceBase {
         } else if (!this.entry_from_puzzle && puzzleSolved) {
           return [
             { speaker: "Henk", text: "Dankjewel voor je hulp! Ik ben zo blij dat al mijn dieren terug zijn!" },
+            { speaker: "Henk", text: "Hier is de brandstof die ik je beloofd had. Succes met je reis terug naar huis!" },
           ];
         } else {
           return [
-            { speaker: "Henk", text: "Hé, jij ziet er nieuw uit op dit vlak." },
-            { speaker: "Jij", text: "Net geland. Weet je waar ik wat energie kan vinden?" },
-            { speaker: "Henk", text: "Sommige vlakken verbergen meer dan ze laten zien… kijk goed rond." },
-            { speaker: "Henk", text: "Kom, dan laat ik je een puzzel zien." },
+            { speaker: "Henk", text: "Hoi! Ik ben Henk. Ik ben hier wat ze op aarde boer noemen geloof ik. Welkom op onze planeet!" },
+            { speaker: "Jij", text: "Hoi Henk! Ik ben hier neergestort en ik probeer nu genoeg energie te verzamelen om terug naar huis te reizen. Kun jij me misschien helpen?" },
+            { speaker: "Henk", text: "Ja, als jij me helpt om mijn dieren weer terug te krijgen, dan krijg jij een deel van mijn energievoorraad." },
+            { speaker: "Henk", text: "Ik heb een speciaal compas om ze terug te halen. Het enige wat jij hoeft te doen is hun schaduw precies na te maken met mijn speciale stenen." },
+            { speaker: "Henk", text: "Er zijn drie soorten dieren, de schaduw van de kikker is het makkelijkst, die van de krab het moeilijkst en die van de schildpad zit er tussen in." },
           ];
         }
       },
