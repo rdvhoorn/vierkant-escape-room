@@ -23,6 +23,14 @@ export default class Face8Scene extends FaceBase {
       showLabel: visuals.showLabel ?? true,
     });
 
+    this.addDiagonalStripesInFace({
+      angleDeg: -18,
+      overlayAlpha: 0.4,
+      stripeAlpha: 0.25,
+      gap: 30,
+      stripeWidth: 10,
+    });
+
     const center = this.getPolygonCenter(this.poly);
     const sign1Pos = new Phaser.Math.Vector2(center.x-40, center.y - 60);
     const sign1 = this.add

@@ -98,6 +98,8 @@ export default abstract class FaceBase extends Phaser.Scene {
   protected twinklingStars?: TwinklingStars;
   protected travelEdgeZones: TravelEdgeZone[] = [];
   protected activeTravelEdge: string | null = null;
+  private faceStripeOverlay?: Phaser.GameObjects.TileSprite;
+  private faceStripeMaskGfx?: Phaser.GameObjects.Graphics;
 
   // ---- Interaction highlights ----
   private interactableHighlights: {
@@ -439,7 +441,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.worldBounds = this.unionRects(rects);
   }
 
-  private getPolyBounds(poly: Phaser.Geom.Polygon): Phaser.Geom.Rectangle {
+  protected getPolyBounds(poly: Phaser.Geom.Polygon): Phaser.Geom.Rectangle {
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
@@ -1060,5 +1062,96 @@ export default abstract class FaceBase extends Phaser.Scene {
       h.highlight.setVisible(inRange && !this.dialogActive);
     }
   }
+
+  protected addDiagonalStripesInFace(options?: {
+    textureKey?: string;
+    tileSize?: number;
+    stripeWidth?: number;
+    gap?: number;
+    stripeColor?: number;
+    stripeAlpha?: number;
+    overlayAlpha?: number;
+    angleDeg?: number;
+    depth?: number;
+  }) {
+    const {
+      textureKey = "__diag_stripes",
+      tileSize = 256,     // bigger tile = less chance you notice repetition
+      stripeWidth = 10,
+      gap = 22,
+      stripeColor = 0xffffff,
+      stripeAlpha = 0.12,
+      overlayAlpha = 0.18,
+      angleDeg = -18,
+      depth = 11,
+    } = options ?? {};
+
+    // 1) Build a seamless stripe tile (angle is baked in)
+    if (!this.textures.exists(textureKey)) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.clear();
+
+      const a = Phaser.Math.DegToRad(angleDeg);
+      const dir = new Phaser.Math.Vector2(Math.cos(a), Math.sin(a)); // stripe direction
+      const nrm = new Phaser.Math.Vector2(-dir.y, dir.x);            // perpendicular
+
+      g.lineStyle(stripeWidth, stripeColor, stripeAlpha);
+
+      const c = new Phaser.Math.Vector2(tileSize / 2, tileSize / 2);
+      const L = tileSize * 3; // long enough to cover tile at any angle
+
+      // Draw stripes by sliding along the perpendicular direction (nrm).
+      // This tiles cleanly because the pattern is periodic along nrm.
+      for (let t = -tileSize * 2; t <= tileSize * 2; t += gap) {
+        const p0 = c.clone().add(nrm.clone().scale(t)).subtract(dir.clone().scale(L));
+        const p1 = c.clone().add(nrm.clone().scale(t)).add(dir.clone().scale(L));
+
+        g.beginPath();
+        g.moveTo(p0.x, p0.y);
+        g.lineTo(p1.x, p1.y);
+        g.strokePath();
+      }
+
+      g.generateTexture(textureKey, tileSize, tileSize);
+      g.destroy();
+
+      // Optional: if you're doing pixel-art and want crisp sampling:
+      // this.textures.get(textureKey).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
+
+    // 2) Big tiling overlay (NOT rotated)
+    const bounds = this.getPolyBounds(this.poly); // make getPolyBounds protected
+    const pad = 200;
+
+    const overlay = this.add
+      .tileSprite(
+        bounds.x - pad,
+        bounds.y - pad,
+        bounds.width + pad * 2,
+        bounds.height + pad * 2,
+        textureKey
+      )
+      .setOrigin(0, 0)
+      .setAlpha(overlayAlpha)
+      .setDepth(depth);
+
+    // 3) Mask to the pentagon
+    const maskGfx = this.make.graphics({ x: 0, y: 0 });
+    maskGfx.fillStyle(0xffffff, 1);
+    maskGfx.beginPath();
+    maskGfx.moveTo(this.poly.points[0].x, this.poly.points[0].y);
+    for (let i = 1; i < this.poly.points.length; i++) {
+      maskGfx.lineTo(this.poly.points[i].x, this.poly.points[i].y);
+    }
+    maskGfx.closePath();
+    maskGfx.fillPath();
+
+    overlay.setMask(maskGfx.createGeometryMask());
+
+    this.faceLayers?.ground.add(overlay);
+
+    return overlay;
+  }
+
 
 }
