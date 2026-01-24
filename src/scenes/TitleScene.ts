@@ -24,7 +24,7 @@ Wil je mee op een van de zomerkampen van Vierkant voor Wiskunde? Meer informatie
 Bekijk ook onze [homepagina](https://www.vierkantvoorwiskunde.nl/).`;
 
 const CONTACT_TAB_BODY = `Makers escaperoom 2025-2026:
-- Verhaal en Raadsels: Sonja Lakovleva & Moniek Messink
+- Verhaal en Raadsels: Sonja Iakovleva & Moniek Messink
 - Programmering: Daniël Wielenga, Misha Stassen, Robin van Hoorn
 - Illustraties: Gegenereerd met AI.
 
