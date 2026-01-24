@@ -7,11 +7,11 @@ export default class TangramSchildpadScene extends BaseTangramScene {
   }
 
   protected getTitleText(): string {
-    return "Tangram: Schildpad";
+    return "De Schildpad";
   }
 
   protected getSubtitleText(): string {
-    return "Sleep de stukken op de schaduw."
+    return ""
   }
 
   protected onPuzzleSolved(): void {

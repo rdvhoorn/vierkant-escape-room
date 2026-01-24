@@ -7,7 +7,7 @@ export default class TangramKrabScene extends BaseTangramScene {
   }
 
   protected getTitleText(): string {
-    return "Tangram: Krab";
+    return "De Krab";
   }
 
   protected getSubtitleText(): string {

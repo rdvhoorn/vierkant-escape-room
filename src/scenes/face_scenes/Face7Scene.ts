@@ -31,6 +31,14 @@ export default class Face7Scene extends FaceBase {
       showLabel: visuals.showLabel ?? true,
     });
 
+    this.addDiagonalStripesInFace({
+      angleDeg: -18,
+      overlayAlpha: 0.4,
+      stripeAlpha: 0.25,
+      gap: 30,
+      stripeWidth: 10,
+    });
+
     const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.KistVanQuadratus].puzzleSolvedRegistryKey)
 
     const image_str = puzzleSolved ? "chest_2_open" : "chest_2";
