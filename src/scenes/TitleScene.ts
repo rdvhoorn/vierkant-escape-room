@@ -101,7 +101,7 @@ export default class TitleScene extends Phaser.Scene {
     // Background: Warp Stars
     // -------------------------
     const stars = new WarpStars(this, 600, width, height, {
-      baseSpeed: 700,
+      baseSpeed: 200,
       depth: 1400,
       fov: 280,
       fadeInZPortion: 0.25,
@@ -195,7 +195,7 @@ export default class TitleScene extends Phaser.Scene {
     if (this.isStarting) return;
     this.isStarting = true;
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
-      if (p === 1) this.scene.start("CockpitScene");
+      if (p === 1) this.scene.start("IntroScene");
     });
   }
 
