@@ -44,6 +44,7 @@ export default class Face12Scene extends FaceBase {
     const plokScale = 0.4;
     plok.setScale(plokScale);
     this.faceLayers.actors.add(plok);
+    
     //yay movement
     this.tweens.add({
       targets: plok,
@@ -54,25 +55,56 @@ export default class Face12Scene extends FaceBase {
       ease: "Sine.easeInOut"
     });
     this.addSoftShadowBelow(plok, 40 * plokScale, 0x000000, 0.3);
+
+    const isSolved = this.registry.get("domino_solved");
+
+    let dialogLines = [];
+
+    if (isSolved) {
+        //dialoog opgelost
+        dialogLines = [
+            { text: "Wauw! Het is je gelukt!", speaker: "Plok" },
+            { text: "Ik snapte er helemaal niks van. Jij bent echt slim.", speaker: "Plok" },
+            { text: "Je hebt er weer 10 energie bij. Bedankt voor het oplossen!", speaker: "Plok" }
+        ];
+    } else {
+        //dialoog onopgelost
+        dialogLines = [
+            { text: "Hoi!", speaker: "Jij" },
+            { text: "O, hallo! Eindelijk iemand anders, fijn!", speaker: "Plok" },
+            { text: "Wie ben jij?", speaker: "Jij" },
+            { text: "Ik ben Plok en ik woon hier helemaal alleen. Dat is soms best eenzaam.", speaker: "Plok" },
+            { text: "Vaak maak ik een domino puzzel om de tijd te doden, maar vandaag lukt dat niet.", speaker: "Plok" },
+            { text: "Ik zie allemaal gekleurde vakken en met getallen, maar ik snap niet wat de bedoeling is.", speaker: "Jij" },
+            { text: "Bij dit spel moet ik de dominostenen precies goed neerleggen.", speaker: "Plok" },
+            { text: "Vakjes met dezelfde kleur horen bij elkaar en de getallen geven informatie. Als het goed is, werkt alles samen.", speaker: "Plok" },
+            { text: "Bijvoorbeeld het = teken betekent dat er in het gekleurde vak alleen maar dezelfde getallen mogen staan, bijvoorbeeld alleen maar vijfen.", speaker: "Plok" },
+            { text: "En  < zegt dat de som van de domino’s in het gekleurde vak kleiner moet zijn dan het getal dat er staat.", speaker: "Plok" },
+            { text: "Als je een cijfer ziet staan, zonder teken, dan weet je dat het gekleurde vak óf dit getal bevat, óf dat de som van de getallen in het vak gelijk is aan het cijfer.", speaker: "Plok" },
+            { text: "Hier, probeer het maar. Dit zijn de stenen die bij deze puzzel horen.", speaker: "Plok" },
+            { text: "Eigenlijk moet ik een weg terugvinden naar huis, mijn raket is leeg en ik heb nieuwe energie nodig zodat ik weer terug naar de Aarde kan.", speaker: "Jij" },
+            { text: "Als jij de puzzel oplost, mag je mijn energie hebben. Ik heb het toch niet allemaal nodig.", speaker: "Plok" },
+            { text: "Oké, in dat geval help ik je graag met de puzzel!", speaker: "Jij" }
+        ];
+    }
+
     const handle = this.createDialogInteraction(plok, {
       hitRadius: 60,
-      hintText: "Druk op E",
+      hintText: isSolved ? "Praat met Plok" : "Druk op E",
       
-      buildLines: () => [
-        { text: "de tekst komt hier", speaker: "Plok" },
-        { text: "domino domino domino domino", speaker: "Plok" },
-        { text: "stray kids reference", speaker: "Plok" }
-      ],
+      buildLines: () => dialogLines,
       
       onComplete: () => {
-        this.scene.start("DominoScene", { returnScene: "Face12Scene" });
+        if (!isSolved) {
+            this.scene.start("DominoScene", { returnScene: "Face12Scene" });
+        }
       },
     });
 
     plok.setData("dialogHandle", handle);
 
     // Give reward if returning from solved puzzle
-    if (this.entry_from_puzzle && this.registry.get("domino_solved")) {
+    if (this.entry_from_puzzle && isSolved) {
       this.addPuzzleRewardIfNotObtained(PuzzleKey.Domino);
     }
   }

@@ -36,7 +36,7 @@ export default class Face10Scene extends FaceBase {
 
     this.drawIntertwinedCables(radius);
     if (!this.faceLayers) return;
-    const { actors } = this.faceLayers;
+    const { actors, deco } = this.faceLayers;
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
     //cube
@@ -55,14 +55,31 @@ export default class Face10Scene extends FaceBase {
     actors.add(energyCube);
     this.addSoftShadowBelow(energyCube, 70 * scaleFactor, 0x00ffff, 0.5);
 
+    // 
+    // quadratus
+    const quadX = centerX + 120; 
+    const quadY = centerY + 30;
+    const quadratus = this.add.image(quadX, quadY, "quadratus_small")
+      .setDepth(50).setDisplaySize(-200/2, 336/2); //negatieve width voor kijkrichting?
+    deco.add(quadratus);
+
     //sudokuscene tijd
     const handle = this.createDialogInteraction(energyCube, {
       hitRadius: 120,
       paddingX: -60,
       hintText: "Druk op E om te verbinden",
       buildLines: () => [
-        { text: "de tekst komt hier", speaker: "???" },
-        { text: "kevin the cube reference", speaker: "???" }
+        { text: "Hè, waarom trilt de grond zo?", speaker: "Jij" },
+        { text: "Hmm, dat is een vreemd ding! Het lijkt wel alsof er een kaars in brandt.", speaker: "Jij" },
+        { text: "Ah, je hebt onze Energiekubus gevonden!", speaker: "Quadratus" },
+        { text: "Wat IS dat ding?", speaker: "Jij" },
+        { text: "Dezonia slaat energie op in patronen, slimme patronen.", speaker: "Quadratus" },
+        { text: "Deze Energiekubus is een oud beveiligingssysteem. Hij geeft alleen energie af wanneer je het getallenraster herstelt.", speaker: "Quadratus" },
+        { text: "Maar dit lijkt net een Sudoku!", speaker: "Jij" },
+        { text: "Precies! De Energiekubus blijft stabiel door de getallen. Vier getallen zijn extra belangrijk, dit zijn de sleutel-symbolen", speaker: "Quadratus" },
+      { text: "Als je het goed oplost, dan verschijnen er vier symbolen boven speciale vakjes. Deze getallen vormen de code.", speaker: "Quadratus" },
+        { text: "Je loopt naar de kubus toe, legt je hand er op. De kubus wordt warm en de symbolen beginnen te gloeien", speaker: "" },
+        { text: "Oké, tijd om de code te kraken en energie te krijgen!", speaker: "Jij" },
       ],
       
       onComplete: () => {
@@ -102,7 +119,7 @@ export default class Face10Scene extends FaceBase {
              ));
         }
     }
-    const numCables = 40; //40 is misschien nog wat veel maar prima voor nu
+    const numCables = 20; //40 is misschien nog wat veel maar prima voor nu
     for (let i = 0; i < numCables; i++) {
         const start = Phaser.Utils.Array.GetRandom(edgePoints);
         let end = Phaser.Utils.Array.GetRandom(edgePoints);

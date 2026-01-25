@@ -25,17 +25,27 @@ export default class SudokuScene extends Phaser.Scene {
   ];
 
   private currentGrid: number[][] = [];
+  
   private readonly specialCells = [
-    { r: 0, c: 5, color: "#00ffff", hex: 0x00ffff }, //blauwe (erm eigenlijk cyan)
-    { r: 1, c: 6, color: "#ffff00", hex: 0xffff00 }, //gele
-    { r: 3, c: 2, color: "#00ff00", hex: 0x00ff00 }, //groene
-    { r: 7, c: 0, color: "#ff0000", hex: 0xff0000 }  //rode
+    { r: 0, c: 5, color: "#00ffff", hex: 0x00ffff, type: "triangle", char: "▲" }, 
+    { r: 1, c: 6, color: "#ffff00", hex: 0xffff00, type: "square",   char: "■" }, 
+    { r: 3, c: 2, color: "#00ff00", hex: 0x00ff00, type: "circle",   char: "●" }, 
+    { r: 7, c: 0, color: "#ff0000", hex: 0xff0000, type: "diamond",  char: "◆" }  
+  ];
+
+  //Iedereen kent wel een sudoku toch?
+  private readonly rules = [
+    "Vul elk vakje met een cijfer van 1 t/m 9.",
+    "Elke rij moet de cijfers 1 t/m 9 bevatten.",
+    "Elke kolom moet de cijfers 1 t/m 9 bevatten.",
+    "Elk blok van 3x3 moet de cijfers 1 t/m 9 bevatten."
   ];
 
   private cellTexts: Phaser.GameObjects.Text[][] = [];
   private selectorGraphics!: Phaser.GameObjects.Graphics;
   private popupContainer!: Phaser.GameObjects.Container;
   private codeDOM?: Phaser.GameObjects.DOMElement;
+
   constructor() {
     super("SudokuScene");
   }
@@ -61,6 +71,7 @@ export default class SudokuScene extends Phaser.Scene {
     //grid/logica
     this.drawGridVisuals();
     this.createInteractiveZones();
+    this.createRuleUI();//regel ui (nieuw)
     this.selectorGraphics = this.add.graphics();
     //ui button
     const uiX = this.gridStartX + (9 * this.cellSize) + 40;
@@ -74,7 +85,6 @@ export default class SudokuScene extends Phaser.Scene {
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.openCodePopup());
 
-    // 4. Input Listeners
     this.input.keyboard?.on("keydown-ESC", () => {
         if (this.isPopupOpen) this.closeCodePopup();
         else this.exitScene();
@@ -82,6 +92,33 @@ export default class SudokuScene extends Phaser.Scene {
     
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
         if (!this.isPopupOpen) this.handleGridInput(event);
+    });
+  }
+
+  private createRuleUI() {
+    let y = 80;
+    const x = 20;
+    
+    this.add.text(x, y, "Regels:", { 
+        fontSize: "22px", 
+        color: "#ffffff", 
+        fontStyle: "bold",
+        stroke: "#000000",
+        strokeThickness: 2 
+    });
+    
+    y += 40;
+
+    this.rules.forEach(ruleText => {
+        this.add.text(x, y, `- ${ruleText}`, { 
+            fontSize: "16px", 
+            color: "#eeeeee",
+            stroke: "#000000",
+            strokeThickness: 2,
+            wordWrap: { width: 250 }
+        });
+        
+        y += 50; //ruimte per regel
     });
   }
 
@@ -94,14 +131,14 @@ export default class SudokuScene extends Phaser.Scene {
     this.popupContainer = this.add.container(0, 0).setDepth(2000);
     const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.85).setOrigin(0).setInteractive();
     const boxW = 450;
-    const boxH = 300;
+    const boxH = 350; 
     const box = this.add.rectangle(width/2, height/2, boxW, boxH, 0x222222).setStrokeStyle(4, 0x555555);
 
-    const title = this.add.text(width/2, height/2 - 100, "VOER DE CODE IN", {
+    const title = this.add.text(width/2, height/2 - 120, "VOER DE CODE IN", {
         fontSize: "24px", fontStyle: "bold", color: "#ffffff"
     }).setOrigin(0.5);
 
-    const sub = this.add.text(width/2, height/2 - 70, "(Kijk naar de gekleurde vakjes)", {
+    const sub = this.add.text(width/2, height/2 - 90, "(Kijk naar de gemarkeerde vakjes)", {
         fontSize: "16px", color: "#cccccc"
     }).setOrigin(0.5);
 
@@ -110,19 +147,22 @@ export default class SudokuScene extends Phaser.Scene {
             
             <div style="display: flex; gap: 15px;">
                 ${this.specialCells.map((cell, index) => `
-                    <input type="text" id="digit${index}" maxlength="1"
-                        style="
-                            width: 50px; 
-                            height: 50px; 
-                            font-size: 30px; 
-                            text-align: center; 
-                            background: #000; 
-                            color: white; 
-                            border: 4px solid ${cell.color}; 
-                            outline: none;
-                            font-weight: bold;
-                        "
-                    >
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <span style="color: ${cell.color}; font-size: 24px; margin-bottom: 5px;">${cell.char}</span>
+                        <input type="text" id="digit${index}" maxlength="1"
+                            style="
+                                width: 50px; 
+                                height: 50px; 
+                                font-size: 30px; 
+                                text-align: center; 
+                                background: #000; 
+                                color: white; 
+                                border: 4px solid ${cell.color}; 
+                                outline: none;
+                                font-weight: bold;
+                            "
+                        >
+                    </div>
                 `).join('')}
             </div>
 
@@ -146,7 +186,7 @@ export default class SudokuScene extends Phaser.Scene {
     
     this.codeDOM.addListener("keydown");
     this.codeDOM.on("keydown", (e: any) => {
-        e.stopPropagation(); //escape momenteel alleen om hier uit te komen, die knop van eerder moet ik nog even uitzoeken. 
+        e.stopPropagation(); 
         if (e.key === "Enter") this.checkCode();
         if (e.key === "Escape") this.closeCodePopup();
     });
@@ -218,12 +258,41 @@ export default class SudokuScene extends Phaser.Scene {
     const graphics = this.add.graphics();
     graphics.lineStyle(1, 0x555555, 1);
 
-    //achtergrond, met scaling. 
+    //achtergrond, met scaling en symbolen
     for (const special of this.specialCells) {
       const x = this.gridStartX + special.c * this.cellSize;
       const y = this.gridStartY + special.r * this.cellSize;
       const bg = this.add.rectangle(x, y, this.cellSize, this.cellSize, special.hex);
       bg.setOrigin(0, 0).setAlpha(0.6);
+
+      const symbolGraphics = this.add.graphics();
+      const padding = 6;
+      const size = this.cellSize * 0.15; 
+      const cornerX = x + padding + size; 
+      const cornerY = y + padding + size;
+
+      symbolGraphics.lineStyle(2, 0xffffff, 0.9);
+      
+      switch (special.type) {
+        case 'triangle':
+            symbolGraphics.strokeTriangle(cornerX, cornerY - size, cornerX + size, cornerY + size, cornerX - size, cornerY + size);
+            break;
+        case 'square':
+            symbolGraphics.strokeRect(cornerX - size, cornerY - size, size * 2, size * 2);
+            break;
+        case 'circle':
+            symbolGraphics.strokeCircle(cornerX, cornerY, size);
+            break;
+        case 'diamond':
+            symbolGraphics.beginPath();
+            symbolGraphics.moveTo(cornerX, cornerY - size * 1.3);
+            symbolGraphics.lineTo(cornerX + size * 1.3, cornerY);
+            symbolGraphics.lineTo(cornerX, cornerY + size * 1.3);
+            symbolGraphics.lineTo(cornerX - size * 1.3, cornerY);
+            symbolGraphics.closePath();
+            symbolGraphics.strokePath();
+            break;
+      }
     }
 
     //lijnen
@@ -259,7 +328,7 @@ export default class SudokuScene extends Phaser.Scene {
         const textObj = this.add.text(x, y, val === 0 ? "" : val.toString(), {
           fontFamily: "sans-serif",
           fontSize: `${this.fontSize}px`,
-          color: isFixed ? "#ffffff" : "#aaaaff",
+          color: isFixed ? "#ffffff" : "#00ffff", 
           fontStyle: isFixed ? "bold" : "normal"
         }).setOrigin(0.5);
 

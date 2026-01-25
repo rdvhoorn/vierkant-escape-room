@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+
 //types
 type DominoData = {
   id: number;
@@ -14,6 +15,7 @@ type GridSlot = {
 };
 
 type RuleType = "exact" | "sum_match" | "less_than" | "equality_group";
+
 type RuleDef = {
   id: string;
   type: RuleType;
@@ -23,11 +25,20 @@ type RuleDef = {
   color?: number; 
 };
 
+type DominoState = {
+  id: number;
+  x: number;
+  y: number;
+  angle: number;
+};
+
 export default class DominoScene extends Phaser.Scene {
   private returnSceneKey = "Face12Scene";
+
   private readonly tileSize = 60; 
   private readonly boardOffsetX = -60; 
   private readonly boardOffsetY = 140;  
+
   private readonly initialDominos: DominoData[] = [
     { id: 1, top: 5, bottom: 2 },
     { id: 2, top: 4, bottom: 3 }, 
@@ -43,8 +54,8 @@ export default class DominoScene extends Phaser.Scene {
     { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 },
     { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 },
     { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 },
-    { x: 3, y: 2 }, //rechter extension
-    { x: -1, y: 1 } //linker extension (ja negative lekker handig hopelijk levert het geen problemen op)
+    { x: 3, y: 2 }, 
+    { x: -1, y: 1 } 
   ];
 
   //regels hier
@@ -53,37 +64,37 @@ export default class DominoScene extends Phaser.Scene {
       id: "rule_neg1_1", type: "less_than", value: 3,
       cells: [{ x: -1, y: 1 }], 
       description: "In het rode vakje moeten minder dan 3 ogen",
-      color: 0xff5555 //rood
+      color: 0xff5555 
     },
     { 
       id: "rule_0_0", type: "exact", value: 6,
       cells: [{ x: 0, y: 0 }], 
       description: "In het groene vakje moeten 6 ogen",
-      color: 0x55ff55 //groen
+      color: 0x55ff55 
     },
     { 
       id: "sum_01_02", type: "sum_match", value: 6,
       cells: [{ x: 1, y: 0 }, { x: 2, y: 0 }], 
-      description: "In de blauwe vakjes moeten samen exact 6 ogen",
-      color: 0x5555ff //blauw
+      description: "In de donkerblauwe vakjes moeten samen precies 6 ogen",
+      color: 0x5555ff 
     },
     { 
       id: "sum_01_11", type: "sum_match", value: 2,
       cells: [{ x: 0, y: 1 }, { x: 1, y: 1 }], 
-      description: "In de gele vakjes moeten samen exact 2 ogen",
-      color: 0xffff55 //geel
+      description: "In de gele vakjes moeten samen precies 2 ogen",
+      color: 0xffff55 
     },
     { 
       id: "sum_02_12", type: "sum_match", value: 2,
       cells: [{ x: 0, y: 2 }, { x: 1, y: 2 }], 
-      description: "In de roze vakjes moeten samen exact 2 ogen ",
-      color: 0xff55ff //roze
+      description: "In de roze vakjes moeten samen precies 2 ogen ",
+      color: 0xff55ff 
     },
     { 
       id: "equal_group", type: "equality_group",
       cells: [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 2, y: 2 }, { x: 2, y: 1 }], 
-      description: "In de blauwe vakjes moeten alle vakjes hetzelfde aantal ogen hebben",
-      color: 0x55ffff //lichtblauw
+      description: "In de lichtblauwe vakjes moet elk vakje hetzelfde aantal ogen hebben",
+      color: 0x55ffff 
     }
   ];
 
@@ -93,6 +104,12 @@ export default class DominoScene extends Phaser.Scene {
   private graphics!: Phaser.GameObjects.Graphics;
   private activeDomino: Phaser.GameObjects.Container | null = null;
   private ruleLabels: Map<string, Phaser.GameObjects.Text> = new Map();
+  
+  private history: DominoState[][] = [];
+  
+  private undoBtnText = "Stap terug";
+  private resetBtnText = "Reset alles";
+
   constructor() {
     super("DominoScene");
   }
@@ -103,20 +120,92 @@ export default class DominoScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+
     this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0);
-    this.add.text(20, 20, "ESC: Terug", { fontSize: "16px", color: "#8fd5ff" });
-    this.add.text(width - 250, 20, "Druk op R om een steen te 90 graden te draaien", { fontSize: "16px", color: "#ffffff" });
+    
+    // Bigger text and higher contrast
+    const infoStyle = { fontSize: "24px", color: "#ffffff", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 };
+    this.add.text(20, 20, "ESC: Terug", infoStyle);
+    this.add.text(width - 300, 20, "R: Draai steen 90°", infoStyle);
+
     this.createGrid(width, height);
     this.createRuleUI();
+    this.createControlButtons(width, height);
+
     this.spawnDominos(height);
+
     this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
     this.input.keyboard?.on("keydown-R", () => {
         if (this.activeDomino) {
+            this.saveState();
             this.activeDomino.angle += 90;
             this.checkRules();
         }
     });
+
     this.checkRules();
+  }
+
+  private createControlButtons(width: number, height: number) {
+    const btnStyle = { fontSize: "18px", color: "#ffffff", backgroundColor: "#444444", padding: { x: 10, y: 5 } };
+    
+    this.add.text(width - 150, height - 80, this.undoBtnText, btnStyle)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.undoLastMove());
+
+    this.add.text(width - 150, height - 40, this.resetBtnText, { ...btnStyle, backgroundColor: "#aa3333" })
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.resetBoard());
+  }
+
+  private saveState() {
+    const currentState: DominoState[] = this.dominos.map(d => ({
+        id: d.getData("id"),
+        x: d.x,
+        y: d.y,
+        angle: d.angle
+    }));
+    this.history.push(currentState);
+    if (this.history.length > 20) this.history.shift(); 
+  }
+
+  private undoLastMove() {
+    if (this.history.length === 0) return;
+    
+    const prevState = this.history.pop();
+    if (!prevState) return;
+
+    prevState.forEach(state => {
+        const domino = this.dominos.find(d => d.getData("id") === state.id);
+        if (domino) {
+            this.tweens.add({
+                targets: domino,
+                x: state.x,
+                y: state.y,
+                angle: state.angle,
+                duration: 200
+            });
+        }
+    });
+
+    this.time.delayedCall(205, () => this.checkRules());
+  }
+
+  private resetBoard() {
+    this.saveState(); 
+
+    this.dominos.forEach(d => {
+        this.tweens.add({
+            targets: d,
+            x: d.getData("homeX"),
+            y: d.getData("homeY"),
+            angle: 0,
+            duration: 500,
+            ease: 'Power2'
+        });
+    });
+
+    this.time.delayedCall(505, () => this.checkRules());
   }
 
   //grid logica
@@ -131,8 +220,8 @@ export default class DominoScene extends Phaser.Scene {
       this.gridSlots.push({ x: coord.x, y: coord.y, pixelX: px, pixelY: py });
     });
 
-    //standaard outlines
-    this.graphics.lineStyle(2, 0x333333);
+    //standaard outlines - now brighter white and slightly thicker
+    this.graphics.lineStyle(4, 0xffffff, 0.8);
     this.gridSlots.forEach(slot => {
          this.graphics.strokeRect(slot.pixelX - this.tileSize/2, slot.pixelY - this.tileSize/2, this.tileSize, this.tileSize);
     });
@@ -140,7 +229,7 @@ export default class DominoScene extends Phaser.Scene {
     //gekleurde outlines
     this.rules.forEach(rule => {
         const color = rule.color || 0xffffff;
-        this.graphics.lineStyle(4, color, 1); //dikker voor de regels natuurlijk
+        this.graphics.lineStyle(4, color, 1); 
         rule.cells.forEach(cell => {
              const slot = this.gridSlots.find(s => s.x === cell.x && s.y === cell.y);
              if (slot) {
@@ -149,22 +238,26 @@ export default class DominoScene extends Phaser.Scene {
         });
     });
   }
+
   private createRuleUI() {
     let y = 60;
     const x = 20;
-    this.add.text(x, y - 25, "Regels:", { fontSize: "18px", color: "#fff", fontStyle: "bold" });
+    this.add.text(x, y - 25, "Regels:", { fontSize: "22px", color: "#fff", fontStyle: "bold" });
     this.rules.forEach(rule => {
         const colorHex = rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#aaaaaa";
         const txt = this.add.text(x, y, `[ ] ${rule.description}`, { 
-            fontSize: "14px", 
+            fontSize: "16px", 
             color: colorHex,
-            fontStyle: "bold"
+            fontStyle: "bold",
+            stroke: "#000000",
+            strokeThickness: 2
         });
-        this.add.rectangle(x - 10, y + 7, 8, 8, rule.color).setStrokeStyle(1, 0xffffff);
+        this.add.rectangle(x - 10, y + 10, 10, 10, rule.color).setStrokeStyle(1, 0xffffff);
         this.ruleLabels.set(rule.id, txt);
-        y += 30;
+        y += 35;
     });
   }
+
   //logica
   private checkRules() {
     const boardState = new Map<string, number>();
@@ -221,8 +314,6 @@ export default class DominoScene extends Phaser.Scene {
 
         const label = this.ruleLabels.get(rule.id);
         if (label) {
-            rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#ffffff";
-            //misschien gedimd als het nog niet goed is
             label.setText(`[${passed ? "✔" : " "}] ${rule.description}`);
             label.setAlpha(passed ? 1.0 : 0.7);
         }
@@ -274,6 +365,10 @@ export default class DominoScene extends Phaser.Scene {
       const container = this.createDominoVisual(data.top, data.bottom);
       container.setPosition(x, y);
       container.setSize(this.tileSize, this.tileSize * 2); 
+      
+      // Make slightly smaller so grid lines are visible around it
+      container.setScale(0.95);
+
       container.setData("isDomino", true);
       container.setData("id", data.id);
       container.setData("top", data.top);
@@ -285,12 +380,15 @@ export default class DominoScene extends Phaser.Scene {
       this.dominos.push(container);
     });
     this.input.on('dragstart', (_p: any, obj: any) => {
+      this.saveState();
       this.children.bringToTop(obj); this.activeDomino = obj;
-      this.tweens.add({ targets: obj, scale: 1.1, duration: 100 });
+      // Scale up slightly for drag effect (relative to base 0.95)
+      this.tweens.add({ targets: obj, scale: 1.05, duration: 100 });
     });
     this.input.on('drag', (_p: any, obj: any, x: number, y: number) => { obj.x = x; obj.y = y; });
     this.input.on('dragend', (_p: any, obj: any) => {
-      this.tweens.add({ targets: obj, scale: 1.0, duration: 100 });
+      // Return to base size
+      this.tweens.add({ targets: obj, scale: 0.95, duration: 100 });
       const snapPos = this.getSnapPosition(obj);
       if (snapPos) { obj.x = snapPos.x; obj.y = snapPos.y; }
       else { this.tweens.add({ targets: obj, x: obj.getData("homeX"), y: obj.getData("homeY"), duration: 200 }); }
