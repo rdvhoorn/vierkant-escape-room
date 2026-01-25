@@ -26,8 +26,12 @@ export default class PhoneBoxScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset state on each scene start
+    this.enteredCode = "";
+    this.currentWallIndex = 0;
+
     const { width, height } = this.scale;
-    this.add.rectangle(0, 0, width, height, 0x2a0a0a).setOrigin(0); 
+    this.add.rectangle(0, 0, width, height, 0x2a0a0a).setOrigin(0);
     this.numpadContainer = this.add.container(0, 0);
     this.wallContainer = this.add.container(0, 0).setVisible(false);
     this.createNumpadView(width, height);
@@ -194,7 +198,7 @@ export default class PhoneBoxScene extends Phaser.Scene {
   }
 
   private puzzleSolved() {
-    console.log("Phonebox opgelost");
+    console.log("[PhoneBox] Puzzle solved, returning to:", this.returnSceneKey);
     this.registry.set("phonebox_solved", true);
     this.exitScene();
   }

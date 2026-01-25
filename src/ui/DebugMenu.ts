@@ -85,7 +85,7 @@ export class DebugMenu {
 
     const div = document.createElement("div");
     div.style.cssText = `
-      position: fixed; top: 10px; right: 10px; z-index: 99999;
+      position: fixed; top: 10px; left: 10px; z-index: 99999;
       background: rgba(0,0,0,0.95); color: #fff; padding: 10px;
       font-family: monospace; font-size: 11px; max-height: 90vh;
       overflow-y: auto; border: 2px solid #666; width: 280px;
@@ -274,6 +274,9 @@ export class DebugMenu {
     }
 
     this.registry.set("energy", total);
+
+    // Emit event so HUD updates immediately
+    this.currentScene?.events.emit("energyChanged", total);
   }
 
   private updateEnergyDisplay() {
@@ -297,6 +300,9 @@ export class DebugMenu {
     this.registry.set("tangram_krab_solved", false);
 
     this.registry.set("energy", 0);
+
+    // Emit event so HUD updates immediately
+    this.currentScene?.events.emit("energyChanged", 0);
 
     this.updateEnergyDisplay();
 

@@ -268,6 +268,11 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.events.on("update", () => {
       this.hud.update();
     });
+
+    // Clean up HUD when scene shuts down to prevent stale event listeners
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.hud?.destroy();
+    });
   }
 
   protected registerInteraction(
