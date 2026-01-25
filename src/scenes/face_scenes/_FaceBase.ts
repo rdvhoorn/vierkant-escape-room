@@ -103,6 +103,9 @@ export default abstract class FaceBase extends Phaser.Scene {
   // @ts-ignore - reserved for stripe pattern feature
   private faceStripeMaskGfx?: Phaser.GameObjects.Graphics;
 
+  // ---- Debug hitbox visualization ----
+  private hitboxDebugGfx?: Phaser.GameObjects.Graphics;
+
   // ---- Interaction highlights ----
   private interactableHighlights: {
     getCenter: () => Phaser.Math.Vector2;
@@ -1129,6 +1132,9 @@ export default abstract class FaceBase extends Phaser.Scene {
       // Simple on/off; you can add fancier effects later
       h.highlight.setVisible(inRange && !this.dialogActive);
     }
+
+    // ----- Debug hitbox visualization -----
+    this.drawDebugHitboxes();
   }
 
   protected addDiagonalStripesInFace(options?: {
@@ -1221,5 +1227,40 @@ export default abstract class FaceBase extends Phaser.Scene {
     return overlay;
   }
 
+  /**
+   * Draw debug hitboxes for player and edge zones.
+   * Toggle via debug menu: "Show Hitboxes"
+   */
+  private drawDebugHitboxes() {
+    const showHitboxes = this.registry.get("debug_showHitboxes");
 
+    if (!showHitboxes) {
+      if (this.hitboxDebugGfx) {
+        this.hitboxDebugGfx.destroy();
+        this.hitboxDebugGfx = undefined;
+      }
+      return;
+    }
+
+    if (!this.hitboxDebugGfx) {
+      this.hitboxDebugGfx = this.add.graphics().setDepth(9999);
+    }
+
+    const gfx = this.hitboxDebugGfx;
+    gfx.clear();
+
+    // Draw player hitbox (physics body)
+    if (this.playerController) {
+      const body = this.player.body as Phaser.Physics.Arcade.Body;
+      gfx.lineStyle(2, 0x00ff00, 1);
+      gfx.strokeRect(body.x, body.y, body.width, body.height);
+    }
+
+    // Draw edge zone hitboxes (physics zones - axis aligned)
+    for (const ez of this.travelEdgeZones) {
+      const zoneBody = ez.zone.body as Phaser.Physics.Arcade.StaticBody;
+      gfx.lineStyle(2, 0xff00ff, 1);
+      gfx.strokeRect(zoneBody.x, zoneBody.y, zoneBody.width, zoneBody.height);
+    }
+  }
 }

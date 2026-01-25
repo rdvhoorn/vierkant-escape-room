@@ -119,6 +119,13 @@ export class DebugMenu {
         <div id="dbg-states" style="margin-top:6px;"></div>
       </div>
 
+      <hr style="border-color:#444; margin:8px 0;">
+
+      <div style="margin-bottom:8px;">
+        <b>Debug Visuals:</b>
+        <div id="dbg-visuals" style="margin-top:4px;"></div>
+      </div>
+
       <div style="margin-top:8px;">
         <button id="dbg-reset" style="cursor:pointer;">Reset All</button>
       </div>
@@ -137,6 +144,9 @@ export class DebugMenu {
 
     // Puzzle state checkboxes
     this.addPuzzleStates();
+
+    // Debug visual toggles
+    this.addDebugVisualToggles();
 
     // Reset button
     div.querySelector("#dbg-reset")?.addEventListener("click", () => this.resetAll());
@@ -235,6 +245,33 @@ export class DebugMenu {
       row.appendChild(label);
       container.appendChild(row);
     }
+  }
+
+  private addDebugVisualToggles() {
+    const container = this.container?.querySelector("#dbg-visuals");
+    if (!container) return;
+
+    const showHitboxes = !!this.registry.get("debug_showHitboxes");
+
+    const row = document.createElement("div");
+    row.style.cssText = "margin:4px 0;";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = showHitboxes;
+    checkbox.id = "dbg-hitboxes";
+    checkbox.addEventListener("change", () => {
+      this.registry.set("debug_showHitboxes", checkbox.checked);
+    });
+
+    const label = document.createElement("label");
+    label.htmlFor = checkbox.id;
+    label.textContent = " Show Hitboxes (player + edge zones)";
+    label.style.cursor = "pointer";
+
+    row.appendChild(checkbox);
+    row.appendChild(label);
+    container.appendChild(row);
   }
 
   private goToScene(sceneKey: string) {
