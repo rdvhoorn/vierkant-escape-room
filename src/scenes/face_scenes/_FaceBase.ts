@@ -179,8 +179,8 @@ export default abstract class FaceBase extends Phaser.Scene {
 
   private playEnergyRewardAnimation(amount: number) {
     // Floating "+X energie" text near the energy bar (top-right)
-    const x = this.scale.width - 70;
-    const y = 60;
+    const x = this.scale.width - 106;
+    const y = 100;
 
     const text = this.add.text(x, y, `+${amount} energie`, {
       fontFamily: "sans-serif",

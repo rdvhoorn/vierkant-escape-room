@@ -30,7 +30,10 @@ export class Hud {
   private portalHint!: Phaser.GameObjects.Text;
 
   // Energy UI
+  private readonly energyBarWidth = 180;
+  private readonly energyBarHeight = 45;
   private energyBar?: Phaser.GameObjects.Graphics;
+  private energyText?: Phaser.GameObjects.Text;
   private energyContainer?: Phaser.GameObjects.Container;
 
   // Mobile interaction button (+ glow)
@@ -96,13 +99,13 @@ export class Hud {
     this.joystickBase?.destroy();
     this.joystickKnob?.destroy();
     this.energyBar?.destroy();
+    this.energyText?.destroy();
     this.energyContainer?.destroy();
     this.interactButton?.destroy();
     this.interactButtonGlow?.destroy();
 
     // Unsubscribe from events
     this.scene.events.off("energyChanged", this.handleEnergyChanged, this);
-    // You can also remove input listeners here if you want to be extra clean.
   }
 
   // ---------------------------
@@ -136,35 +139,81 @@ export class Hud {
       .setAlpha(0);
   }
 
-  // Energy bar UI (top-right)
+  // Energy bar UI (top-right) - cockpit style
   private createEnergyUI() {
     if (!this.opts.getEnergy) return; // HUD can be used without energy
-    const current_energy = this.opts.getEnergy();
-    const energyBg = this.scene.add.graphics();
-    energyBg.fillStyle(0x222222, 0.7);
-    energyBg.fillRect(0, 0, 104, 24);
 
+    const barWidth = this.energyBarWidth;
+    const barHeight = this.energyBarHeight;
+    const max = this.opts.maxEnergy ?? 100;
+    const current = this.opts.getEnergy();
+
+    // Label above the bar
+    const label = this.scene.add.text(barWidth / 2, -10, "ENERGIE", {
+      fontFamily: "sans-serif",
+      fontSize: "16px",
+      color: "#aaccff",
+    }).setOrigin(0.5, 1);
+
+    // Background with border
+    const energyBg = this.scene.add.graphics();
+    energyBg.fillStyle(0x111122, 0.85);
+    energyBg.fillRect(0, 0, barWidth, barHeight);
+    energyBg.lineStyle(3, 0x3c5a99, 1);
+    energyBg.strokeRect(0, 0, barWidth, barHeight);
+
+    // Energy fill bar
     this.energyBar = this.scene.add.graphics();
-    this.energyBar.fillStyle(0x00ff00, 1);
-    this.energyBar.fillRect(2, 2, Math.min(current_energy, this.opts.maxEnergy ?? 100), 20);
+    this.drawEnergyFill(current, max, barWidth, barHeight);
+
+    // Energy value text (no % sign since value can exceed 100)
+    this.energyText = this.scene.add.text(barWidth / 2, barHeight / 2, `${current}`, {
+      fontFamily: "sans-serif",
+      fontSize: "20px",
+      color: "#ffffff",
+    }).setOrigin(0.5);
 
     this.energyContainer = this.scene.add
-      .container(this.scene.scale.width - 120, 28, [energyBg, this.energyBar])
+      .container(this.scene.scale.width - barWidth - 16, 35, [energyBg, this.energyBar, this.energyText, label])
       .setScrollFactor(0)
       .setDepth(20);
 
     this.scene.events.on("energyChanged", this.handleEnergyChanged, this);
   }
 
+  private drawEnergyFill(current: number, max: number, barWidth: number, barHeight: number) {
+    if (!this.energyBar) return;
+
+    this.energyBar.clear();
+
+    // Cap fill at 100% (bar doesn't overflow even if energy > max)
+    const maxFillWidth = barWidth - 4;
+    const fillWidth = Math.min((current / max) * maxFillWidth, maxFillWidth);
+    if (fillWidth <= 0) return;
+
+    // Color based on level (same as cockpit)
+    let color = 0x00ff00; // green
+    const percentage = (current / max) * 100;
+    if (percentage < 30) color = 0xff0000; // red
+    else if (percentage < 60) color = 0xffaa00; // orange
+
+    this.energyBar.fillStyle(color, 0.8);
+    this.energyBar.fillRect(2, 2, fillWidth, barHeight - 4);
+  }
+
   private handleEnergyChanged = (newEnergy: number) => {
     if (!this.energyBar) return;
 
     const max = this.opts.maxEnergy ?? 100;
-    const clamped = Phaser.Math.Clamp(newEnergy, 0, max);
+    // Clamp for the bar fill (visual), but show actual value in text
+    const clampedForFill = Phaser.Math.Clamp(newEnergy, 0, max);
 
-    this.energyBar.clear();
-    this.energyBar.fillStyle(0x00ff00, 1);
-    this.energyBar.fillRect(2, 2, Math.min(clamped, max), 20);
+    this.drawEnergyFill(clampedForFill, max, this.energyBarWidth, this.energyBarHeight);
+
+    if (this.energyText) {
+      // Show actual energy value (can be > 100), no % sign
+      this.energyText.setText(`${Math.round(Math.max(0, newEnergy))}`);
+    }
   };
 
   private bindModeToggle() {
