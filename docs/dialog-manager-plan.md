@@ -74,7 +74,6 @@ export class DialogManager {
   // Input handlers (voor cleanup)
   private keyE?: Phaser.Input.Keyboard.Key;
   private keySpace?: Phaser.Input.Keyboard.Key;
-  private keyEnter?: Phaser.Input.Keyboard.Key;
   private pointerHandler?: () => void;
 
   constructor(scene: Phaser.Scene, config?: DialogConfig) {
@@ -116,7 +115,6 @@ De DialogManager luistert naar **alle** volgende inputs:
 |-------|----------|-------|
 | E-toets | Desktop | advance() |
 | Spatiebalk | Desktop | advance() |
-| Enter | Desktop | advance() |
 | Klik anywhere | Desktop | advance() |
 | Tap anywhere | Mobiel | advance() |
 
@@ -130,11 +128,9 @@ private setupInput(): void {
   if (kb) {
     this.keyE = kb.addKey("E");
     this.keySpace = kb.addKey("SPACE");
-    this.keyEnter = kb.addKey("ENTER");
 
     kb.on("keydown-E", this.handleAdvance, this);
     kb.on("keydown-SPACE", this.handleAdvance, this);
-    kb.on("keydown-ENTER", this.handleAdvance, this);
   }
 
   // Pointer (klik/tap)
@@ -251,7 +247,7 @@ this.dialogManager.show(lines, onComplete);
 // VOOR - alleen klik
 this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
 
-// NA - E + klik + spatie + tap
+// NA - E + spatie + klik/tap
 this.dialogManager = new DialogManager(this, { position: "center" });
 this.dialogManager.show(lines, onClose);
 ```
@@ -272,27 +268,27 @@ this.dialogManager.show(introLines, () => this.startPuzzle());
 
 ## Migratie Stappenplan
 
-### Fase 1: DialogManager maken
-- [ ] Maak `src/ui/DialogManager.ts`
-- [ ] Implementeer basis functionaliteit
+### Fase 1: DialogManager maken ✅
+- [x] Maak `src/ui/DialogManager.ts`
+- [x] Implementeer basis functionaliteit
 - [ ] Test standalone
 
-### Fase 2: FaceBase migreren
-- [ ] Integreer DialogManager in FaceBase
-- [ ] Verwijder oude dialog code uit FaceBase
+### Fase 2: CockpitScene en FaceBase migreren ✅
+- [x] Integreer DialogManager in CockpitScene
+- [x] Verwijder oude dialog code uit CockpitScene
+- [x] Integreer DialogManager in FaceBase
+- [x] Verwijder oude dialog code uit FaceBase
+- [ ] Test CockpitScene
 - [ ] Test alle Face scenes (2, 3, 4, 7, 9, 10, 12)
 
-### Fase 3: Puzzel scenes migreren
-- [ ] StreakMaze (prioriteit - broken)
+### Fase 3: Puzzel scenes migreren (LATER)
+- [ ] StreakMaze (prioriteit - broken op mobiel)
 - [ ] LogicTower
 - [ ] LogicTower_1
-- [ ] LogicTower_5 (prioriteit - broken)
+- [ ] LogicTower_5 (prioriteit - broken op mobiel)
 - [ ] ShipFuelScene
 
-### Fase 4: Overige scenes
-- [ ] CockpitScene
-
-### Fase 5: Cleanup
+### Fase 4: Cleanup
 - [ ] Verwijder dubbele code
 - [ ] Test alles op desktop + mobiel
 
@@ -337,9 +333,9 @@ En de volledige DialogManager later implementeren.
 
 ---
 
-## Beslissing Nodig
+## Beslissingen
 
-1. **Volledige refactor nu?** Of quick fixes eerst?
-2. **Spatie en Enter toevoegen?** Of alleen E + klik/tap?
-3. **Position configureerbaar?** Of altijd bottom?
+1. ~~Volledige refactor nu? Of quick fixes eerst?~~ → **DialogManager eerst, dan CockpitScene + FaceBase. Puzzels later.**
+2. ~~Spatie en Enter toevoegen? Of alleen E + klik/tap?~~ → **E + spatie + klik/tap. Geen Enter.**
+3. **Position configureerbaar?** Of altijd bottom? → Te beslissen
 

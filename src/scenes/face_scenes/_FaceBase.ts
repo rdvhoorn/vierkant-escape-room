@@ -10,6 +10,7 @@ import { Hud } from "../../PlanetHud";
 import { getIsDesktop } from "../../ControlsMode";
 import { TwinklingStars } from "../../utils/TwinklingStars";
 import { PUZZLE_REWARDS, PuzzleKey } from "./_FaceConfig";
+import { DialogManager, DialogLine } from "../../ui/DialogManager";
 
 export type Edge = { a: Phaser.Math.Vector2; b: Phaser.Math.Vector2 };
 
@@ -47,11 +48,6 @@ type TravelEdgeZone = {
   gfx: Phaser.GameObjects.Graphics;
   width: number;
   height: number;
-};
-
-type DialogLine = {
-  speaker: string;
-  text: string;
 };
 
 type StandardFaceConfig = {
@@ -114,18 +110,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   }[] = [];
 
   // ---- Shared dialog system ----
-  private dialogBox?: Phaser.GameObjects.Rectangle;
-  private dialogText?: Phaser.GameObjects.Text;
-  private dialogLines: DialogLine[] = [];
-  private dialogIndex = 0;
-  private dialogNameText?: Phaser.GameObjects.Text;
-  private dialogActive = false;
-  private dialogOnComplete?: () => void;
-  protected dialogSpeakerStyles: Record<string, string> = {
-    "Jij" : "#4bff72ff",
-    "Quadratus": "#ffb74cff",
-  };
-  protected defaultDialogSpeakerColor: string = "#ffffffff";
+  protected dialogManager?: DialogManager;
 
   // ------------------------------------
   // Lifecycle
@@ -299,15 +284,26 @@ export default abstract class FaceBase extends Phaser.Scene {
       maxEnergy: this.maxEnergy,
     });
 
+    // Initialize dialog manager for face scenes (bottom position)
+    this.dialogManager = new DialogManager(this, {
+      position: "bottom",
+      showOverlay: false,
+      speakerStyles: {
+        Jij: "#4bff72ff",
+        Quadratus: "#ffb74cff",
+      },
+    });
+
     this.setCameraToPlayerBounds();
 
     this.events.on("update", () => {
       this.hud.update();
     });
 
-    // Clean up HUD when scene shuts down to prevent stale event listeners
+    // Clean up HUD and DialogManager when scene shuts down
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.hud?.destroy();
+      this.dialogManager?.destroy();
     });
   }
 
@@ -583,7 +579,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
   ): { start: () => void } {
     const start = () => {
-      if (this.dialogActive) return; // already in a dialog, ignore
+      if (this.isDialogActive()) return; // already in a dialog, ignore
       const lines = config.buildLines();
       this.startDialog(lines, config.onComplete);
     };
@@ -594,7 +590,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       paddingX: config.paddingX,
       paddingY: config.paddingY,
       onUse: () => {
-        if (this.dialogActive) {
+        if (this.isDialogActive()) {
           this.advanceDialog();
         } else {
           start();
@@ -676,117 +672,26 @@ export default abstract class FaceBase extends Phaser.Scene {
 
 
   protected isDialogActive(): boolean {
-    return this.dialogActive;
-  }
-
-  private ensureDialogUi() {
-    if (this.dialogText && this.dialogText.scene && this.dialogText.active) {
-      return;
-    }
-
-    const { width, height } = this.scale;
-
-    this.dialogBox?.destroy();
-    this.dialogNameText?.destroy();
-    this.dialogText?.destroy();
-
-    this.dialogBox = this.add
-      .rectangle(width / 2, height - 80, width - 100, 120, 0x1b2748, 0.9)
-      .setStrokeStyle(2, 0x3c5a99)
-      .setDepth(999)
-      .setScrollFactor(0);
-
-    const leftX = this.dialogBox.x - this.dialogBox.width / 2 + 20;
-    const topY = this.dialogBox.y - this.dialogBox.height / 2 + 14;
-
-    this.dialogNameText = this.add.text(leftX, topY, "", {
-      fontFamily: "sans-serif",
-      fontSize: "16px",
-      fontStyle: "bold",
-      color: "#ffffff",
-    }).setDepth(1000).setScrollFactor(0);
-
-    this.dialogText = this.add
-      .text(
-        leftX,
-        topY + 24,
-        "",
-        {
-          fontFamily: "sans-serif",
-          fontSize: "18px",
-          color: "#e7f3ff",
-          wordWrap: {
-            width: this.dialogBox.width - 40,
-            useAdvancedWrap: true,
-          },
-        }
-      )
-      .setDepth(1000).setScrollFactor(0);
-
-    this.dialogBox.setVisible(false);
-    this.dialogNameText.setVisible(false);
-    this.dialogText.setVisible(false);
+    return this.dialogManager?.isActive() ?? false;
   }
 
   protected startDialog(lines: DialogLine[], onComplete?: () => void) {
     if (!lines.length) return;
 
-    this.ensureDialogUi();
     this.playerController.setInputEnabled(false);
-
-    this.dialogLines = lines;
-    this.dialogIndex = 0;
-    this.dialogOnComplete = onComplete;
-    this.dialogActive = true;
-
-    this.showCurrentDialogLine();
+    this.dialogManager?.show(lines, () => {
+      this.playerController.setInputEnabled(true);
+      onComplete?.();
+    });
   }
 
   protected advanceDialog() {
-    if (!this.dialogActive) return;
-
-    this.dialogIndex++;
-    if (this.dialogIndex >= this.dialogLines.length) {
-      this.endDialog();
-    } else {
-      this.showCurrentDialogLine();
-    }
+    this.dialogManager?.advance();
   }
 
   protected endDialog() {
-    if (!this.dialogActive) return;
-
-    this.dialogActive = false;
+    this.dialogManager?.close();
     this.playerController.setInputEnabled(true);
-
-    this.dialogBox?.setVisible(false);
-    this.dialogNameText?.setVisible(false);
-    this.dialogText?.setVisible(false);
-
-    const cb = this.dialogOnComplete;
-    this.dialogOnComplete = undefined;
-    cb?.();
-  }
-
-  private showCurrentDialogLine() {
-    if (!this.dialogBox || !this.dialogText || !this.dialogNameText) return;
-
-    const line: DialogLine = this.dialogLines[this.dialogIndex];
-    if (!line) return;
-
-    const speakerColor =
-      this.dialogSpeakerStyles[line.speaker] ??
-      this.defaultDialogSpeakerColor;
-    
-
-    this.dialogBox.setVisible(true);
-    
-    this.dialogNameText.setVisible(true);
-    this.dialogNameText.setText(line.speaker);
-    this.dialogNameText.setColor(speakerColor);
-
-    this.dialogText.setVisible(true);
-    this.dialogText.setText(line.text);
   }
 
 
@@ -1130,7 +1035,7 @@ export default abstract class FaceBase extends Phaser.Scene {
       const inRange = dist < h.radius;
 
       // Simple on/off; you can add fancier effects later
-      h.highlight.setVisible(inRange && !this.dialogActive);
+      h.highlight.setVisible(inRange && !this.isDialogActive());
     }
 
     // ----- Debug hitbox visualization -----

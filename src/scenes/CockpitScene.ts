@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../utils/TwinklingStars";
+import { DialogManager } from "../ui/DialogManager";
 
 export default class CockpitScene extends Phaser.Scene {
   private stars?: TwinklingStars;
@@ -33,12 +34,7 @@ export default class CockpitScene extends Phaser.Scene {
   private currentPhase: "intro1" | "intro2" | "damaged" | "repaired" = "intro1";
 
   // Dialog system
-  private dialogOverlay?: Phaser.GameObjects.Rectangle;
-  private dialogBox?: Phaser.GameObjects.Graphics;
-  private dialogText?: Phaser.GameObjects.Text;
-  private dialogLines: string[] = [];
-  private dialogIndex: number = 0;
-  private dialogOnClose?: () => void;
+  private dialogManager?: DialogManager;
 
   // Joystick (needs to be animatable)
   private joystickPressT = 0; // 0..1
@@ -51,6 +47,12 @@ export default class CockpitScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+
+    // Initialize dialog manager with centered position for cockpit thoughts
+    this.dialogManager = new DialogManager(this, {
+      position: "center",
+      showOverlay: true,
+    });
 
     // Determine current phase based on registry
     var introDone = this.registry.get("introDone") || false;
@@ -296,155 +298,24 @@ export default class CockpitScene extends Phaser.Scene {
   }
 
   private showIntroText() {
-    const { width, height } = this.scale;
-
-    // Semi-transparent overlay
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
-    this.dialogOverlay.setDepth(200);
-
-    // Dialog box positioned at standard location (35% from top)
-    const boxHeight = 120;
-    const boxWidth = 640;
-    const boxY = height * 0.35;
-    const boxX = width / 2 - boxWidth / 2;
-    this.dialogBox = this.add.graphics();
-    this.dialogBox.setDepth(201);
-    this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-
-    // Text starting position
-    const textStartX = boxX + 20;
-
-    // Dialog text
-    this.dialogText = this.add.text(textStartX, boxY - 10, "Je reist lekker door de ruimte, als plots...", {
-      fontFamily: "sans-serif",
-      fontSize: "18px",
-      color: "#e7f3ff",
-      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
-    }).setDepth(202);
-
-    // Hint positioned bottom-right inside box
-    this.add.text(boxX + boxWidth - 10, boxY + boxHeight / 2 - 10, "Klik →", {
-      fontFamily: "sans-serif",
-      fontSize: "12px",
-      color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("introHint");
-
-    // Enable clicking after a short delay to prevent immediate click-through
-    this.time.delayedCall(300, () => {
-      if (this.dialogOverlay) {
-        this.dialogOverlay.setInteractive();
-        this.dialogOverlay.on("pointerdown", () => {
-          // Close dialog
-          this.dialogOverlay?.destroy();
-          this.dialogBox?.destroy();
-          this.dialogText?.destroy();
-
-          // Remove hint
-          this.children.getAll().forEach((child) => {
-            if (child.name === "introHint") {
-              child.destroy();
-            }
-          });
-
-          // Wait 500ms, then start crash sequence
-          this.time.delayedCall(500, () => {
-            this.startCrashSequence();
-          });
+    this.dialogManager?.show(
+      [{ text: "Je reist lekker door de ruimte, als plots..." }],
+      () => {
+        // Wait 500ms, then start crash sequence
+        this.time.delayedCall(500, () => {
+          this.startCrashSequence();
         });
       }
-    });
+    );
   }
 
   private showWakeUpThoughts() {
-    this.dialogIndex = 0;
-    this.dialogLines = [
-      "Waar ben ik? Wat is er gebeurd? Waar is iedereen?",
-      "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde teruggingen.",
-      "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben.",
-      "Wacht... het paneel! Alle draden zijn los!"
-    ];
-
-    const { width, height } = this.scale;
-
-    // Semi-transparent overlay (not interactive initially to prevent immediate clicks)
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
-    this.dialogOverlay.setDepth(200);
-
-    // Dialog box positioned in front of window area (35% from top, 30% smaller)
-    const boxHeight = 120;
-    const boxWidth = 640;
-    const boxY = height * 0.35;
-    const boxX = width / 2 - boxWidth / 2;
-    this.dialogBox = this.add.graphics();
-    this.dialogBox.setDepth(201);
-    this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-
-    // Text starting position (no speaker name for thoughts)
-    const textStartX = boxX + 20;
-
-    // Dialog text (positioned higher in box)
-    this.dialogText = this.add.text(textStartX, boxY - 30, "", {
-      fontFamily: "sans-serif",
-      fontSize: "18px",
-      color: "#e7f3ff",
-      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
-    }).setDepth(202);
-
-    // Hint positioned bottom-right inside box
-    this.add.text(boxX + boxWidth - 10, boxY + boxHeight / 2 - 10, "Klik →", {
-      fontFamily: "sans-serif",
-      fontSize: "12px",
-      color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
-
-    this.showDialogLine();
-
-    // Enable clicking after a short delay to prevent immediate click-through
-    this.time.delayedCall(300, () => {
-      if (this.dialogOverlay) {
-        this.dialogOverlay.setInteractive();
-        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
-      }
-    });
-  }
-
-  private showDialogLine() {
-    if (!this.dialogText) return;
-
-    if (this.dialogIndex < this.dialogLines.length) {
-      this.dialogText.setText(this.dialogLines[this.dialogIndex]);
-    }
-  }
-
-  private advanceDialog() {
-    this.dialogIndex++;
-    if (this.dialogIndex < this.dialogLines.length) {
-      this.showDialogLine();
-    } else {
-      this.closeDialog();
-    }
-  }
-
-  private closeDialog() {
-    this.dialogOverlay?.destroy();
-    this.dialogBox?.destroy();
-    this.dialogText?.destroy();
-
-    // Remove hint
-    this.children.getAll().forEach((child) => {
-      if (child.name === "thoughtHint") child.destroy();
-    });
-
-    // Run optional callback (used for post puzzle transition etc.)
-    const cb = this.dialogOnClose;
-    this.dialogOnClose = undefined;
-    if (cb) cb();
+    this.dialogManager?.show([
+      { text: "Waar ben ik? Wat is er gebeurd? Waar is iedereen?" },
+      { text: "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde teruggingen." },
+      { text: "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben." },
+      { text: "Wacht... het paneel! Alle draden zijn los!" },
+    ]);
   }
 
 
@@ -452,69 +323,22 @@ export default class CockpitScene extends Phaser.Scene {
     // Mark as shown so it doesn't repeat
     this.registry.set("postPuzzleThoughtsShown", true);
 
-    this.dialogIndex = 0;
-    this.dialogLines = [
-      "Yes! De systemen werken weer!",
-      "Maar de energie is bijna op, reizen zal dus niet meer lukken.",
-      "Volgens mijn navigatie ben ik op Dezonia?",
-      "Ik moet uitstappen om dit te onderzoeken."
-    ];
-
-    const { width, height } = this.scale;
-
-    // More transparent overlay to see dashboard better
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
-    this.dialogOverlay.setDepth(200);
-
-    // Dialog box positioned higher, in front of the window area (30% smaller)
-    const boxHeight = 120;
-    const boxWidth = 640;
-    const boxY = height * 0.35; // Position at 35% from top (in window area)
-    const boxX = width / 2 - boxWidth / 2;
-    this.dialogBox = this.add.graphics();
-    this.dialogBox.setDepth(201);
-    this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-
-    // Text starting position (no speaker name for thoughts)
-    const textStartX = boxX + 20;
-
-    // Dialog text (positioned higher in box)
-    this.dialogText = this.add.text(textStartX, boxY - 30, "", {
-      fontFamily: "sans-serif",
-      fontSize: "18px",
-      color: "#e7f3ff",
-      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
-    }).setDepth(202);
-
-    // Hint positioned bottom-right inside box
-    this.add.text(boxX + boxWidth - 10, boxY + boxHeight / 2 - 10, "Klik →", {
-      fontFamily: "sans-serif",
-      fontSize: "12px",
-      color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
-
-    this.dialogOnClose = () => {
-      this.time.delayedCall(500, () => {
-        this.cameras.main.fadeOut(800, 0, 0, 0);
-      });
-      this.cameras.main.once("camerafadeoutcomplete", () => {
-        this.scene.start("Face1Scene");
-      });
-    };
-
-
-    this.showDialogLine();
-
-    // Enable clicking after a short delay to prevent immediate click-through
-    this.time.delayedCall(300, () => {
-      if (this.dialogOverlay) {
-        this.dialogOverlay.setInteractive();
-        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
+    this.dialogManager?.show(
+      [
+        { text: "Yes! De systemen werken weer!" },
+        { text: "Maar de energie is bijna op, reizen zal dus niet meer lukken." },
+        { text: "Volgens mijn navigatie ben ik op Dezonia?" },
+        { text: "Ik moet uitstappen om dit te onderzoeken." },
+      ],
+      () => {
+        this.time.delayedCall(500, () => {
+          this.cameras.main.fadeOut(800, 0, 0, 0);
+        });
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+          this.scene.start("Face1Scene");
+        });
       }
-    });
+    );
   }
 
   private drawCockpitWindows(width: number, height: number) {
@@ -1243,10 +1067,7 @@ export default class CockpitScene extends Phaser.Scene {
     // Case 1: Damaged (electricity hatch clickable)
     if (this.currentPhase === "damaged") {
       this.animateJoystickDownUp(() => {
-        this.dialogIndex = 0;
-        this.dialogLines = ["Hmm dit lijkt niet te werken..."];
-        this.dialogOnClose = undefined; // no transitions
-        this.showWakeUpThoughtsStyleDialog(); // helper below
+        this.dialogManager?.show([{ text: "Hmm dit lijkt niet te werken..." }]);
       });
       return;
     }
@@ -1273,59 +1094,12 @@ export default class CockpitScene extends Phaser.Scene {
       this.animateJoystickDownOnly(() => {
         this.cameras.main.shake(200, 0.01);
         this.animateJoystickDownUp(() => {
-          this.dialogIndex = 0;
-          this.dialogLines = ["Hmm ik heb nog niet genoeg energie om weer op te stijgen..."];
-          this.dialogOnClose = undefined;
-          this.showWakeUpThoughtsStyleDialog();
+          this.dialogManager?.show([
+            { text: "Hmm ik heb nog niet genoeg energie om weer op te stijgen..." },
+          ]);
         });
       });
     }
-  }
-
-  private showWakeUpThoughtsStyleDialog() {
-    // This uses the same UI style as your thoughts dialogs, but uses this.dialogLines
-    this.showWakeUpThoughts = this.showWakeUpThoughts.bind(this); // keep TS happy if needed
-
-    const { width, height } = this.scale;
-
-    // Semi-transparent overlay
-    this.dialogOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.15);
-    this.dialogOverlay.setDepth(200);
-
-    // Dialog box
-    const boxHeight = 120;
-    const boxWidth = 640;
-    const boxY = height * 0.35;
-    const boxX = width / 2 - boxWidth / 2;
-
-    this.dialogBox = this.add.graphics();
-    this.dialogBox.setDepth(201);
-    this.dialogBox.fillStyle(0x1b2748, 0.95);
-    this.dialogBox.fillRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-    this.dialogBox.lineStyle(2, 0x3c5a99, 1);
-    this.dialogBox.strokeRoundedRect(boxX, boxY - boxHeight / 2, boxWidth, boxHeight, 12);
-
-    this.dialogText = this.add.text(boxX + 20, boxY - 30, "", {
-      fontFamily: "sans-serif",
-      fontSize: "18px",
-      color: "#e7f3ff",
-      wordWrap: { width: boxWidth - 40, useAdvancedWrap: true },
-    }).setDepth(202);
-
-    this.add.text(boxX + boxWidth - 10, boxY + boxHeight / 2 - 10, "Klik →", {
-      fontFamily: "sans-serif",
-      fontSize: "12px",
-      color: "#888888",
-    }).setOrigin(1, 1).setDepth(202).setName("thoughtHint");
-
-    this.showDialogLine();
-
-    this.time.delayedCall(300, () => {
-      if (this.dialogOverlay) {
-        this.dialogOverlay.setInteractive();
-        this.dialogOverlay.on("pointerdown", () => this.advanceDialog());
-      }
-    });
   }
 
 
