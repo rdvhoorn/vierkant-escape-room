@@ -41,9 +41,11 @@ export class DebugMenu {
   private game: Phaser.Game;
   private container?: HTMLDivElement;
   private visible = false;
+  private boundSyncCheckboxes: () => void;
 
   constructor(game: Phaser.Game) {
     this.game = game;
+    this.boundSyncCheckboxes = this.syncPuzzleCheckboxes.bind(this);
     this.setupKeyListener();
   }
 
@@ -68,6 +70,7 @@ export class DebugMenu {
 
   hide() {
     this.visible = false;
+    this.registry.events.off("changedata", this.boundSyncCheckboxes);
     this.container?.remove();
     this.container = undefined;
   }
@@ -153,6 +156,9 @@ export class DebugMenu {
 
     // Update energy display
     this.updateEnergyDisplay();
+
+    // Listen for registry changes to sync checkboxes
+    this.registry.events.on("changedata", this.boundSyncCheckboxes);
   }
 
   private addGroupedSceneButtons() {
@@ -245,6 +251,17 @@ export class DebugMenu {
       row.appendChild(label);
       container.appendChild(row);
     }
+  }
+
+  private syncPuzzleCheckboxes() {
+    for (const puzzle of PUZZLES) {
+      const config = PUZZLE_REWARDS[puzzle.key];
+      const checkbox = this.container?.querySelector(`#dbg-${puzzle.key}`) as HTMLInputElement | null;
+      if (checkbox) {
+        checkbox.checked = !!this.registry.get(config.puzzleSolvedRegistryKey);
+      }
+    }
+    this.updateEnergyDisplay();
   }
 
   private addDebugVisualToggles() {
