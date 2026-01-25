@@ -86,20 +86,16 @@ export default class PhoneBoxScene extends Phaser.Scene {
     .on("pointerdown", () => this.switchView("wall"));
 
     this.numpadContainer.add(wallBtn);
-
-    // Hint Button
     const hintBtn = this.add.text(200, height - 80, "[ Hint ]", {
         fontSize: "24px", color: "#ffff00", backgroundColor: "#444", padding: { x: 20, y: 10 }
     })
     .setOrigin(0.5)
     .setInteractive({ useHandCursor: true })
     .on("pointerdown", () => {
-        // Toggle hint visibility
+ 
         this.hintDisplay.setVisible(!this.hintDisplay.visible);
     });
     this.numpadContainer.add(hintBtn);
-
-    // Hint Text Object (hidden by default)
     this.hintDisplay = this.add.text(width / 2, height - 150, "Begin bij nul...", {
         fontSize: "20px", color: "#ffff00", backgroundColor: "#000000", padding: { x: 10, y: 5 }
     }).setOrigin(0.5).setVisible(false);
