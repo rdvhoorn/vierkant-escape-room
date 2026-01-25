@@ -155,7 +155,8 @@ export default abstract class FaceBase extends Phaser.Scene {
   }
 
   protected setEnergy(value: number) {
-    const clamped = Phaser.Math.Clamp(value, 0, this.maxEnergy);
+    // Allow values > maxEnergy (number can exceed 100, but bar fill is capped visually)
+    const clamped = Math.max(0, value);
     this.registry.set(FaceBase.ENERGY_KEY, clamped);
     this.events.emit("energyChanged", clamped);
   }
@@ -172,36 +173,68 @@ export default abstract class FaceBase extends Phaser.Scene {
     const obtainedKey = rewardInfo.rewardObtainedRegistryKey;
     if (!this.registry.get(obtainedKey)) {
       this.registry.set(obtainedKey, true);
-      this.addEnergy(rewardInfo.rewardEnergy);
+      // Don't add energy immediately - the animation will do it gradually
       this.playEnergyRewardAnimation(rewardInfo.rewardEnergy);
     }
   }
 
   private playEnergyRewardAnimation(amount: number) {
-    // Floating "+X energie" text near the energy bar (top-right)
-    const x = this.scale.width - 106;
-    const y = 100;
+    // Get player screen position (center of screen since camera follows player)
+    const playerScreenX = this.scale.width / 2;
+    const playerScreenY = this.scale.height / 2;
 
-    const text = this.add.text(x, y, `+${amount} energie`, {
+    // Energy bar position (left edge of bar)
+    const barX = this.scale.width - 180 - 16; // bar width + margin
+    const barY = 35 + 22; // bar top + half height
+
+    // Create floating text at player position
+    const text = this.add.text(playerScreenX, playerScreenY - 50, `+${amount}`, {
       fontFamily: "sans-serif",
-      fontSize: "20px",
+      fontSize: "28px",
       color: "#00ff00",
       stroke: "#003300",
-      strokeThickness: 3,
+      strokeThickness: 4,
     })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(1000);
 
-    // Float up and fade out
+    // Fly towards energy bar
     this.tweens.add({
       targets: text,
-      y: y - 40,
-      alpha: 0,
-      duration: 1500,
+      x: barX + 30,
+      y: barY,
+      scale: 0.7,
+      duration: 1600,
       ease: "Power2",
-      onComplete: () => text.destroy(),
+      onComplete: () => {
+        text.destroy();
+        // Start counting up the energy
+        this.countUpEnergy(amount);
+      },
     });
+  }
+
+  private countUpEnergy(amount: number) {
+    let added = 0;
+    const interval = Math.max(30, 500 / amount); // Faster for larger amounts, min 30ms
+
+    const timer = this.time.addEvent({
+      delay: interval,
+      callback: () => {
+        added++;
+        this.addEnergy(1);
+        if (added >= amount) {
+          timer.destroy();
+        }
+      },
+      repeat: amount - 1,
+    });
+  }
+
+  // Debug method to test the reward animation from debug menu
+  public debugTestRewardAnimation(amount: number) {
+    this.playEnergyRewardAnimation(amount);
   }
 
   // ---------------------------

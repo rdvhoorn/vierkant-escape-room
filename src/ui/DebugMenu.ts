@@ -256,14 +256,36 @@ export class DebugMenu {
       this.registry.set("tangram_krab_solved", solved);
     }
 
-    this.recalculateEnergy();
-    this.updateEnergyDisplay();
+    if (solved) {
+      // When toggling ON: set energy WITHOUT this puzzle, then play animation to add it
+      this.recalculateEnergy(key); // exclude this puzzle
+
+      // Trigger animation on current scene if it supports it
+      const scene = this.currentScene as any;
+      if (scene?.debugTestRewardAnimation) {
+        scene.debugTestRewardAnimation(config.rewardEnergy);
+      } else {
+        // Fallback: just add energy directly if not on a Face scene
+        this.recalculateEnergy();
+        this.currentScene?.events.emit("energyChanged", this.registry.get("energy"));
+      }
+
+      // Show expected total in debug display (current + this puzzle's reward)
+      const expectedTotal = (this.registry.get("energy") ?? 0) + config.rewardEnergy;
+      this.updateEnergyDisplay(expectedTotal);
+    } else {
+      // When toggling OFF: recalculate immediately
+      this.recalculateEnergy();
+      this.currentScene?.events.emit("energyChanged", this.registry.get("energy"));
+      this.updateEnergyDisplay();
+    }
   }
 
-  private recalculateEnergy() {
+  private recalculateEnergy(excludeKey?: PuzzleKey) {
     let total = 0;
 
     for (const puzzle of PUZZLES) {
+      if (excludeKey && puzzle.key === excludeKey) continue; // Skip excluded puzzle
       const config = PUZZLE_REWARDS[puzzle.key];
       const solved = this.registry.get(config.puzzleSolvedRegistryKey);
       const obtained = this.registry.get(config.rewardObtainedRegistryKey);
@@ -279,10 +301,10 @@ export class DebugMenu {
     this.currentScene?.events.emit("energyChanged", total);
   }
 
-  private updateEnergyDisplay() {
+  private updateEnergyDisplay(overrideValue?: number) {
     const el = this.container?.querySelector("#dbg-energy");
     if (el) {
-      const energy = this.registry.get("energy") ?? 0;
+      const energy = overrideValue ?? this.registry.get("energy") ?? 0;
       el.textContent = `(${energy} energie)`;
     }
   }
@@ -312,4 +334,5 @@ export class DebugMenu {
       if (checkbox) checkbox.checked = false;
     }
   }
+
 }
