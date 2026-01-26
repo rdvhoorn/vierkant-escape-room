@@ -19,23 +19,20 @@ export default class StreakMaze extends Phaser.Scene {
   private currentRoom!: MazeRoom;
   private rooms: Record<string, MazeRoom> = {};
 
-  private clueText!: Phaser.GameObjects.Text;
-  private choiceTexts: Phaser.GameObjects.Text[] = [];
+  private mainSignText!: Phaser.GameObjects.Text;
+  private choiceContainer!: Phaser.GameObjects.Container;
   private inputBox?: HTMLInputElement;
 
   private firstTimeEntering: boolean = true;
+  private failedLastStage: boolean = false; 
 
   private dialogText?: Phaser.GameObjects.Text;
   private dialogHint?: Phaser.GameObjects.Text;
   private dialogLines: string[] = [];
   private currentLine: number = 0;
   private dialogActive: boolean = false;
-  
-  // Characters
   private zippuImage?: Phaser.GameObjects.Image;
   private poffieImage?: Phaser.GameObjects.Image;
-  
-  // --- SCALING CONFIG ---
   private readonly zippuScale = 0.3; 
   private readonly poffieScale = 0.3; 
 
@@ -50,6 +47,9 @@ export default class StreakMaze extends Phaser.Scene {
 
   create() {
     this.buildMazeData();
+    this.drawForestBackground();
+    this.createMainSign();
+    this.choiceContainer = this.add.container(0, 0);
 
     if (this.firstTimeEntering) {
       this.firstTimeEntering = false;
@@ -62,11 +62,77 @@ export default class StreakMaze extends Phaser.Scene {
     }
   }
 
+  private drawForestBackground() {
+    const { width, height } = this.scale;
+    
+    this.add.rectangle(0, 0, width, height, 0x1a2b1a).setOrigin(0);
+
+    const g = this.add.graphics();
+
+    g.fillStyle(0x3d2e1e); 
+    
+    g.beginPath();
+    g.moveTo(width * 0.5, height);
+    g.lineTo(width * 0.4, height * 0.7); 
+    g.lineTo(width * 0.6, height * 0.7);
+    g.closePath();
+    g.fillPath();
+
+    g.beginPath();
+    g.moveTo(width * 0.4, height * 0.75);
+    g.lineTo(width * 0.2, height * 0.5);
+    g.lineTo(width * 0.3, height * 0.5);
+    g.closePath();
+    g.fillPath();
+
+    g.beginPath();
+    g.moveTo(width * 0.5, height * 0.75);
+    g.lineTo(width * 0.45, height * 0.5); 
+    g.lineTo(width * 0.55, height * 0.5);
+    g.closePath();
+    g.fillPath();
+
+    g.beginPath();
+    g.moveTo(width * 0.6, height * 0.75);
+    g.lineTo(width * 0.8, height * 0.5); 
+    g.lineTo(width * 0.7, height * 0.5);
+    g.closePath();
+    g.fillPath();
+
+    g.fillStyle(0x0f380f, 0.8);
+    g.fillTriangle(width * 0.1, height * 0.5, width * 0.2, height * 0.2, width * 0.3, height * 0.5);
+    g.fillTriangle(width * 0.8, height * 0.6, width * 0.9, height * 0.3, width * 1.0, height * 0.6);
+    g.fillTriangle(width * 0.0, height * 0.7, width * 0.1, height * 0.4, width * 0.2, height * 0.7);
+  }
+
+  private createMainSign() {
+    const { width } = this.scale;
+    const x = width / 2;
+    const y = 150;
+
+    const g = this.add.graphics();
+    g.fillStyle(0x5c4033); 
+    g.fillRect(x - 10, y, 20, 200); 
+
+    g.fillStyle(0x8b5a2b); 
+    g.fillRoundedRect(x - 300, y - 100, 600, 150, 10);
+    g.lineStyle(4, 0x3e2723);
+    g.strokeRoundedRect(x - 300, y - 100, 600, 150, 10);
+
+    this.mainSignText = this.add.text(x, y - 25, "", {
+        fontSize: "28px",
+        color: "#3e2723",
+        fontStyle: "bold",
+        align: "center",
+        wordWrap: { width: 550 }
+    }).setOrigin(0.5);
+  }
+
   private cleanupDialog() {
     this.dialogText?.destroy();
     this.dialogHint?.destroy();
     this.zippuImage?.destroy(); 
-    this.poffieImage?.destroy(); // Cleanup Poffie too
+    this.poffieImage?.destroy(); 
     
     this.dialogText = undefined;
     this.dialogHint = undefined;
@@ -74,15 +140,10 @@ export default class StreakMaze extends Phaser.Scene {
     this.poffieImage = undefined;
   }
 
-  // NPC DIALOG
   private addNpcDialog(forFirstTime: boolean, onComplete: () => void) {
     const { width, height } = this.scale;
-    
-    // 1. Setup Zippu
     this.zippuImage = this.add.image(width - 150, height / 2, "zippu");
     this.zippuImage.setScale(this.zippuScale);
-
-    // 2. Define Lines
     this.dialogLines = forFirstTime
       ? [
           "Zippu: Hoi! Ik ben Zippu, kom jij me helpen om mijn poffel te vinden?",
@@ -91,22 +152,21 @@ export default class StreakMaze extends Phaser.Scene {
           "Jij: Euhm, ik moet eigenlijk op zoek naar energie voor mijn capsule om naar huis terug te keren. En wat is trouwens een poffel?",
           "Zippu: O ja, natuurlijk! Een poffel is een pluizig beestje, net zo groot als een kat. Poffie is heel nieuwsgierig, dus ze rende weg toen ze een geluidje hoorde.",
           "Jij: Poffie klinkt behoorlijk schattig, misschien moet ik Zippu toch helpen? Of is het slimmer om op zoek te gaan naar energie?",
-          "Hoorde je wat ik zei? Als je mij helpt om Poffie te vinden, dan mag je al mijn extra energie hebben. Dat is wel 10 [ENERGIE-NAAM]. Wat zeg je ervan",
-          "Dat klinkt als een goede deal! Ik zal je helpen Zippu, kom dan gaan we naar binnen.",
-          "Dank je, dank je, dank je! Er staan wel bordjes binnen die je waarschijnlijk helpen met welke kant je op moet, maar ik weet het niet."
+          "Zippu: Hoorde je wat ik zei? Als je mij helpt om Poffie te vinden, dan mag je al mijn extra energie hebben, ik heb 10 energie. Wat zeg je ervan",
+          "Jij: Dat klinkt als een goede deal! Ik zal je helpen Zippu, kom dan gaan we naar binnen.",
+          "Zippu: Dank je, dank je, dank je! Er staan wel bordjes binnen die je waarschijnlijk helpen met welke kant je op moet, maar ik weet het niet."
         ]
       : [
           "Zippu: Poffie! Poffie, kom dan! Poffie!",
-          "POFFIE KOMT IN BEELD", // Trigger for Poffie spawn
+          "POFFIE KOMT IN BEELD", 
           "Zippu: Oh, daar ben je!",
           "Zippu: Dank je wel, zonder jou had ik Poffie nooit gevonden. Hier heb je 10 energie.",
-          "ZE VLIEGEN WEG" // Trigger for fly animation
+          "ZE VLIEGEN WEG" 
         ];
 
     this.currentLine = 0;
     this.dialogActive = true;
 
-    // 3. UI Text
     if (!this.dialogText)
       this.dialogText = this.add.text(width / 2, height - 100, "", {
         fontSize: "24px",
@@ -120,29 +180,22 @@ export default class StreakMaze extends Phaser.Scene {
         fontSize: "18px",
         color: "#ffff00",
       }).setDepth(100).setOrigin(0.5);
-
-    // 4. Input Handler
     const keyE = this.input!.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
     const advanceHandler = () => {
       if (!this.dialogActive) return;
       
       this.showNextDialogLine(onComplete, () => {
-        // This callback runs when dialogue is totally finished
         this.cleanupDialog();
         if (!forFirstTime) this.registry.set("streak_maze_solved", true);
       });
     };
 
     keyE.on("down", advanceHandler);
-    
-    // Show first line immediately
     this.showNextDialogLine(onComplete, () => {});
   }
 
-  // Handles displaying lines AND special actions (Spawn / Fly)
   private showNextDialogLine(onComplete: () => void, cleanup?: () => void) {
-    // If we ran out of lines, finish.
     if (this.currentLine >= this.dialogLines.length) {
       cleanup?.();
       this.dialogActive = false;
@@ -152,17 +205,15 @@ export default class StreakMaze extends Phaser.Scene {
 
     const line = this.dialogLines[this.currentLine];
 
-    // --- ACTION: SPAWN POFFIE ---
+
     if (line === "POFFIE KOMT IN BEELD") {
         this.spawnPoffie();
-        this.currentLine++; // Skip this line so we don't display the placeholder text
-        this.showNextDialogLine(onComplete, cleanup); // Immediately show next line
+        this.currentLine++; 
+        this.showNextDialogLine(onComplete, cleanup); 
         return;
     }
 
-    // --- ACTION: FLY AWAY ---
     if (line === "ZE VLIEGEN WEG") {
-        // Start animation, then finish dialog when animation is done
         this.performFlyAway(() => {
             cleanup?.();
             this.dialogActive = false;
@@ -171,22 +222,17 @@ export default class StreakMaze extends Phaser.Scene {
         return;
     }
 
-    // Normal Text Line
     this.dialogText?.setText(line);
     this.currentLine++;
   }
 
   private spawnPoffie() {
       const { width, height } = this.scale;
-      
-      // Create Poffie off-screen to the right
       this.poffieImage = this.add.image(width + 100, height / 2 + 50, "poffie");
       this.poffieImage.setScale(this.poffieScale);
-
-      // Tween her in next to Zippu
       this.tweens.add({
           targets: this.poffieImage,
-          x: width - 250, // To the left of Zippu
+          x: width - 250,
           y: height / 2 + 20,
           duration: 600,
           ease: 'Back.out'
@@ -194,7 +240,6 @@ export default class StreakMaze extends Phaser.Scene {
   }
 
   private performFlyAway(onAnimComplete: () => void) {
-      // Hide UI during animation
       this.dialogText?.setVisible(false);
       this.dialogHint?.setVisible(false);
 
@@ -203,15 +248,14 @@ export default class StreakMaze extends Phaser.Scene {
 
       this.tweens.add({
           targets: targets,
-          y: -150,           // Fly off top
-          x: '+=100',        // Slightly to the right
+          y: -150,          
+          x: '+=100',        
           duration: 1500,
           ease: 'Quad.in',
           onComplete: onAnimComplete
       });
   }
 
-  // puzzle data
   private buildMazeData() {
     this.rooms = {
       stage1: { id: "stage1", clue: "Reeks: 2, 4, 6, 8", choices: [
@@ -221,18 +265,18 @@ export default class StreakMaze extends Phaser.Scene {
       ]},
       stage2: { id: "stage2", clue: "Reeks: 1, 1, 2, 3, 5", choices: [
         { label: "6", target: "wrongA" },
+        { label: "8", target: "stage3" }, 
         { label: "7", target: "wrongB" },
-        { label: "8", target: "stage3" },
       ]},
       stage3: { id: "stage3", clue: "Reeks: 25, 36, 49, 64", choices: [
+        { label: "81", target: "stage4" },
         { label: "73", target: "WrongRoom" },
         { label: "79", target: "wrongC" },
-        { label: "81", target: "stage4" },
       ]},
       stage4: { id: "stage4", clue: "Reeks: 8, 10, 6, 8, 4, 6, 2", choices: [
         { label: "-2", target: "WrongRoom" },
-        { label: "4", target: "stage5" },
         { label: "6", target: "WrongRoom" },
+        { label: "4", target: "stage5" },
       ]},
       stage5: { id: "stage5", clue: "Reeks: 13, 17, 19, 23\nVoer het volgende getal in:", isInputRoom: true, correctInput: 29 },
       wrongA: { id: "wrongA", clue: "Reeks: 243, 247, 251, 255", choices: [
@@ -255,7 +299,6 @@ export default class StreakMaze extends Phaser.Scene {
     };
   }
 
-  // Room logic
   private enterRoom(roomId: string) {
     if (this.inputBox) {
       this.inputBox.remove();
@@ -266,28 +309,18 @@ export default class StreakMaze extends Phaser.Scene {
     if (!room) return;
     this.currentRoom = room;
 
-    const { width } = this.scale;
-
-    this.choiceTexts.forEach(t => t.destroy());
-    this.choiceTexts = [];
-
-    if (!this.clueText) {
-      this.clueText = this.add.text(width / 2, 80, "", {
-        fontSize: "26px",
-        color: "#ffffff",
-        align: "center",
-      }).setOrigin(0.5);
-    }
+    this.choiceContainer.removeAll(true); 
 
     if (room.isEndWrong) {
-      this.clueText.setText("Fout! Je hebt ergens onderweg een fout gemaakt.");
-      this.showResetButton();
+      this.mainSignText.setText("Fout! Je hebt ergens onderweg een fout gemaakt.");
+      this.createChoiceSign(this.scale.width / 2, this.scale.height * 0.5, "Opnieuw", () => {
+          this.enterRoom("stage1");
+      });
       return;
     }
 
     if (room.isEndCorrect) {
-      this.clueText.setText("Je hebt het doolhof opgelost!");
-      //Forceer eind-dialoog
+      this.mainSignText.setText("Je hebt het doolhof opgelost!");
       this.addNpcDialog(false, () => {
         const { width, height } = this.scale;
         this.scene.start("Face3Scene", {
@@ -299,7 +332,7 @@ export default class StreakMaze extends Phaser.Scene {
       return;
     }
 
-    this.clueText.setText(room.clue ?? "");
+    this.mainSignText.setText(room.clue ?? "");
 
     if (room.isInputRoom) {
       this.createInputBox();
@@ -307,35 +340,95 @@ export default class StreakMaze extends Phaser.Scene {
     }
 
     if (room.choices) {
-      room.choices.forEach((choice, i) => {
-        const text = this.add.text(width / 2, 180 + i * 60, `[ ${choice.label} ]`, {
-          fontSize: "28px",
-          color: "#ffffaa",
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on("pointerdown", () => { this.enterRoom(choice.target); });
+        const { width, height } = this.scale;
+        const positions = [
+            { x: width * 0.25, y: height * 0.55 }, 
+            { x: width * 0.5, y: height * 0.55 },  
+            { x: width * 0.75, y: height * 0.55 }  
+        ];
 
-        this.choiceTexts.push(text);
-      });
+        room.choices.forEach((choice, i) => {
+            const pos = positions[i] || positions[1];
+            this.createChoiceSign(pos.x, pos.y, choice.label, () => {
+                this.enterRoom(choice.target);
+            });
+        });
     }
   }
 
+  private createChoiceSign(x: number, y: number, text: string, onClick: () => void) {
+      const container = this.add.container(x, y);
+      
+      const post = this.add.rectangle(0, 50, 10, 80, 0x3e2723);
+      
+      const board = this.add.graphics();
+      board.fillStyle(0x8b5a2b);
+      board.fillRoundedRect(-60, -30, 120, 60, 8);
+      board.lineStyle(2, 0x3e2723);
+      board.strokeRoundedRect(-60, -30, 120, 60, 8);
+
+      const label = this.add.text(0, 0, text, {
+          fontSize: "24px",
+          color: "#3e2723",
+          fontStyle: "bold"
+      }).setOrigin(0.5);
+
+      container.add([post, board, label]);
+      
+      const hitArea = new Phaser.Geom.Rectangle(-60, -30, 120, 60);
+      container.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
+      
+      container.on('pointerdown', () => {
+          this.tweens.add({
+              targets: container,
+              scale: 0.9,
+              duration: 50,
+              yoyo: true,
+              onComplete: onClick
+          });
+      });
+
+      this.choiceContainer.add(container);
+  }
+
   private createInputBox() {
-    const { width } = this.scale;
+    const { width, height } = this.scale;
 
     const input = document.createElement("input");
     input.type = "number";
     input.style.position = "absolute";
-    input.style.left = `${width / 2 - 60}px`;
-    input.style.top = `200px`;
-    input.style.fontSize = "20px";
+    
+    // Size & Font
+    const boxWidth = 200;
+    const boxHeight = 50;
+    
+    input.style.width = `${boxWidth}px`;
+    input.style.height = `${boxHeight}px`;
+    input.style.fontSize = "28px";
     input.style.padding = "6px";
-    input.style.width = "120px";
+    input.style.textAlign = "center";
+
+    // Center on screen
+    input.style.left = `${(width / 2) - (boxWidth / 2)}px`;
+    input.style.top = `${(height / 2) - (boxHeight / 2)}px`;
 
     document.body.appendChild(input);
     this.inputBox = input;
     input.focus();
+
+    if (this.failedLastStage) {
+        // Position hint button below the centered input box
+        const hintBtn = this.add.text(width / 2, (height / 2) + 80, "[ Hint Tonen ]", {
+            fontSize: "20px", color: "#ffff00", backgroundColor: "#333", padding: { x: 10, y: 5 }
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+            hintBtn.setText("Hint: Ik denk dat je er met deze hint PRIEMa uit komt!");
+            hintBtn.disableInteractive();
+        });
+        this.choiceContainer.add(hintBtn);
+    }
 
     input.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
@@ -344,28 +437,10 @@ export default class StreakMaze extends Phaser.Scene {
         if (num === correct) {
           this.enterRoom("EndRoom");
         } else {
+          this.failedLastStage = true; 
           this.enterRoom("WrongRoom");
         }
       }
     });
-  }
-
-  private showResetButton() {
-    const { width } = this.scale;
-
-    const btn = this.add.text(width / 2, 200, "Opnieuw beginnen", {
-      fontSize: "28px",
-      color: "#ffaa88",
-      backgroundColor: "#442222",
-      padding: { x: 10, y: 8 }
-    })
-    .setOrigin(0.5)
-    .setInteractive({ useHandCursor: true })
-    .on("pointerdown", () => {
-      btn.destroy();
-      this.enterRoom("stage1");
-    });
-
-    this.choiceTexts.push(btn);
   }
 }

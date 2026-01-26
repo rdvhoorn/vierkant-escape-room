@@ -140,7 +140,7 @@ export default class Face3Scene extends FaceBase {
     // Add interaction to the image
     const handle = this.createDialogInteraction(door, {
       hitRadius: 100, 
-      hintText: "Ga door het deurtje: E",
+      hintText: "Inspecteer deurtje: E",
       buildLines: () => {
         const solved = !!this.registry.get("streak_maze_solved");
         if (solved) return [{ speaker: "", text: "Het deurtje staat open. Je bent hier al geweest." }];
