@@ -4,24 +4,15 @@ export default class LogicTowerScene extends Phaser.Scene {
   // --- Configuration ---
   private readonly returnSceneKeyDefault = "Face4Scene";
   private readonly panelScale = 0.2;
-  private readonly backgroundScale = 1; 
   private returnSceneKey: string = "";
-
-  // --- State Variables ---
   private isDialogActive = false;
   private dialogLines: string[] = [];
   private dialogIndex = 0;
   private isSolved = false; 
-
-  // --- Game Objects ---
   private panel!: Phaser.GameObjects.Image;
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
-  
-  // Keep this undefined initially
   private answerInput: Phaser.GameObjects.DOMElement | undefined; 
-
-  // --- Event Handlers ---
   private onKeyHandler?: (event: KeyboardEvent) => void;
   private onPointerHandler?: () => void;
 
@@ -38,29 +29,18 @@ export default class LogicTowerScene extends Phaser.Scene {
   }
 
   create() {
-    // -----------------------------------------------------------------
-    // 1. HARD STATE RESET (Fixes the re-entry bug)
-    // -----------------------------------------------------------------
     this.isDialogActive = false;
     this.dialogIndex = 0;
     this.dialogLines = [];
-    
-    // CRITICAL: Force these to undefined so checks don't fail on re-entry
     this.answerInput = undefined; 
     this.onKeyHandler = undefined;
     this.onPointerHandler = undefined;
     
-    // Check registry for solved state
     this.isSolved = !!this.registry.get("logic_tower_0_solved");
 
-    // -----------------------------------------------------------------
-    // 2. SCENE SETUP
-    // -----------------------------------------------------------------
     const { width, height } = this.scale;
-
-    // Background
-    const bg = this.add.rectangle(0, 0, width, height, 0x0f182b).setOrigin(0);
-    bg.setScale(this.backgroundScale);
+    
+    this.createTowerBackground(width, height);
 
     this.add.text(20, 20, "ESC to return", {
       fontFamily: "sans-serif",
@@ -68,41 +48,64 @@ export default class LogicTowerScene extends Phaser.Scene {
       color: "#8fd5ff",
     }).setOrigin(0, 0).setAlpha(0.7);
 
-    // Panel Interaction
     this.panel = this.add.image(width / 2, height / 2, "brokenpanel")
       .setScale(this.panelScale)
       .setInteractive({ useHandCursor: true });
 
     this.panel.on("pointerdown", () => {
-      // Prevent multiple clicks if dialog or input is already open
       if (this.isDialogActive || this.answerInput) return;
-
       if (this.isSolved) {
-        // Skip to next level if solved
         console.log("Floor 0 already solved, moving to Floor 1");
         this.scene.start("LogicTower_1", { returnScene: this.returnSceneKey });
       } else {
-        // Start Riddle
         this.startDialog([
           "Het paneel is kapot...",
           "Misschien kan ik het systeem herstarten met een wachtwoord?"
         ]);
       }
     });
-
-    // Setup UI Components (Hidden by default)
     this.createDialogUI();
-
-    // Setup Input Handling
     this.setupInputListeners();
-
-    // Register Cleanup
     this.events.once("shutdown", this.cleanup, this);
   }
 
-  // -------------------------------------------------------------------------
-  // UI SETUP METHODS
-  // -------------------------------------------------------------------------
+  private createTowerBackground(width: number, height: number) {
+    const skyColor = 0x0f182b;
+    this.add.rectangle(0, 0, width, height, skyColor).setOrigin(0);
+    const windowRadius = 150; 
+    const windowX = width * 0.75; 
+    const windowY = height / 2 - 80;
+    const starGraphics = this.add.graphics();
+    starGraphics.fillStyle(0xffffff, 1.0); 
+    
+    for (let i = 0; i < 150; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * windowRadius; 
+        
+        const sx = windowX + Math.cos(angle) * r;
+        const sy = windowY + Math.sin(angle) * r;
+        
+        const size = Math.random() * 2 + 1; 
+        starGraphics.fillCircle(sx, sy, size);
+    }
+
+    const wallGraphics = this.add.graphics();
+    wallGraphics.fillStyle(0x222222); 
+    wallGraphics.beginPath();
+    wallGraphics.arc(windowX, windowY, windowRadius, 0, Math.PI * 2, false);
+    wallGraphics.arc(windowX, windowY, 3000, 0, Math.PI * 2, true);
+    wallGraphics.fillPath();
+    wallGraphics.lineStyle(12, 0x111111);
+    wallGraphics.strokeCircle(windowX, windowY, windowRadius);
+    wallGraphics.fillStyle(0x333333, 0.4);
+    for (let i = 0; i < 30; i++) {
+        const bx = Math.random() * width;
+        const by = Math.random() * height;
+        if (Phaser.Math.Distance.Between(bx, by, windowX, windowY) > windowRadius + 20) {
+             wallGraphics.fillRect(bx, by, 60, 30);
+        }
+    }
+  }
 
   private createDialogUI() {
     const { width, height } = this.scale;
@@ -127,23 +130,14 @@ export default class LogicTowerScene extends Phaser.Scene {
     .setVisible(false);
   }
 
-  // -------------------------------------------------------------------------
-  // INPUT & CLEANUP
-  // -------------------------------------------------------------------------
-
   private setupInputListeners() {
-    // Global ESC Key
     this.input.keyboard?.on("keydown-ESC", () => this.exitPuzzle());
-
-    // E Key for Dialog
     this.onKeyHandler = (ev: KeyboardEvent) => {
       if ((ev.key === "e" || ev.key === "E") && this.isDialogActive) {
         this.advanceDialog();
       }
     };
     this.input.keyboard?.on("keydown", this.onKeyHandler);
-
-    // Click for Dialog
     this.onPointerHandler = () => {
       if (this.isDialogActive) this.advanceDialog();
     };
@@ -151,7 +145,6 @@ export default class LogicTowerScene extends Phaser.Scene {
   }
 
   private cleanup() {
-    // Clean up global inputs
     if (this.input.keyboard && this.onKeyHandler) {
       this.input.keyboard.off("keydown", this.onKeyHandler);
     }
@@ -160,20 +153,17 @@ export default class LogicTowerScene extends Phaser.Scene {
     }
     this.input.keyboard?.off("keydown-ESC");
 
-    // Clean up DOM element manually to be safe
     if (this.answerInput) {
       this.answerInput.removeListener("click");
       this.answerInput.removeListener("keydown");
       this.answerInput.destroy();
-      this.answerInput = undefined; // IMPORTANT: clear the reference
+      this.answerInput = undefined;
     }
   }
 
   private exitPuzzle() {
     const spawnX = this.scale.width / 2;
     const spawnY = this.scale.height / 2 + 90;
-    
-    // Transition
     this.scene.start(this.returnSceneKey, {
       spawnX,
       spawnY,
@@ -181,18 +171,14 @@ export default class LogicTowerScene extends Phaser.Scene {
     });
   }
 
-  // -------------------------------------------------------------------------
-  // DIALOG LOGIC
-  // -------------------------------------------------------------------------
 
   private startDialog(lines: string[]) {
-    // Safety check again
+
     if (this.isDialogActive || this.answerInput) return;
 
     this.dialogLines = lines;
     this.dialogIndex = 0;
     this.isDialogActive = true;
-    
     this.dialogBox.setVisible(true);
     this.dialogText.setVisible(true);
     this.dialogText.setText(this.dialogLines[0]);
@@ -214,17 +200,12 @@ export default class LogicTowerScene extends Phaser.Scene {
     this.showRiddle();
   }
 
-  // -------------------------------------------------------------------------
-  // RIDDLE & DOM INPUT
-  // -------------------------------------------------------------------------
-
   private showRiddle() {
     const panelY = this.panel.y;
     const panelHeight = this.panel.height * this.panelScale;
-    
-    const riddle = "I shine without a light\nI burn without burning\nYou only see me when the night is dark\nand adventurers use me to find their way";
+    const riddle = "Ik schijn zonder een lamp te zijn \n en ik brand zonder te verbranden\nJe ziet me alleen als de nacht donker is\nen avonturiers gebruiken mij om hun weg te vinden";
 
-    this.add.text(this.panel.x, panelY - panelHeight * 0.7, riddle, {
+    this.add.text(this.panel.x, panelY - panelHeight * 0.9, riddle, {
         fontSize: "20px",
         fontFamily: "sans-serif",
         color: "#c6e2ff",
@@ -233,7 +214,7 @@ export default class LogicTowerScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // Create DOM Element
+
     const inputY = this.scale.height * 0.65;
     this.answerInput = this.add.dom(this.panel.x, inputY).createFromHTML(`
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
@@ -246,7 +227,6 @@ export default class LogicTowerScene extends Phaser.Scene {
         </div>
     `);
 
-    // Setup DOM Listeners
     this.answerInput.addListener("click");
     this.answerInput.on("click", (event: any) => {
       if (event.target.name === "submitBtn") this.validateAnswer();
@@ -254,7 +234,6 @@ export default class LogicTowerScene extends Phaser.Scene {
 
     this.answerInput.addListener("keydown");
     this.answerInput.on("keydown", (event: any) => {
-      // Handle ESC inside the input box
       if (event.key === "Escape") {
         event.stopPropagation();
         const inputElement = this.answerInput?.getChildByName("answerField") as HTMLInputElement;
@@ -270,24 +249,21 @@ export default class LogicTowerScene extends Phaser.Scene {
       }
     });
 
-    // Auto-focus the input
     const inputElement = this.answerInput.getChildByName("answerField") as HTMLInputElement;
     if (inputElement) inputElement.focus();
   }
 
   private validateAnswer() {
     if (!this.answerInput) return;
-    
+  
     const inputElement = this.answerInput.getChildByName("answerField") as HTMLInputElement;
     if (!inputElement) return;
 
     const value = inputElement.value.trim().toLowerCase();
 
-    // Accept multiple variations of "Star"
-    if (value === "sterren" || value === "ster" || value === "stars" || value === "star") {
+    if (value === "sterren" || value === "ster") {
       this.completePuzzle();
     } else {
-      // Shake Effect
       inputElement.style.border = "2px solid #ff4444";
       this.tweens.add({
         targets: this.answerInput,

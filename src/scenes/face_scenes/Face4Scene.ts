@@ -1,9 +1,8 @@
 import FaceBase from "./_FaceBase";
-// We import PuzzleKey and PUZZLE_REWARDS to use the central config
 import { getFaceConfig, buildNeighborColorMap, PuzzleKey, PUZZLE_REWARDS } from "./_FaceConfig";
 
 export default class Face4Scene extends FaceBase {
-  private readonly birdSize = 20;
+  private readonly birdSize = 24; 
   private entry_from_puzzle = false;
 
   constructor() {
@@ -16,8 +15,6 @@ export default class Face4Scene extends FaceBase {
   }
 
   create() {
-    console.log("[ENTER]", this.scene.key);
-
     const cfg = getFaceConfig("Face4Scene");
     const { radius, neighbors, visuals } = cfg;
     const colorMap = buildNeighborColorMap(neighbors);
@@ -40,7 +37,6 @@ export default class Face4Scene extends FaceBase {
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
 
-    // --- TOWER ASSET ---
     const tower = this.add.image(centerX, centerY + 40, "tower");
     tower.setOrigin(0.5, 1);
     const scaleFactor = 0.3;
@@ -48,11 +44,9 @@ export default class Face4Scene extends FaceBase {
     actors.add(tower);
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
 
-    // --- INTERACTION LOGIC ---
     const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
     const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
 
-    // Give reward if returning from solved puzzle
     if (this.entry_from_puzzle && isSolved) {
       this.addPuzzleRewardIfNotObtained(PuzzleKey.LogicTower);
     }
@@ -94,35 +88,41 @@ export default class Face4Scene extends FaceBase {
     this.baseFaceUpdate(delta);
   }
 
-  // --- VISUALS (Standard Escher Pattern) ---
   private addMorphingEscherPattern(radius: number) {
     if (!this.faceLayers) return;
     const width = this.scale.width;
     const height = this.scale.height;
-    const textureKey = "escher_morph";
+    const textureKey = "escher_morph_smooth";
+
     if (!this.textures.exists(textureKey)) {
         const graphics = this.make.graphics({ x: 0, y: 0 });
-        const colorBg = 0x4a1c35;      
+        
         const colorBird = 0x8a2e55;    
         const colorOutline = 0xff88aa; 
-        const colorEye = 0xffffff;    
-        graphics.fillStyle(colorBg);
-        graphics.fillRect(0, 0, width, height);
-        const cols = Math.ceil(width / this.birdSize);
-        const rows = Math.ceil(height / this.birdSize);
-        for (let row = 0; row < rows; row++) {
-            for (let col = 0; col < cols; col++) {
+        const colorEye = 0xffffff;     
+        
+        const cols = Math.ceil(width / this.birdSize) + 2;
+        const rows = Math.ceil(height / this.birdSize) + 2;
+
+        for (let row = -1; row < rows; row++) {
+            for (let col = -1; col < cols; col++) {
                 const x = col * this.birdSize;
                 const y = row * this.birdSize;
-                const progress = (x + y) / (width + height); 
-                this.drawBird(graphics, x, y, this.birdSize, progress, colorBird, colorOutline, colorEye);
+                
+                let rawProgress = (x + y) / (width + height);
+                const progress = Phaser.Math.Clamp(rawProgress * 1.5 - 0.25, 0, 1);
+
+                this.drawEscherTile(graphics, x, y, this.birdSize, progress, colorBird, colorOutline, colorEye);
             }
         }
+
         graphics.generateTexture(textureKey, width, height);
         graphics.destroy();
     }
+
     const patternImg = this.add.image(width / 2, height / 2, textureKey);
     patternImg.setAlpha(0.35); 
+    
     const shape = this.make.graphics({ x: 0, y: 0 });
     shape.fillStyle(0xffffff);
     const points: {x:number, y:number}[] = [];
@@ -141,44 +141,53 @@ export default class Face4Scene extends FaceBase {
     shape.fillPath();
     const mask = shape.createGeometryMask();
     patternImg.setMask(mask);
+    
     this.faceLayers.ground.add(patternImg);
   }
-
-  private drawBird(
+//het ziet er nog steeds niet geweldig uit maar tenminste lijkt het nu ergens op i guess. ik wilde het met vogel doen maar das niet echt gelukt :(
+  private drawEscherTile(
     g: Phaser.GameObjects.Graphics, 
     x: number, y: number, size: number, 
-    simplicity: number, 
+    t: number, 
     fillColor: number, lineColor: number, eyeColor: number
   ) {
-    const half = size / 2;
-    const showEye = simplicity < 0.35;
-    const showWing = simplicity < 0.35;
-    const showStroke = simplicity < 0.65;
+    const lerp = (a: number, b: number) => a + (b - a) * t;
+    const rA = { x: size * 0.5, y: 0 };
+    const rB = { x: size, y: size * 0.5 };
+    const rC = { x: size * 0.5, y: size };
+    const rD = { x: 0, y: size * 0.5 };
+    const bHead = { x: size * 0.3, y: size * 0.2 }; 
+    const bWingTip = { x: size * 0.9, y: size * 0.1 };
+    const bTail = { x: size * 0.8, y: size * 0.8 };
+    const bChest = { x: size * 0.2, y: size * 0.6 };
+    const pTop = { x: lerp(rA.x, bHead.x), y: lerp(rA.y, bHead.y) };
+    const pRight = { x: lerp(rB.x, bWingTip.x), y: lerp(rB.y, bWingTip.y) };
+    const pBottom = { x: lerp(rC.x, bTail.x), y: lerp(rC.y, bTail.y) };
+    const pLeft = { x: lerp(rD.x, bChest.x), y: lerp(rD.y, bChest.y) };
+    const anchorTR = { x: size, y: 0 };
+    const anchorBL = { x: 0, y: size };
     g.fillStyle(fillColor);
     g.beginPath();
-    g.moveTo(x, y);
-    g.lineTo(x + size, y + half);
-    g.lineTo(x, y + size);
-    g.moveTo(x + size, y);
-    g.lineTo(x + half, y + size);
-    g.lineTo(x + size, y + size);
+    g.moveTo(pLeft.x + x, pLeft.y + y); 
+    g.lineTo(pTop.x + x, pTop.y + y);
+    if (t > 0.1) g.lineTo(x + lerp(size*0.5, size*0.7), y + lerp(0, size*0.1)); 
+    
+    g.lineTo(pRight.x + x, pRight.y + y);
+    g.lineTo(pBottom.x + x, pBottom.y + y);
+    
     g.closePath();
     g.fill();
-    if (showStroke) {
-        const thick = showWing ? 2 : 1; 
-        g.lineStyle(thick, lineColor, 0.6);
-        g.strokePath();
-    }
-    if (showWing) {
-        g.lineStyle(1, lineColor, 0.4);
+
+    if (t > 0.3) {
+        g.lineStyle(1, lineColor, t); 
         g.beginPath();
-        g.moveTo(x + 10, y + 10);
-        g.lineTo(x + size - 10, y + size - 10);
+        g.moveTo(pLeft.x + x + 5, pLeft.y + y - 5);
+        g.lineTo(pRight.x + x - 5, pRight.y + y + 10);
         g.strokePath();
-    }
-    if (showEye) {
-        g.fillStyle(eyeColor);
-        g.fillCircle(x + size * 0.2, y + size * 0.25, 2);
+        if (t > 0.6) {
+            g.fillStyle(eyeColor);
+            g.fillCircle(pTop.x + x - 2, pTop.y + y + 5, 1.5 * t);
+        }
     }
   }
 }
