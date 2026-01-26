@@ -242,7 +242,7 @@ export default class DominoScene extends Phaser.Scene {
   private createRuleUI() {
     let y = 60;
     const x = 20;
-    this.add.text(x, y - 25, "Regels:", { fontSize: "22px", color: "#fff", fontStyle: "bold" });
+    //this.add.text(x, y - 25, "Regels:", { fontSize: "22px", color: "#fff", fontStyle: "bold" });
     this.rules.forEach(rule => {
         const colorHex = rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#aaaaaa";
         const txt = this.add.text(x, y, `[ ] ${rule.description}`, { 

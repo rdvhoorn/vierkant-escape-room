@@ -398,7 +398,6 @@ export default class StreakMaze extends Phaser.Scene {
     input.type = "number";
     input.style.position = "absolute";
     
-    // Size & Font
     const boxWidth = 200;
     const boxHeight = 50;
     
@@ -408,7 +407,7 @@ export default class StreakMaze extends Phaser.Scene {
     input.style.padding = "6px";
     input.style.textAlign = "center";
 
-    // Center on screen
+    //weigert te werken
     input.style.left = `${(width / 2) - (boxWidth / 2)}px`;
     input.style.top = `${(height / 2) - (boxHeight / 2)}px`;
 
@@ -417,7 +416,6 @@ export default class StreakMaze extends Phaser.Scene {
     input.focus();
 
     if (this.failedLastStage) {
-        // Position hint button below the centered input box
         const hintBtn = this.add.text(width / 2, (height / 2) + 80, "[ Hint Tonen ]", {
             fontSize: "20px", color: "#ffff00", backgroundColor: "#333", padding: { x: 10, y: 5 }
         })
