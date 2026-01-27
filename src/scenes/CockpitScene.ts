@@ -40,6 +40,8 @@ export default class CockpitScene extends Phaser.Scene {
   private joystickPressT = 0; // 0..1
   private joystickBusy = false;
 
+  private inputLocked = false;
+
 
   constructor() {
     super("CockpitScene");
@@ -260,6 +262,7 @@ export default class CockpitScene extends Phaser.Scene {
 
   private playWakeUpEffect() {
     const { width, height } = this.scale;
+    this.inputLocked = true;
 
     // Black overlay that we'll fade out
     const blackOverlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1);
@@ -315,7 +318,12 @@ export default class CockpitScene extends Phaser.Scene {
       { text: "Ik weet nog dat we gisteren onze ruimte-missie hebben afgerond en dat we daarna allemaal in onze eigen raketten naar de aarde teruggingen." },
       { text: "Zo te zien ben ik niet op de aarde. Ik moet uitzoeken waar ik ben." },
       { text: "Wacht... het paneel! Alle draden zijn los!" },
-    ]);
+    ],
+      () => {
+        // Unlock input after dialog
+        this.inputLocked = false;
+      }
+    );
   }
 
 
@@ -1059,7 +1067,7 @@ export default class CockpitScene extends Phaser.Scene {
 
 
   private onStickControlClicked() {
-    if (this.joystickBusy) return;
+    if (this.joystickBusy || this.inputLocked) return;
 
     // Only allow joystick use in the same phases you described
     if (this.currentPhase !== "damaged" && this.currentPhase !== "repaired") return;
@@ -1266,8 +1274,10 @@ export default class CockpitScene extends Phaser.Scene {
 
     // Click handler - zoom in and transition
     hitArea.on("pointerdown", () => {
+      if (this.inputLocked) return;
       this.openElectricityHatch(hatchX + hatchWidth / 2, hatchY + hatchHeight / 2);
     });
+
   }
 
   private openElectricityHatch(centerX: number, centerY: number) {
