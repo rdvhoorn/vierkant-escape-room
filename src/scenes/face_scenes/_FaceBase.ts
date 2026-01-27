@@ -43,11 +43,11 @@ type EdgeMeta = {
 };
 
 type TravelEdgeZone = {
-  zone: Phaser.GameObjects.Zone;
   target: string;
   gfx: Phaser.GameObjects.Graphics;
   width: number;
   height: number;
+  edge: Edge;              // real segment (a->b)
 };
 
 type StandardFaceConfig = {
@@ -334,6 +334,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     return Phaser.Math.Distance.Between(p.x, p.y, closest.x, closest.y);
   }
 
+  // Only used in face1scene??
   protected isNearEdge(player: { x: number; y: number }, e: Edge): boolean {
     const p = new Phaser.Math.Vector2(player.x, player.y);
     return this.distanceToEdge(p, e) < 16;
@@ -809,11 +810,6 @@ export default abstract class FaceBase extends Phaser.Scene {
       const hitWidth = e.length * EDGE_TRIGGER_SCALE;
       const hitHeight = 40 * EDGE_TRIGGER_SCALE;
 
-      const zone = this.add
-        .zone(e.mid.x, e.mid.y, hitWidth, hitHeight)
-        .setOrigin(0.5);
-      this.physics.add.existing(zone, true);
-
       const gfx = this.add.graphics().setDepth(60);
       gfx.fillStyle(0x4b7ad1, 0.16);
       gfx.lineStyle(2, 0x4b7ad1, 0.9);
@@ -835,36 +831,38 @@ export default abstract class FaceBase extends Phaser.Scene {
 
       // DEV: Add label showing target scene name
       // Calculate offset direction from pentagon center to edge
-      const center = this.getPolygonCenter(this.poly);
-      const dx = e.mid.x - center.x;
-      const dy = e.mid.y - center.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      // const center = this.getPolygonCenter(this.poly);
+      // const dx = e.mid.x - center.x;
+      // const dy = e.mid.y - center.y;
+      // const dist = Math.sqrt(dx * dx + dy * dy);
 
       // Push label outward from center, beyond the edge
-      const pushDistance = 25;
-      const labelX = e.mid.x + (dx / dist) * pushDistance;
-      const labelY = e.mid.y + (dy / dist) * pushDistance;
+      // const pushDistance = 25;
+      // const labelX = e.mid.x + (dx / dist) * pushDistance;
+      // const labelY = e.mid.y + (dy / dist) * pushDistance;
 
       // Remove "Scene" suffix from label
-      const labelText = target.replace("Scene", "");
+      // const labelText = target.replace("Scene", "");
 
-      const label = this.add.text(labelX, labelY, labelText, {
-        fontFamily: "monospace",
-        fontSize: "12px",
-        color: "#00ff00",
-        backgroundColor: "#000000",
-        padding: { x: 4, y: 2 }
-      })
-      .setOrigin(0.5)
-      .setDepth(61);
-      this.faceLayers.ui.add(label);
+      // const label = this.add.text(labelX, labelY, labelText, {
+      //   fontFamily: "monospace",
+      //   fontSize: "12px",
+      //   color: "#00ff00",
+      //   backgroundColor: "#000000",
+      //   padding: { x: 4, y: 2 }
+      // })
+      // .setOrigin(0.5)
+      // .setDepth(61);
+      // this.faceLayers.ui.add(label);
+
+      const edge: Edge = { a: e.start, b: e.end };
 
       this.travelEdgeZones.push({
-        zone,
         target,
         gfx,
         width: hitWidth,
         height: hitHeight,
+        edge,
       });
     }
   }
@@ -949,23 +947,27 @@ export default abstract class FaceBase extends Phaser.Scene {
 
     // If we came from another scene via edge travel, spawn near the edge that leads back
     if (this.cameFromScene && !this.incomingSpawnX) {
-      // Find the edge zone that points back to where we came from
-      const returnEdgeZone = this.travelEdgeZones.find(ez => ez.target === this.cameFromScene);
-      if (returnEdgeZone) {
-        // Move spawn point INWARD from edge toward center, so it's inside the pentagon
+      const returnEdge = this.travelEdgeZones.find(
+        (ez) => ez.target === this.cameFromScene
+      );
+
+      if (returnEdge) {
         const center = this.getPolygonCenter(this.poly);
-        const edgeX = returnEdgeZone.zone.x;
-        const edgeY = returnEdgeZone.zone.y;
+
+        // Midpoint of the actual edge segment
+        const edgeX = (returnEdge.edge.a.x + returnEdge.edge.b.x) / 2;
+        const edgeY = (returnEdge.edge.a.y + returnEdge.edge.b.y) / 2;
+
         const dx = center.x - edgeX;
         const dy = center.y - edgeY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-        // Move 15% of the way from edge to center (closer to edge)
         const inwardRatio = 0.15;
         spawnX = edgeX + (dx / dist) * dist * inwardRatio;
         spawnY = edgeY + (dy / dist) * dist * inwardRatio;
       }
     }
+
 
     this.createPlayerAt(spawnX, spawnY);
 
@@ -985,7 +987,9 @@ export default abstract class FaceBase extends Phaser.Scene {
     // ----- Edge travel highlighting -----
     this.activeTravelEdge = null;
     for (const ez of this.travelEdgeZones) {
-      if (this.physics.world.overlap(this.player, ez.zone)) {
+      const active = this.doesPlayerOverlapEdgeTrigger(ez);
+
+      if (active) {
         this.activeTravelEdge = ez.target;
         ez.gfx.clear();
         ez.gfx.fillStyle(0x4b7ad1, 0.26);
@@ -1162,10 +1166,98 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
 
     // Draw edge zone hitboxes (physics zones - axis aligned)
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+    const p = new Phaser.Math.Vector2(body.center.x, body.center.y);
+
+    gfx.fillStyle(0xffff00, 1);
+    gfx.fillCircle(p.x, p.y, 3);
+
     for (const ez of this.travelEdgeZones) {
-      const zoneBody = ez.zone.body as Phaser.Physics.Arcade.StaticBody;
-      gfx.lineStyle(2, 0xff00ff, 1);
-      gfx.strokeRect(zoneBody.x, zoneBody.y, zoneBody.width, zoneBody.height);
+      const a = ez.edge.a;
+      const b = ez.edge.b;
+
+      const mid = new Phaser.Math.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2);
+      const dir = new Phaser.Math.Vector2(b.x - a.x, b.y - a.y).normalize();
+      const nrm = new Phaser.Math.Vector2(-dir.y, dir.x);
+
+      const halfW = ez.width * 0.5;
+      const halfH = ez.height * 0.5;
+
+      // corners of rotated rectangle (OBB)
+      const c1 = mid.clone().add(dir.clone().scale(-halfW)).add(nrm.clone().scale(-halfH));
+      const c2 = mid.clone().add(dir.clone().scale( halfW)).add(nrm.clone().scale(-halfH));
+      const c3 = mid.clone().add(dir.clone().scale( halfW)).add(nrm.clone().scale( halfH));
+      const c4 = mid.clone().add(dir.clone().scale(-halfW)).add(nrm.clone().scale( halfH));
+
+      const active = this.doesPlayerOverlapEdgeTrigger(ez);
+
+      gfx.lineStyle(2, active ? 0x00ff00 : 0xff00ff, 1);
+      gfx.beginPath();
+      gfx.moveTo(c1.x, c1.y);
+      gfx.lineTo(c2.x, c2.y);
+      gfx.lineTo(c3.x, c3.y);
+      gfx.lineTo(c4.x, c4.y);
+      gfx.closePath();
+      gfx.strokePath();
+
+      // also draw the edge line
+      gfx.lineStyle(1, 0xffffff, 0.6);
+      gfx.beginPath();
+      gfx.moveTo(a.x, a.y);
+      gfx.lineTo(b.x, b.y);
+      gfx.strokePath();
     }
   }
+
+  protected doesPlayerOverlapEdgeTrigger(ez: TravelEdgeZone): boolean {
+    const body = this.player.body as Phaser.Physics.Arcade.Body;
+
+    // Player AABB in world space
+    const px = body.x;
+    const py = body.y;
+    const pw = body.width;
+    const ph = body.height;
+
+    // Edge trigger OBB basis
+    const a = ez.edge.a;
+    const b = ez.edge.b;
+
+    const mid = new Phaser.Math.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2);
+    const dir = new Phaser.Math.Vector2(b.x - a.x, b.y - a.y).normalize(); // u axis
+    const nrm = new Phaser.Math.Vector2(-dir.y, dir.x);                    // v axis
+
+    const halfW = ez.width * 0.5;   // along edge
+    const halfH = ez.height * 0.5;  // thickness
+
+    // Convert player AABB corners into OBB local space (u,v)
+    const corners = [
+      new Phaser.Math.Vector2(px, py),
+      new Phaser.Math.Vector2(px + pw, py),
+      new Phaser.Math.Vector2(px + pw, py + ph),
+      new Phaser.Math.Vector2(px, py + ph),
+    ];
+
+    let minU = Infinity, maxU = -Infinity;
+    let minV = Infinity, maxV = -Infinity;
+
+    for (const c of corners) {
+      const d = c.clone().subtract(mid);
+      const u = d.dot(dir);
+      const v = d.dot(nrm);
+      if (u < minU) minU = u;
+      if (u > maxU) maxU = u;
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+
+    // Overlap test between:
+    // - player AABB projected onto (u,v)
+    // - OBB local box [-halfW..halfW] x [-halfH..halfH]
+    const overlapU = !(maxU < -halfW || minU > halfW);
+    const overlapV = !(maxV < -halfH || minV > halfH);
+
+    return overlapU && overlapV;
+  }
+
+
 }

@@ -27,7 +27,7 @@ export default class Face2Scene extends FaceBase {
       colorMap,
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
-      showLabel: visuals.showLabel ?? true,
+      showLabel: visuals.showLabel,
     });
 
     const baseLayers = this.getFaceLayers();

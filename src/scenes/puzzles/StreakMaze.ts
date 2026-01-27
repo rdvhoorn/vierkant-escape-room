@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 interface MazeChoice {
   label: string;
@@ -49,6 +50,7 @@ export default class StreakMaze extends Phaser.Scene {
     this.buildMazeData();
     this.drawForestBackground();
     this.createMainSign();
+    createBackButton(this, "Face3Scene", { entry_from_puzzle: true });
     this.choiceContainer = this.add.container(0, 0);
 
     if (this.firstTimeEntering) {

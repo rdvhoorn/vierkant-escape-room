@@ -128,7 +128,7 @@ export interface FaceConfig {
 const DEFAULT_VISUALS: Omit<FaceVisualConfig, "mainFill" | "neighborFill"> = {
   backgroundColor: "#0b1020",
   edgeTriggerScale: 0.4,
-  showLabel: true,
+  showLabel: false,
 };
 
 // --------------------

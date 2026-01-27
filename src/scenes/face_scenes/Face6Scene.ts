@@ -22,7 +22,7 @@ export default class Face6Scene extends FaceBase {
       colorMap,
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
-      showLabel: visuals.showLabel ?? true,
+      showLabel: visuals.showLabel,
     });
 
     this.addDiagonalStripesInFace({

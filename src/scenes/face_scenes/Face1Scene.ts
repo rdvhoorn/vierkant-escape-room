@@ -21,6 +21,14 @@ export default class Face1Scene extends FaceBase {
   private inShipRange = false;
   private inPuzzleRange = false;
 
+  private entry_from_cockpit: boolean = false;
+  private static readonly QUADRATUS_FACE1_MET_KEY = "face1_quadratus_met";
+
+  init(data?: any) {
+    super.init(data);
+    this.entry_from_cockpit = !!data?.entry_from_cockpit;
+  }
+
   create() {
     console.log("[ENTER]", this.scene.key);
     const { width, height } = this.scale;
@@ -55,23 +63,23 @@ export default class Face1Scene extends FaceBase {
 
     // ---- Crash site / ship
     const center = this.getPolygonCenter(this.poly);
-    const shipPos = new Phaser.Math.Vector2(center.x, center.y + 50);
+    const shipPos = new Phaser.Math.Vector2(center.x-60, center.y + 100);
 
     const ship = this.add
       .image(shipPos.x, shipPos.y, "ship")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(200, 200)
+      .setDisplaySize(150, 150)
       .setDepth(50);
     ship.setAngle(-18);
     this.layer.actors?.add(ship);
 
-    const shipBlock = this.add.zone(shipPos.x, shipPos.y-80, 70, 150);
+    const shipBlock = this.add.zone(shipPos.x, shipPos.y-60, 50, 120);
     this.physics.add.existing(shipBlock, true);
     this.physics.add.collider(this.player, shipBlock);
 
     // ---- Ship zone & highlight
     this.makeObjectInteractable(ship, {
-      hitRadius: 150,
+      hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
       hintText: "Interactie: " + (getIsDesktop(this) ? "E" : "I"),
@@ -82,6 +90,80 @@ export default class Face1Scene extends FaceBase {
 
     // Decorations etc.
     this.decorateCrashSite(radius);
+
+
+    // ---- Quadratus near the ship
+    const quadratusPos = new Phaser.Math.Vector2(shipPos.x + 140, shipPos.y - 180);
+
+    const quadratus = this.add
+      .image(quadratusPos.x, quadratusPos.y, "quadratus_small")
+      .setDepth(55)
+      // match your Face7 sizing vibe (adjust to taste)
+      .setDisplaySize(-200 / 2, 336 / 2);
+
+    this.layer.deco?.add(quadratus);
+
+    // Optional: block so you can't walk through him
+    const quadBlock = this.add.zone(quadratusPos.x, quadratusPos.y - 30, 60, 90);
+    this.physics.add.existing(quadBlock, true);
+    this.physics.add.collider(this.player, quadBlock);
+
+    // ---- Dialog interaction
+    const hasMet = !!this.registry.get(Face1Scene.QUADRATUS_FACE1_MET_KEY);
+    const current_energie = this.getEnergy();
+
+    const quadHandle = this.createDialogInteraction(quadratus, {
+      hitRadius: 110,
+      hintText: "Praat met Quadratus",
+      buildLines: () => {
+        // First ever emergence from cockpit => longer intro
+        if (this.entry_from_cockpit && !hasMet) {
+          return [
+            { speaker: "Quadratus", text: "Ah hallo vreemdeling! Welkom op Dezonia, onze twaalf vlakkige planeet. Ik ben Quadratus. Is er iets waarmee ik je kan helpen?" },
+            { speaker: "Jij", text: "Hoi Quadratus. Fijn om iemand te leren kennen. Ik was onderweg naar huis toen ik problemen kreeg met mijn raket. Nu heb ik te weinig energie om terug naar huis te reizen. Weet jij misschien hoe ik op Dezonia energie kan krijgen?" },
+            { speaker: "Quadratus", text: "Energie is er genoeg op Dezonia. Je moet alleen weten waar je moet zoeken. Ik denk dat je gewoon maar moet gaan zoeken! Er zullen vast veel bewoners zijn die je hulp kunnen gebruiken in ruil voor wat energie. Op ieder van de twaalf vlakken van deze planeet is wel wat unieks te vinden." },
+            { speaker: "Jij", text: "Dankjewel voor de tip! Ik heb nog 10 energie, maar ik moet nog een lang stuk naar huis. Ik moet dus proberen om in totaal 90 energie te verzamelen om weer terug te kunnen reizen."},
+            { speaker: "Jij", text: "He Quadratus, heb je misschien nog meer tips voor me?" },
+            { speaker: "Quadratus", text: "Zeker! Je kunt over de hele planeet heen lopen door gebruik te maken van de pijltjes toetsen of de WASD toetsen. Als je in de buurt van de rand van dit vlak komt, dan kun je je naar een ander vlak verplaatsen door op de spatiebalk te drukken." },
+            { speaker: "Jij", text: "Super handig, dankjewel! Ik ga nu op onderzoek uit." },
+
+          ];
+        }
+
+        // Later occasions: always the same single line
+        if (current_energie == 10) {
+          return [
+            { speaker: "Quadratus", text: "Je kunt bewegen met de pijltjes toetsen of de WASD toetsen. Aan de rand van het vlak kun je met behulp van de spatiebalk je naar een ander vlak verplaatsen" },
+            { speaker: "Quadratus", text: "Als je 90 energie hebt verzameld, dan kun je terug naar huis reizen! Heel veel succes!" },
+          ];
+        } else if (current_energie < 90) {
+          return [
+            { speaker: "Quadratus", text: "Hoi! Hoe gaat het met je zoektocht naar energie?" },
+            { speaker: "Jij", text: `Ik heb nu ${current_energie} energie verzameld.` },
+            { speaker: "Quadratus", text: "Wow, goed bezig! Blijf vooral zoeken, er is nog genoeg energie te vinden op deze planeet!" },
+          ];
+        } else {
+          return [
+            { speaker: "Quadratus", text: `Wauw! Je hebt al ${current_energie} energie verzameld! Dat is genoeg om terug naar huis te reizen!` },
+            { speaker: "Quadratus", text: "Ga snel terug naar je raket! Ik wens je een goede reis!" },
+          ];
+        }
+      },
+      onComplete: () => {
+        // Mark met after the first forced talk
+        if (this.entry_from_cockpit && !hasMet) {
+          this.registry.set(Face1Scene.QUADRATUS_FACE1_MET_KEY, true);
+        }
+        // consume the entry flag so we don't retrigger in the same lifetime
+        this.entry_from_cockpit = false;
+      },
+    });
+
+    // Auto-start ONLY the first time you emerge from cockpit (and haven't met yet)
+    if (this.entry_from_cockpit && !hasMet) {
+      this.time.delayedCall(50, () => quadHandle.start());
+    }
+
   }
 
   update(_time: number, delta: number) {

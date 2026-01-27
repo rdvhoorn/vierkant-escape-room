@@ -27,7 +27,7 @@ export default class Face4Scene extends FaceBase {
       colorMap,
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
-      showLabel: visuals.showLabel ?? true,
+      showLabel: visuals.showLabel,
     });
 
     this.addMorphingEscherPattern(radius);
