@@ -30,7 +30,7 @@ export default class Face12Scene extends FaceBase {
       colorMap,
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
-      showLabel: visuals.showLabel ?? true,
+      showLabel: visuals.showLabel,
     });
 
     this.addSubtleDominoPattern(radius);
