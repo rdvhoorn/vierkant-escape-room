@@ -61,12 +61,16 @@ export class Hud {
     this.interactions.push(interaction);
 
     if (!this.interactKey && this.opts.isDesktop) {
-      this.interactKey = this.scene.input.keyboard?.addKey(INTERACT_KEY);
-      this.scene.input.keyboard?.on(`keydown-${INTERACT_KEY}`, () => {
+      const handleInteract = () => {
         const player = this.opts.getPlayer();
         const active = this.getActiveInteraction(player);
         if (active) active.onUse();
-      });
+      };
+
+      this.interactKey = this.scene.input.keyboard?.addKey(INTERACT_KEY);
+      this.scene.input.keyboard?.addKey("SPACE");
+      this.scene.input.keyboard?.on(`keydown-${INTERACT_KEY}`, handleInteract);
+      this.scene.input.keyboard?.on("keydown-SPACE", handleInteract);
     }
   }
 
@@ -81,7 +85,7 @@ export class Hud {
 
     if (active) {
       const defaultHint = this.opts.isDesktop
-        ? "Interact: press E"
+        ? "Interact: E / spatie"
         : "Interact: tap";
       const hint = active.hintText ?? defaultHint;
       this.portalHint.setText(hint).setAlpha(1);
