@@ -63,23 +63,23 @@ export default class Face1Scene extends FaceBase {
 
     // ---- Crash site / ship
     const center = this.getPolygonCenter(this.poly);
-    const shipPos = new Phaser.Math.Vector2(center.x, center.y + 50);
+    const shipPos = new Phaser.Math.Vector2(center.x-60, center.y + 100);
 
     const ship = this.add
       .image(shipPos.x, shipPos.y, "ship")
       .setOrigin(0.5, 0.6)
-      .setDisplaySize(200, 200)
+      .setDisplaySize(150, 150)
       .setDepth(50);
     ship.setAngle(-18);
     this.layer.actors?.add(ship);
 
-    const shipBlock = this.add.zone(shipPos.x, shipPos.y-80, 70, 150);
+    const shipBlock = this.add.zone(shipPos.x, shipPos.y-60, 50, 120);
     this.physics.add.existing(shipBlock, true);
     this.physics.add.collider(this.player, shipBlock);
 
     // ---- Ship zone & highlight
     this.makeObjectInteractable(ship, {
-      hitRadius: 150,
+      hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
       hintText: "Interactie: " + (getIsDesktop(this) ? "E" : "I"),
@@ -93,7 +93,7 @@ export default class Face1Scene extends FaceBase {
 
 
     // ---- Quadratus near the ship
-    const quadratusPos = new Phaser.Math.Vector2(shipPos.x + 120, shipPos.y + 40);
+    const quadratusPos = new Phaser.Math.Vector2(shipPos.x + 140, shipPos.y - 180);
 
     const quadratus = this.add
       .image(quadratusPos.x, quadratusPos.y, "quadratus_small")
@@ -110,6 +110,7 @@ export default class Face1Scene extends FaceBase {
 
     // ---- Dialog interaction
     const hasMet = !!this.registry.get(Face1Scene.QUADRATUS_FACE1_MET_KEY);
+    const current_energie = this.getEnergy();
 
     const quadHandle = this.createDialogInteraction(quadratus, {
       hitRadius: 110,
@@ -130,7 +131,6 @@ export default class Face1Scene extends FaceBase {
         }
 
         // Later occasions: always the same single line
-        const current_energie = this.getEnergy();
         if (current_energie == 10) {
           return [
             { speaker: "Quadratus", text: "Je kunt bewegen met de pijltjes toetsen of de WASD toetsen. Aan de rand van het vlak kun je met behulp van de spatiebalk je naar een ander vlak verplaatsen" },
