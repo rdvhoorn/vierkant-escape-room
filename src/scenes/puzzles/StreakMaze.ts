@@ -24,8 +24,7 @@ export default class StreakMaze extends Phaser.Scene {
   private choiceContainer!: Phaser.GameObjects.Container;
   private inputBox?: HTMLInputElement;
 
-  private firstTimeEntering: boolean = true;
-  private failedLastStage: boolean = false; 
+  private failedLastStage: boolean = false;
 
   private dialogText?: Phaser.GameObjects.Text;
   private dialogHint?: Phaser.GameObjects.Text;
@@ -53,15 +52,10 @@ export default class StreakMaze extends Phaser.Scene {
     createBackButton(this, "Face3Scene", { entry_from_puzzle: true });
     this.choiceContainer = this.add.container(0, 0);
 
-    if (this.firstTimeEntering) {
-      this.firstTimeEntering = false;
-      this.addNpcDialog(true, () => {
-        this.cleanupDialog();
-        this.enterRoom("stage1");
-      });
-    } else {
+    this.addNpcDialog(true, () => {
+      this.cleanupDialog();
       this.enterRoom("stage1");
-    }
+    });
   }
 
   private drawForestBackground() {
@@ -178,22 +172,23 @@ export default class StreakMaze extends Phaser.Scene {
       }).setDepth(100).setOrigin(0.5);
 
     if (!this.dialogHint)
-      this.dialogHint = this.add.text(width / 2, height - 50, "Druk op E om verder te gaan", {
+      this.dialogHint = this.add.text(width / 2, height - 50, "Klik of druk op E / spatie", {
         fontSize: "18px",
         color: "#ffff00",
       }).setDepth(100).setOrigin(0.5);
-    const keyE = this.input!.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
-
     const advanceHandler = () => {
       if (!this.dialogActive) return;
-      
+
       this.showNextDialogLine(onComplete, () => {
         this.cleanupDialog();
         if (!forFirstTime) this.registry.set("streak_maze_solved", true);
       });
     };
 
-    keyE.on("down", advanceHandler);
+    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E).on("down", advanceHandler);
+    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    this.input.keyboard!.on("keydown-SPACE", advanceHandler);
+    this.input.on("pointerdown", advanceHandler);
     this.showNextDialogLine(onComplete, () => {});
   }
 

@@ -288,6 +288,7 @@ export default abstract class FaceBase extends Phaser.Scene {
     this.dialogManager = new DialogManager(this, {
       position: "bottom",
       showOverlay: false,
+      ownKeyboardInput: false,
       speakerStyles: {
         Jij: "#4bff72ff",
         Quadratus: "#ffb74cff",

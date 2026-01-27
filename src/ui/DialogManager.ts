@@ -30,6 +30,10 @@ export interface DialogConfig {
   // Speaker styles
   speakerStyles?: Record<string, string>;
   defaultSpeakerColor?: string;
+
+  // If false, the DialogManager won't register its own keyboard listeners.
+  // Use this when another system (e.g. PlanetHud) handles keyboard input.
+  ownKeyboardInput?: boolean;
 }
 
 const DEFAULT_CONFIG: Required<DialogConfig> = {
@@ -55,6 +59,7 @@ const DEFAULT_CONFIG: Required<DialogConfig> = {
     Quadratus: "#ffb74cff",
   },
   defaultSpeakerColor: "#ffffffff",
+  ownKeyboardInput: true,
 };
 
 export class DialogManager {
@@ -144,14 +149,16 @@ export class DialogManager {
   }
 
   private setupInput(): void {
-    const kb = this.scene.input.keyboard;
+    if (this.config.ownKeyboardInput) {
+      const kb = this.scene.input.keyboard;
 
-    if (kb) {
-      this.keyE = kb.addKey("E");
-      this.keySpace = kb.addKey("SPACE");
+      if (kb) {
+        this.keyE = kb.addKey("E");
+        this.keySpace = kb.addKey("SPACE");
 
-      kb.on("keydown-E", this.boundHandleAdvance);
-      kb.on("keydown-SPACE", this.boundHandleAdvance);
+        kb.on("keydown-E", this.boundHandleAdvance);
+        kb.on("keydown-SPACE", this.boundHandleAdvance);
+      }
     }
 
     this.scene.input.on("pointerdown", this.boundPointerHandler);
