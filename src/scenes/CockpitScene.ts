@@ -343,7 +343,7 @@ export default class CockpitScene extends Phaser.Scene {
           this.cameras.main.fadeOut(800, 0, 0, 0);
         });
         this.cameras.main.once("camerafadeoutcomplete", () => {
-          this.scene.start("Face1Scene");
+          this.scene.start("Face1Scene", { entry_from_cockpit: true });
         });
       }
     );
@@ -582,7 +582,7 @@ export default class CockpitScene extends Phaser.Scene {
               this.cameras.main.fadeOut(800, 0, 0, 0);
             });
             this.cameras.main.once("camerafadeoutcomplete", () => {
-              this.scene.start("Face1Scene");
+              this.scene.start("Face1Scene", { entry_from_cockpit: true });
             });
           });
         } else {
