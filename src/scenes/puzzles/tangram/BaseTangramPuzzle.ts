@@ -153,6 +153,8 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
+    this.input.topOnly = true;
+
     // Background
     this.cameras.main.setBackgroundColor(this.getBackgroundColor());
 
@@ -514,32 +516,37 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     const startY = cfg.startY ?? 0;
     const startRotation = cfg.startRotation ?? 0;
 
-    const sprite = this.add
-      .image(startX, startY, cfg.textureKey)
-      .setInteractive({ draggable: true })
-      .setTint(cfg.color);
-
-    sprite.setOrigin(0.0, 0.0);
+    const sprite = this.add.image(startX, startY, cfg.textureKey);
+    sprite.setOrigin(0, 0);
     sprite.angle = startRotation;
+    sprite.setTint(cfg.color);
 
-    return {
-      config: cfg,
-      sprite,
-    };
+    // ✅ Custom polygon hit area (local coords; Phaser will transform it with rotation/position)
+    const base = this.getBasePolygonPoints(cfg.type);
+    const hitPoly = new Phaser.Geom.Polygon(base);
+
+    sprite.setInteractive(hitPoly, Phaser.Geom.Polygon.Contains);
+
+    // If you want dragging, set it via input system (either way is fine)
+    this.input.setDraggable(sprite);
+
+    return { config: cfg, sprite };
   }
+
 
   private setSelectedPiece(piece: TangramPieceInstance | null) {
     if (this.selectedPiece) {
-      this.selectedPiece.sprite.clearTint();
       this.selectedPiece.sprite.setTint(this.selectedPiece.config.color);
     }
 
     this.selectedPiece = piece;
 
     if (this.selectedPiece) {
+      this.children.bringToTop(this.selectedPiece.sprite);
       this.selectedPiece.sprite.setTint(0xffffff);
     }
   }
+
 
   private rotateSelectedPiece() {
     if (!this.selectedPiece) return;
