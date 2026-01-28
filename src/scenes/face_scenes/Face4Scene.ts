@@ -36,13 +36,16 @@ export default class Face4Scene extends FaceBase {
     const { actors } = this.faceLayers;
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
-
     const tower = this.add.image(centerX, centerY + 40, "tower");
     tower.setOrigin(0.5, 1);
     const scaleFactor = 0.3;
     tower.setScale(scaleFactor);
     actors.add(tower);
     this.addSoftShadowBelow(tower, 80 * scaleFactor, 0x000000, 0.35);
+    const quadratus = this.add.image(centerX - 100, centerY + 20, "quadratus");
+    quadratus.setScale(0.25);
+    actors.add(quadratus);
+    this.addSoftShadowBelow(quadratus, 40 * 0.25, 0x000000, 0.3);
 
     const rewardConfig = PUZZLE_REWARDS[PuzzleKey.LogicTower];
     const isSolved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);
@@ -60,16 +63,23 @@ export default class Face4Scene extends FaceBase {
 
         if (solved) {
           return [
-            { speaker: "", text: "De lichten van de toren zijn gedoofd." },
-            { speaker: "", text: "Het signaal is succesvol verzonden." },
-            { speaker: "", text: "De ingang zit stevig op slot." }
+            { speaker: "Quadratus", text: "De lichten zijn gedoofd. Het signaal is verstuurd." },
+            { speaker: "Quadratus", text: "Je hebt het goed gedaan. De ingang blijft nu gesloten." }
           ];
         }
 
         return [
-          { speaker: "", text: "Een mysterieuze toren rijst op uit het niets." },
-          { speaker: "", text: "Binnen brandt een flauw licht..." },
-          { speaker: "", text: "Durf je naar binnen te gaan?" }
+          { speaker: "Jij", text: "Hoi Quadratus! Wat is dit voor een toren?" },
+          { speaker: "Quadratus", text: "Hiermee kunnen we kijken naar de sterren en kunnen we ruimteschepen in de buurt waarnemen." },
+          { speaker: "Jij", text: "Is dat ook hoe je zag dat ik neerstortte?" },
+          { speaker: "Quadratus", text: "Nou nee, dat was eigenlijk meer geluk of toeval…" },
+          { speaker: "Quadratus", text: "Het mechanisme is een aantal jaar geleden kapot gegaan en omdat we de afgelopen eeuw niet zoveel bezoekers meer kregen op Dezonia, vonden we het niet nodig om het te repareren." },
+          { speaker: "Jij", text: "O wat jammer! Het leek me super vet als ik mijn vrienden over jullie kon vertellen en dan samen met hen nog een keer terug kon keren." },
+          { speaker: "Quadratus", text: "Wat een goed idee! Wat nou als jij ons helpt om het mechanisme in de toren te repareren?" },
+          { speaker: "Jij", text: "Maar Quadratus, ik heb toch helemaal geen tijd? Ik moet genoeg energie verzamelen zodat ik naar huis terug kan." },
+          { speaker: "Quadratus", text: "Ja natuurlijk, dat snap ik. Wat nou als je energie kunt verdienen voor elke verdieping waarop je het mechanisme repareert?" },
+          { speaker: "Quadratus", text: "Je kan dan zelf bepalen wanneer je wilt stoppen. Natuurlijk kun je altijd nog een keer terugkomen om verder te werken zodat je ook genoeg hebt voor je terugkomst naar Dezonia samen met je vrienden." },
+          { speaker: "Jij", text: "Ja, dat is goed! Ik ga binnen kijken of ik jullie kan helpen." },
         ];
       },
 
@@ -144,7 +154,7 @@ export default class Face4Scene extends FaceBase {
     
     this.faceLayers.ground.add(patternImg);
   }
-//het ziet er nog steeds niet geweldig uit maar tenminste lijkt het nu ergens op i guess. ik wilde het met vogel doen maar das niet echt gelukt :(
+
   private drawEscherTile(
     g: Phaser.GameObjects.Graphics, 
     x: number, y: number, size: number, 

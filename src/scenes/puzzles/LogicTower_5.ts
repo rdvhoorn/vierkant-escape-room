@@ -3,35 +3,27 @@ import Phaser from "phaser";
 export default class LogicTower_5 extends Phaser.Scene {
   private returnSceneKey: string = "Face4Scene";
   private inputElement?: Phaser.GameObjects.DOMElement;
-  
-  // --- ASSETS & CONFIG ---
   private readonly quadratusScale = 0.4; 
-  private readonly morsesheetScale = 0.6;
-  
-  // Separation from center for NPC and Sheet
+  private readonly morsesheetScale = 0.85; 
   private readonly sideOffset = 280; 
-
-  // Morse Timing (in ms)
   private readonly dotDuration = 200;
   private readonly dashDuration = 600;
   private readonly symbolGap = 200;   
-  private readonly letterGap = 800;   
-
-  // "EINDE"
+  private readonly letterGap = 2500;   
   private readonly secretCode = [".", "..", "-.", "-..", "."];
-
-  // State / Objects
   private dialogText?: Phaser.GameObjects.Text;
   private dialogHint?: Phaser.GameObjects.Text;
   private replayText?: Phaser.GameObjects.Text;
   private continueText?: Phaser.GameObjects.Text;
   private backOptionText?: Phaser.GameObjects.Text;
-
+  private hintButton?: Phaser.GameObjects.Text;
   private npcImage?: Phaser.GameObjects.Image;
   private morseSheet?: Phaser.GameObjects.Image;
-  
   private signalBox?: Phaser.GameObjects.Container;
   private flashElement?: Phaser.GameObjects.Rectangle;
+  private isSignalPlaying = false;
+  private wrongAnswersCount = 0;
+  private currentSignalTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super("LogicTower_5");
@@ -49,21 +41,59 @@ export default class LogicTower_5 extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
-    this.add.rectangle(0, 0, width, height, 0x0a0a1a).setOrigin(0);
-
+    this.createTowerBackground(width, height);
     this.createSignalBox(width / 2, height / 2 - 200); 
 
-    // 1. Setup Quadratus NPC (Left)
     this.npcImage = this.add.image(width / 2 - this.sideOffset, height / 2 + 100, "quadratus");
     this.npcImage.setScale(this.quadratusScale);
     this.npcImage.setAlpha(0);
 
-    // 2. Setup Morse Sheet (Right)
     this.morseSheet = this.add.image(width / 2 + this.sideOffset, height / 2 + 100, "morsesheet");
     this.morseSheet.setScale(this.morsesheetScale);
     this.morseSheet.setAlpha(0); 
 
     this.startIntroDialog();
+  }
+
+  private createTowerBackground(width: number, height: number) {
+    const skyColor = 0x0f182b;
+    this.add.rectangle(0, 0, width, height, skyColor).setOrigin(0);
+
+    const windowRadius = 80; 
+    const windowX = width * 0.15; 
+    const windowY = height * 0.2;
+
+    const starGraphics = this.add.graphics();
+    starGraphics.fillStyle(0xffffff, 1.0); 
+    
+    for (let i = 0; i < 80; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * windowRadius; 
+        const sx = windowX + Math.cos(angle) * r;
+        const sy = windowY + Math.sin(angle) * r;
+        const size = Math.random() * 2 + 1; 
+        starGraphics.fillCircle(sx, sy, size);
+    }
+
+    const wallGraphics = this.add.graphics();
+    wallGraphics.fillStyle(0x222222); 
+
+    wallGraphics.beginPath();
+    wallGraphics.arc(windowX, windowY, windowRadius, 0, Math.PI * 2, false);
+    wallGraphics.arc(windowX, windowY, 3000, 0, Math.PI * 2, true);
+    wallGraphics.fillPath();
+
+    wallGraphics.lineStyle(12, 0x111111);
+    wallGraphics.strokeCircle(windowX, windowY, windowRadius);
+    
+    wallGraphics.fillStyle(0x333333, 0.4);
+    for (let i = 0; i < 30; i++) {
+        const bx = Math.random() * width;
+        const by = Math.random() * height;
+        if (Phaser.Math.Distance.Between(bx, by, windowX, windowY) > windowRadius + 20) {
+             wallGraphics.fillRect(bx, by, 60, 30);
+        }
+    }
   }
 
   private createSignalBox(x: number, y: number) {
@@ -76,18 +106,18 @@ export default class LogicTower_5 extends Phaser.Scene {
       this.signalBox.add([boxBg, this.flashElement]);
   }
 
-  // ---------------------------------------------------------
-  // SEQUENCE PART 1: DIALOGUE
-  // ---------------------------------------------------------
   private startIntroDialog() {
     const { width, height } = this.scale;
 
     this.tweens.add({ targets: this.npcImage, alpha: 1, duration: 1000 });
 
-    this.dialogText = this.add.text(width / 2, height - 150, "Quadratus: ...Je hebt het ver geschopt... Luister goed...", {
-      fontFamily: "sans-serif", fontSize: "24px", color: "#ffffff",
-      wordWrap: { width: width - 100 }, align: 'center'
-    }).setOrigin(0.5).setAlpha(0);
+    this.dialogText = this.add.text(width / 2, height - 150, 
+        "Quadratus: ...Je hebt het ver geschopt...\nPak pen en papier erbij, dit gaat snel...", 
+        {
+            fontFamily: "sans-serif", fontSize: "24px", color: "#ffffff",
+            wordWrap: { width: width - 100 }, align: 'center'
+        }
+    ).setOrigin(0.5).setAlpha(0);
 
     this.dialogHint = this.add.text(width / 2, height - 100, "(Klik of druk op E / spatie)", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#ffff00"
@@ -112,9 +142,6 @@ export default class LogicTower_5 extends Phaser.Scene {
     });
   }
 
-  // ---------------------------------------------------------
-  // SEQUENCE PART 2: MORSE FLASHING
-  // ---------------------------------------------------------
   private startFlashingSequence() {
     this.dialogText?.destroy();
     this.dialogHint?.destroy();
@@ -123,61 +150,79 @@ export default class LogicTower_5 extends Phaser.Scene {
   }
 
   private transitionToSignalState() {
+      this.stopSignalTimers();
       this.clearReplayUI();
       this.cleanupInputUI();
-
+      this.isSignalPlaying = true;
       this.signalBox?.setAlpha(1);
       this.npcImage?.setAlpha(1).setTint(0x444444);
       this.morseSheet?.setAlpha(1);
-
-      // Tween sheet back to the side if it was in the center
       const { width, height } = this.scale;
       if (this.morseSheet && this.morseSheet.x === width/2) {
           this.tweens.add({
               targets: this.morseSheet,
               x: width / 2 + this.sideOffset,
               y: height / 2 + 100,
-              duration: 800,
+              duration: 500,
               ease: 'Power2'
           });
       }
 
-      console.log("Starting Morse Sequence...");
-      this.playNextLetter(0);
+      this.currentSignalTimer = this.time.delayedCall(2000, () => {
+          if(this.isSignalPlaying) {
+             this.playNextLetter(0);
+          }
+      });
+  }
+
+  private stopSignalTimers() {
+      if (this.currentSignalTimer) {
+          this.currentSignalTimer.remove(false);
+          this.currentSignalTimer = undefined;
+      }
+      this.isSignalPlaying = false;
+      if (this.flashElement) this.flashElement.setAlpha(0);
   }
 
   private playNextLetter(index: number) {
+    if (!this.isSignalPlaying) return;
+
     if (index >= this.secretCode.length) {
-      this.time.delayedCall(1000, () => this.offerReplayOrContinue());
+      this.currentSignalTimer = this.time.delayedCall(1000, () => {
+          if (this.isSignalPlaying) this.offerReplayOrContinue();
+      });
       return;
     }
     const pattern = this.secretCode[index];
     this.playSignal(pattern, 0, () => {
-      this.time.delayedCall(this.letterGap, () => {
+      this.currentSignalTimer = this.time.delayedCall(this.letterGap, () => {
         this.playNextLetter(index + 1);
       });
     });
   }
 
   private playSignal(pattern: string, symbolIndex: number, onComplete: () => void) {
+    if (!this.isSignalPlaying) return;
+
     if (symbolIndex >= pattern.length) {
       onComplete();
       return;
     }
     const symbol = pattern[symbolIndex];
     const duration = symbol === "." ? this.dotDuration : this.dashDuration;
-    this.flashElement!.setAlpha(1);
-    this.time.delayedCall(duration, () => {
-      this.flashElement!.setAlpha(0);
-      this.time.delayedCall(this.symbolGap, () => {
+    
+    if (this.flashElement) this.flashElement.setAlpha(1);
+    
+    this.currentSignalTimer = this.time.delayedCall(duration, () => {
+      if (!this.isSignalPlaying) return;
+      if (this.flashElement) this.flashElement.setAlpha(0);
+      
+      this.currentSignalTimer = this.time.delayedCall(this.symbolGap, () => {
         this.playSignal(pattern, symbolIndex + 1, onComplete);
       });
     });
   }
 
-  // ---------------------------------------------------------
-  // SEQUENCE PART 3: REPLAY OPTION
-  // ---------------------------------------------------------
   private offerReplayOrContinue() {
       const { width, height } = this.scale;
 
@@ -206,22 +251,22 @@ export default class LogicTower_5 extends Phaser.Scene {
       this.input.keyboard?.off('keydown-C');
   }
 
-  // ---------------------------------------------------------
-  // SEQUENCE PART 4: PAPER & INPUT
-  // ---------------------------------------------------------
   private showMorsePaper() {
+    this.stopSignalTimers();
     this.clearReplayUI();
     const { width, height } = this.scale;
-    
     this.npcImage?.setAlpha(0);
     this.signalBox?.setAlpha(0);
+    this.tweens.killTweensOf(this.flashElement!);
+    this.wrongAnswersCount = 0;
+    this.hintButton = undefined;
 
     if (this.morseSheet) {
         this.tweens.add({
             targets: this.morseSheet,
             x: width / 2,
             y: height / 2,
-            duration: 1000,
+            duration: 600,
             ease: 'Power2'
         });
     }
@@ -268,6 +313,12 @@ export default class LogicTower_5 extends Phaser.Scene {
       this.completeTower();
     } else {
       input.style.borderColor = "#ff0000";
+      
+      this.wrongAnswersCount++;
+      if (this.wrongAnswersCount >= 2 && !this.hintButton) {
+          this.showHintButton();
+      }
+
       this.tweens.add({
         targets: this.inputElement, x: this.inputElement!.x + 10, duration: 50, yoyo: true, repeat: 3,
         onComplete: () => { input.style.borderColor = "#ffffff"; input.focus(); }
@@ -283,6 +334,23 @@ export default class LogicTower_5 extends Phaser.Scene {
     }
   }
 
+  private showHintButton() {
+      const { width, height } = this.scale;
+      const btnX = width / 2 + 400;
+      const btnY = height - 100; 
+      this.hintButton = this.add.text(btnX, btnY, "[ Hint Tonen ]", {
+          fontSize: "18px", color: "#ffff00", backgroundColor: "#333", padding: { x: 10, y: 5 }
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+          if (this.hintButton) {
+              this.hintButton.setText("Hint: Het woord heeft 5 letters");
+              this.hintButton.disableInteractive();
+          }
+      });
+  }
+
   private returnToSignal() {
       this.transitionToSignalState();
   }
@@ -294,14 +362,15 @@ export default class LogicTower_5 extends Phaser.Scene {
       this.dialogText = undefined;
       this.backOptionText?.destroy();
       this.backOptionText = undefined;
+      this.hintButton?.destroy();
+      this.hintButton = undefined;
   }
 
   private completeTower() {
-    console.log("Final Tower Puzzle Completed! Exiting...");
     this.inputElement?.setVisible(false);
     this.backOptionText?.destroy(); 
+    this.hintButton?.destroy();
 
-    // --- SAVE PROGRESS ---
     this.registry.set("tower_solved", true);
 
     const { width, height } = this.scale;

@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 
 export default class LogicTowerScene extends Phaser.Scene {
-  // --- Configuration ---
   private readonly returnSceneKeyDefault = "Face4Scene";
   private readonly panelScale = 0.2;
   private returnSceneKey: string = "";
@@ -42,7 +41,7 @@ export default class LogicTowerScene extends Phaser.Scene {
     
     this.createTowerBackground(width, height);
 
-    this.add.text(20, 20, "ESC to return", {
+    this.add.text(20, 20, "ESC om terug te gaan", {
       fontFamily: "sans-serif",
       fontSize: "16px",
       color: "#8fd5ff",

@@ -3,10 +3,9 @@ import Phaser from "phaser";
 export default class LogicTower_4 extends Phaser.Scene {
   private returnSceneKey: string = "Face4Scene";
   private inputElement?: Phaser.GameObjects.DOMElement;
-
-  // --- SCALING CONFIG ---
-  // Adjust scale to fit the whiteboard nicely on screen
   private readonly puzzleScale = 0.2;
+  private wrongAnswersCount = 0;
+  private hintButton?: Phaser.GameObjects.Text;
 
   constructor() {
     super("LogicTower_4");
@@ -17,41 +16,76 @@ export default class LogicTower_4 extends Phaser.Scene {
   }
 
   preload() {
-    // Load the whiteboard image
     this.load.image("whiteboard", "assets/decor/whiteboard.png");
   }
 
   create() {
     const { width, height } = this.scale;
+    this.wrongAnswersCount = 0;
+    this.hintButton = undefined;
 
-    // 1. Background
-    this.add.rectangle(0, 0, width, height, 0x1b2748).setOrigin(0);
+    this.createTowerBackground(width, height);
 
-    // 2. Header
     this.add.text(width / 2, 40, "Logica Toren: Niveau 4", {
-      fontFamily: "sans-serif", fontSize: "28px", color: "#ffffff"
+      fontFamily: "sans-serif", fontSize: "28px", color: "#ffffff", stroke: "#000", strokeThickness: 4
     }).setOrigin(0.5);
 
     this.add.text(20, 20, "ESC om terug te gaan", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
     }).setAlpha(0.7);
+    const contentX = width * 0.45;
 
-    // 3. The Whiteboard Puzzle Image
-    // Positioned slightly above center to make room for input
-    const whiteboard = this.add.image(width / 2, height / 2 - 30, "whiteboard");
+    const whiteboard = this.add.image(contentX, height / 2 - 30, "whiteboard");
     whiteboard.setScale(this.puzzleScale);
 
-    // 4. Create Input Field
-    // Positioned below the whiteboard
-    this.createInput(width / 2, height - 100);
+    this.createInput(contentX, height - 100);
 
-    // 5. Escape Listener
     this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
   }
 
-  // ---------------------------------------------------------
-  // INTERACTION
-  // ---------------------------------------------------------
+  private createTowerBackground(width: number, height: number) {
+    const skyColor = 0x0f182b;
+    this.add.rectangle(0, 0, width, height, skyColor).setOrigin(0);
+
+    const windowRadius = 120; 
+    const windowX = width * 0.85; 
+    const windowY = height / 2 - 80;
+
+    const starGraphics = this.add.graphics();
+    starGraphics.fillStyle(0xffffff, 1.0); 
+    
+    for (let i = 0; i < 150; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * windowRadius; 
+        
+        const sx = windowX + Math.cos(angle) * r;
+        const sy = windowY + Math.sin(angle) * r;
+        
+        const size = Math.random() * 2 + 1; 
+        starGraphics.fillCircle(sx, sy, size);
+    }
+
+    const wallGraphics = this.add.graphics();
+    wallGraphics.fillStyle(0x222222); 
+
+    wallGraphics.beginPath();
+    wallGraphics.arc(windowX, windowY, windowRadius, 0, Math.PI * 2, false);
+    wallGraphics.arc(windowX, windowY, 3000, 0, Math.PI * 2, true);
+    wallGraphics.fillPath();
+
+    wallGraphics.lineStyle(12, 0x111111);
+    wallGraphics.strokeCircle(windowX, windowY, windowRadius);
+    
+    wallGraphics.fillStyle(0x333333, 0.4);
+    for (let i = 0; i < 30; i++) {
+        const bx = Math.random() * width;
+        const by = Math.random() * height;
+        if (Phaser.Math.Distance.Between(bx, by, windowX, windowY) > windowRadius + 20) {
+             wallGraphics.fillRect(bx, by, 60, 30);
+        }
+    }
+  }
+
   private createInput(x: number, y: number) {
     this.inputElement = this.add.dom(x, y).createFromHTML(`
       <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-direction: column;">
@@ -62,14 +96,14 @@ export default class LogicTower_4 extends Phaser.Scene {
             id="answerBox" 
             placeholder="..."
             style="
-                width: 300px; /* Wider box for the longer answer */
+                width: 300px; 
                 padding: 10px; 
                 font-size: 20px; 
                 text-align: center; 
                 border: 3px solid #3c5a99; 
-                border-radius: 8px;
-                outline: none;
-                font-weight: bold;
+                border-radius: 8px; 
+                outline: none; 
+                font-weight: bold; 
                 color: #333;
             "
             />
@@ -82,7 +116,7 @@ export default class LogicTower_4 extends Phaser.Scene {
                 color: white; 
                 border: none; 
                 border-radius: 8px; 
-                cursor: pointer;
+                cursor: pointer; 
                 font-weight: bold;
             "
             >
@@ -99,8 +133,15 @@ export default class LogicTower_4 extends Phaser.Scene {
 
     this.inputElement.addListener("keydown");
     this.inputElement.on("keydown", (e: any) => {
-      e.stopPropagation();
-      // Prevent submitting if the dialogue is active
+
+      if (e.key === "Escape") {
+          const input = this.inputElement?.getChildByID("answerBox") as HTMLInputElement;
+          input?.blur(); 
+          this.exitScene(); 
+          return;
+      }
+
+      e.stopPropagation(); 
       if (e.key === "Enter" && this.inputElement?.visible) this.checkAnswer();
     });
   }
@@ -110,21 +151,20 @@ export default class LogicTower_4 extends Phaser.Scene {
     if (!input) return;
 
     const rawValue = input.value;
-
-    // Normalization:
-    // 1. toLowerCase(): makes it case-insensitive
-    // 2. replace(/\s+/g, ''): removes ALL spaces
-    // Result: "Vierkant voor Wiskunde" becomes "vierkantvoorwiskunde"
     const normalizedValue = rawValue.toLowerCase().replace(/\s+/g, '');
     const targetAnswer = "vierkantvoorwiskunde";
 
     if (normalizedValue === targetAnswer) {
-      // Correct! Start the dialogue sequence.
       this.startPostPuzzleDialogue();
     } else {
-      // Wrong answer animation (Shake and Red flash)
       input.style.borderColor = "#ff0000";
       input.style.backgroundColor = "#ffcccc";
+      this.wrongAnswersCount++;
+
+      if (this.wrongAnswersCount >= 2 && !this.hintButton) {
+          this.showHintButton();
+      }
+
       this.tweens.add({
         targets: this.inputElement,
         x: this.inputElement!.x + 10,
@@ -140,20 +180,36 @@ export default class LogicTower_4 extends Phaser.Scene {
     }
   }
 
-  // ---------------------------------------------------------
-  // POST-PUZZLE DIALOGUE
-  // ---------------------------------------------------------
+  private showHintButton() {
+      const { width, height } = this.scale;
+      const btnY = height - 40; 
+      
+      // Align hint button with the shifted content X
+      const btnX = width * 0.45; 
+
+      this.hintButton = this.add.text(btnX, btnY, "[ Hint Tonen ]", {
+          fontSize: "18px", color: "#ffff00", backgroundColor: "#333", padding: { x: 10, y: 5 }
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+          if (this.hintButton) {
+              this.hintButton.setText("Hint: Het zijn kandelaars, geen kaarsen :)");
+              this.hintButton.disableInteractive();
+          }
+      });
+  }
+
   private startPostPuzzleDialogue() {
-      // 1. Hide the input form so they can't type anymore
       if (this.inputElement) this.inputElement.setVisible(false);
+      this.hintButton?.setVisible(false);
 
       const { width, height } = this.scale;
 
-      // Simple placeholder dialogue box
       this.add.rectangle(width/2, height - 100, width - 100, 150, 0x000000, 0.8)
           .setStrokeStyle(2, 0xffffff);
       
-      const textContent = "Dat is juist! 'Vierkant voor wiskunde'.\n\n[Hier komt het vervolg van het verhaal...]\n\n(Klik of druk op E / spatie)";
+      const textContent = "Dat is juist! 'Vierkant voor wiskunde'.\n\nDe toren is bijna hersteld!\n\n(Klik of druk op E / spatie)";
 
       this.add.text(width/2, height - 100, textContent, {
           fontFamily: 'sans-serif',
@@ -163,7 +219,6 @@ export default class LogicTower_4 extends Phaser.Scene {
           wordWrap: { width: width - 140 }
       }).setOrigin(0.5);
 
-      // Add listeners for E, spacebar, and tap to finish the level
       this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       this.input.keyboard?.once('keydown-E', () => {
           this.completePuzzle();

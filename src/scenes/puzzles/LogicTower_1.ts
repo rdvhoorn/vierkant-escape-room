@@ -1,26 +1,18 @@
 import Phaser from "phaser";
 
 export default class LogicTower_1 extends Phaser.Scene {
-  // --- Configuration ---
   private readonly objectScale = 0.3;
-  private readonly backgroundScale = 1;
   private returnSceneKey: string = "Face4Scene";
 
-  // --- State Flags ---
-  // We use simple booleans to track state, avoiding complex object checks
   private isInteracting = false; 
-
-  // --- Game Objects ---
+  private wrongAnswersCount = 0; 
   private telescope!: Phaser.GameObjects.Image;
   private dialogBox!: Phaser.GameObjects.Rectangle;
   private dialogText!: Phaser.GameObjects.Text;
   private answerInput?: Phaser.GameObjects.DOMElement;
-
-  // --- Dialog Data ---
+  private hintButton?: Phaser.GameObjects.Text; 
   private dialogLines: string[] = [];
   private dialogIndex = 0;
-
-  // --- Event Handlers ---
   private dialogKeyHandler?: (ev: KeyboardEvent) => void;
   private pointerHandler?: () => void;
 
@@ -39,62 +31,86 @@ export default class LogicTower_1 extends Phaser.Scene {
   }
 
   create() {
-    // 1. HARD RESET OF STATE
     this.isInteracting = false;
+    this.wrongAnswersCount = 0;
     this.dialogLines = [];
     this.dialogIndex = 0;
     this.answerInput = undefined;
-
+    this.hintButton = undefined;
     const { width, height } = this.scale;
-
-    // 2. Background
-    const bg = this.add.rectangle(0, 0, width, height, 0x0f182b).setOrigin(0);
-    bg.setScale(this.backgroundScale);
-
+    this.createTowerBackground(width, height);
     this.add.text(20, 20, "ESC om terug te gaan", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
     }).setOrigin(0, 0).setAlpha(0.7);
 
-    // 3. Telescope with EXPLICIT HIT AREA
     this.telescope = this.add.image(width / 2, height / 2 + 20, "telescope")
       .setScale(this.objectScale);
 
-    // Force a hit area based on the image size to ensure clicks register
-    // (Wait for texture to load, or assume standard size if preloaded)
     this.telescope.setInteractive({ 
         useHandCursor: true,
-        // Optional: define a shape if the PNG transparency is causing issues
-        // hitArea: new Phaser.Geom.Rectangle(0, 0, this.telescope.width, this.telescope.height),
-        // hitAreaCallback: Phaser.Geom.Rectangle.Contains
     });
 
     this.telescope.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-      // Prevent bubbling to global listener
       if (pointer.event) pointer.event.stopPropagation();
 
-      // If we are already doing something (dialog or input), ignore clicks
       if (this.isInteracting) return;
 
-      console.log("Telescope clicked!"); // Debug log
+      console.log("Telescope clicked!");
       this.startDialog([
         "Een oude telescoop...",
         "Er staat iets geschreven op de voet."
       ]);
     });
 
-    // 4. Global Inputs
     this.input.keyboard?.on("keydown-ESC", () => this.exitPuzzle());
 
-    // 5. Setup UI (Hidden)
     this.createDialogUI();
 
-    // 6. Cleanup Hook
     this.events.once("shutdown", this.cleanup, this);
   }
 
-  // -------------------------------------------------------------------------
-  // DIALOG UI & INPUT HANDLING
-  // -------------------------------------------------------------------------
+  private createTowerBackground(width: number, height: number) {
+    const skyColor = 0x0f182b;
+    this.add.rectangle(0, 0, width, height, skyColor).setOrigin(0);
+
+    const windowRadius = 150; 
+    const windowX = width * 0.75; 
+    const windowY = height / 2 - 80;
+
+    const starGraphics = this.add.graphics();
+    starGraphics.fillStyle(0xffffff, 1.0); 
+    
+    for (let i = 0; i < 150; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random()) * windowRadius; 
+        
+        const sx = windowX + Math.cos(angle) * r;
+        const sy = windowY + Math.sin(angle) * r;
+        
+        const size = Math.random() * 2 + 1; 
+        starGraphics.fillCircle(sx, sy, size);
+    }
+
+    const wallGraphics = this.add.graphics();
+    wallGraphics.fillStyle(0x222222); 
+
+    wallGraphics.beginPath();
+    wallGraphics.arc(windowX, windowY, windowRadius, 0, Math.PI * 2, false);
+    wallGraphics.arc(windowX, windowY, 3000, 0, Math.PI * 2, true);
+    wallGraphics.fillPath();
+
+    wallGraphics.lineStyle(12, 0x111111);
+    wallGraphics.strokeCircle(windowX, windowY, windowRadius);
+    
+    wallGraphics.fillStyle(0x333333, 0.4);
+    for (let i = 0; i < 30; i++) {
+        const bx = Math.random() * width;
+        const by = Math.random() * height;
+        if (Phaser.Math.Distance.Between(bx, by, windowX, windowY) > windowRadius + 20) {
+             wallGraphics.fillRect(bx, by, 60, 30);
+        }
+    }
+  }
 
   private createDialogUI() {
     const { width, height } = this.scale;
@@ -116,7 +132,6 @@ export default class LogicTower_1 extends Phaser.Scene {
       .setDepth(1001)
       .setVisible(false);
 
-    // Dialog Advance Listeners
     this.dialogKeyHandler = (ev: KeyboardEvent) => {
       if ((ev.key === "e" || ev.key === "E" || ev.code === "Space") && this.isInteracting && !this.answerInput) {
         this.advanceDialog();
@@ -125,16 +140,10 @@ export default class LogicTower_1 extends Phaser.Scene {
     this.input.keyboard?.on("keydown", this.dialogKeyHandler);
 
     this.pointerHandler = () => {
-      // Only advance if interacting AND input box is NOT open
       if (this.isInteracting && !this.answerInput) this.advanceDialog();
     };
-    // Use a delay to prevent the telescope click from immediately triggering this
     this.input.on("pointerdown", this.pointerHandler);
   }
-
-  // -------------------------------------------------------------------------
-  // CLEANUP & EXIT
-  // -------------------------------------------------------------------------
 
   private cleanup() {
     this.input.keyboard?.off("keydown-ESC");
@@ -161,12 +170,8 @@ export default class LogicTower_1 extends Phaser.Scene {
     });
   }
 
-  // -------------------------------------------------------------------------
-  // DIALOG LOGIC
-  // -------------------------------------------------------------------------
-
   private startDialog(lines: string[]) {
-    this.isInteracting = true; // Lock interaction
+    this.isInteracting = true; 
     this.dialogLines = lines;
     this.dialogIndex = 0;
     
@@ -185,19 +190,14 @@ export default class LogicTower_1 extends Phaser.Scene {
   }
 
   private endDialog() {
-    // We stay in 'isInteracting = true' mode because we go straight to the Riddle
     this.dialogBox.setVisible(false);
     this.dialogText.setVisible(false);
     this.showRiddle();
   }
 
-  // -------------------------------------------------------------------------
-  // RIDDLE & DOM INPUT
-  // -------------------------------------------------------------------------
-
   private showRiddle() {
     const w = this.scale.width;
-    const textY = this.telescope.y - (this.telescope.displayHeight * this.objectScale / 2) - 60;
+    const textY = this.telescope.y - (this.telescope.displayHeight * this.objectScale / 2) - 120;
     
     const riddle = "Je vindt mij in Mercurius, Aarde, Mars en Jupiter,\nmaar niet in Venus of Neptunus.\nWat ben ik?";
     
@@ -251,6 +251,11 @@ export default class LogicTower_1 extends Phaser.Scene {
         this.completePuzzle();
       } else {
         inputElement.style.border = "2px solid #ff4444";
+        this.wrongAnswersCount++;
+        if (this.wrongAnswersCount >= 2 && !this.hintButton) {
+            this.showHintButton();
+        }
+
         this.tweens.add({
           targets: this.answerInput,
           x: this.answerInput.x + 5,
@@ -264,9 +269,28 @@ export default class LogicTower_1 extends Phaser.Scene {
     }
   }
 
+  private showHintButton() {
+      const { width, height } = this.scale;
+      const btnY = height * 0.75 + 60; 
+      
+      this.hintButton = this.add.text(width / 2, btnY, "[Hint]", {
+          fontSize: "18px",
+          color: "#ffff00",
+          backgroundColor: "#333333",
+          padding: { x: 10, y: 5 }
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+          if (this.hintButton) {
+              this.hintButton.setText("Hint: misschien is het niet iets wat je op de planeten vind, maar meer letterlijk");
+              this.hintButton.disableInteractive();
+          }
+      });
+  }
+
   private completePuzzle() {
     console.log("Puzzle 2 Complete!");
-    // Transition to next level
     this.scene.start("LogicTower_2", { 
         returnScene: this.returnSceneKey 
     }); 

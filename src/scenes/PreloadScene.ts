@@ -79,6 +79,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("telescope","/assets/decor/telescope.png")
     this.load.image("background_tower","/assets/decor/background_tower.png")
     this.load.image("balance_scale_puzzle","/assets/decor/balance_scale_puzzle.png")
+    this.load.image("balance_scale_puzzle","/assets/decor/balance_scale_puzzle_nobg.png")
     this.load.image("zippu","/assets/decor/zippu.png")
     this.load.image("mazedoor","/assets/decor/mazedoor.png")
     this.load.image("poffie","/assets/decor/poffie.png")
