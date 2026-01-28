@@ -214,20 +214,25 @@ export class PlayerController {
 
     this.sprite.setAcceleration(ax, ay);
 
-    const pos = new Phaser.Math.Vector2(this.sprite.x, this.sprite.y);
-    const point = new Phaser.Geom.Point(pos.x, pos.y);
+    const body = this.sprite.body as Phaser.Physics.Arcade.Body;
+    const bc = new Phaser.Math.Vector2(body.center.x, body.center.y);
+    const point = new Phaser.Geom.Point(bc.x, bc.y);
+
+    // Offset from sprite anchor to body center (constant while body config unchanged)
+    const offX = body.center.x - this.sprite.x;
+    const offY = body.center.y - this.sprite.y;
 
     if (Phaser.Geom.Polygon.ContainsPoint(this.poly, point)) {
-      // Inside polygon - save as safe position
-      this.lastSafePos.copy(pos);
+      // Inside polygon - save body center as safe position
+      this.lastSafePos.copy(bc);
     } else {
       // Outside polygon - apply wall sliding
-      const edge = this.findClosestEdge(pos);
+      const edge = this.findClosestEdge(bc);
 
       if (edge) {
         const velocity = new Phaser.Math.Vector2(
-          this.sprite.body.velocity.x,
-          this.sprite.body.velocity.y
+          body.velocity.x,
+          body.velocity.y
         );
 
         // Project velocity onto edge direction (tangent) for sliding
@@ -237,19 +242,21 @@ export class PlayerController {
         // Apply the slide velocity
         this.sprite.setVelocity(slideVel.x, slideVel.y);
 
-        // Place player at closest point on edge, pushed slightly inward
-        // This is smoother than going back to lastSafePos
+        // Place body center at closest point on edge, pushed slightly inward
         const pushDist = 1;
-        this.sprite.x = edge.closestPoint.x + edge.normal.x * pushDist;
-        this.sprite.y = edge.closestPoint.y + edge.normal.y * pushDist;
+        const targetX = edge.closestPoint.x + edge.normal.x * pushDist;
+        const targetY = edge.closestPoint.y + edge.normal.y * pushDist;
 
-        // Update lastSafePos to the new position
-        this.lastSafePos.set(this.sprite.x, this.sprite.y);
+        // Convert body center target back to sprite position
+        this.sprite.x = targetX - offX;
+        this.sprite.y = targetY - offY;
+
+        this.lastSafePos.set(targetX, targetY);
       } else {
-        // Fallback: no edge found, use old behavior
+        // Fallback: no edge found
         this.sprite.setVelocity(0, 0);
-        this.sprite.x = this.lastSafePos.x;
-        this.sprite.y = this.lastSafePos.y;
+        this.sprite.x = this.lastSafePos.x - offX;
+        this.sprite.y = this.lastSafePos.y - offY;
       }
     }
   }

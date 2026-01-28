@@ -276,7 +276,10 @@ export default abstract class FaceBase extends Phaser.Scene {
     const isDesktop = getIsDesktop(this);
 
     this.hud = new Hud(this, this.playerController, {
-      getPlayer: () => this.player,
+      getPlayer: () => {
+        const body = this.player.body as Phaser.Physics.Arcade.Body;
+        return body.center;
+      },
       isDesktop,
       onEscape: () => this.scene.start("TitleScene"),
       // Energy hooks for HUD (optional in subclasses)
@@ -1033,10 +1036,10 @@ export default abstract class FaceBase extends Phaser.Scene {
     }
 
     // ----- Interactable object highlight -----
-    const player = this.player;
+    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     for (const h of this.interactableHighlights) {
       const c = h.getCenter();
-      const dist = Phaser.Math.Distance.Between(player.x, player.y, c.x, c.y);
+      const dist = Phaser.Math.Distance.Between(playerBody.center.x, playerBody.center.y, c.x, c.y);
       const inRange = dist < h.radius;
 
       // Simple on/off; you can add fancier effects later
