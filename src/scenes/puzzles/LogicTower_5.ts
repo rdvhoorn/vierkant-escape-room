@@ -89,7 +89,7 @@ export default class LogicTower_5 extends Phaser.Scene {
       wordWrap: { width: width - 100 }, align: 'center'
     }).setOrigin(0.5).setAlpha(0);
 
-    this.dialogHint = this.add.text(width / 2, height - 100, "(Druk op E om het signaal te starten)", {
+    this.dialogHint = this.add.text(width / 2, height - 100, "(Klik of druk op E / spatie)", {
       fontFamily: "sans-serif", fontSize: "16px", color: "#ffff00"
     }).setOrigin(0.5).setAlpha(0);
 
@@ -98,7 +98,14 @@ export default class LogicTower_5 extends Phaser.Scene {
       alpha: 1,
       duration: 1000,
       onComplete: () => {
+        this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.input.keyboard?.once("keydown-E", () => {
+          this.startFlashingSequence();
+        });
+        this.input.keyboard?.once("keydown-SPACE", () => {
+          this.startFlashingSequence();
+        });
+        this.input.once("pointerdown", () => {
           this.startFlashingSequence();
         });
       }

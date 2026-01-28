@@ -133,10 +133,11 @@ export default class LogicTowerScene extends Phaser.Scene {
   private setupInputListeners() {
     this.input.keyboard?.on("keydown-ESC", () => this.exitPuzzle());
     this.onKeyHandler = (ev: KeyboardEvent) => {
-      if ((ev.key === "e" || ev.key === "E") && this.isDialogActive) {
+      if ((ev.key === "e" || ev.key === "E" || ev.key === " ") && this.isDialogActive) {
         this.advanceDialog();
       }
     };
+    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.input.keyboard?.on("keydown", this.onKeyHandler);
     this.onPointerHandler = () => {
       if (this.isDialogActive) this.advanceDialog();

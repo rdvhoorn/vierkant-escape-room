@@ -153,8 +153,8 @@ export default class LogicTower_4 extends Phaser.Scene {
       this.add.rectangle(width/2, height - 100, width - 100, 150, 0x000000, 0.8)
           .setStrokeStyle(2, 0xffffff);
       
-      const textContent = "Dat is juist! 'Vierkant voor wiskunde'.\n\n[Hier komt het vervolg van het verhaal...]\n\n(Druk op E om verder te gaan)";
-      
+      const textContent = "Dat is juist! 'Vierkant voor wiskunde'.\n\n[Hier komt het vervolg van het verhaal...]\n\n(Klik of druk op E / spatie)";
+
       this.add.text(width/2, height - 100, textContent, {
           fontFamily: 'sans-serif',
           fontSize: '20px',
@@ -163,8 +163,15 @@ export default class LogicTower_4 extends Phaser.Scene {
           wordWrap: { width: width - 140 }
       }).setOrigin(0.5);
 
-      // Add a one-time listener for 'E' to finish the level
+      // Add listeners for E, spacebar, and tap to finish the level
+      this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       this.input.keyboard?.once('keydown-E', () => {
+          this.completePuzzle();
+      });
+      this.input.keyboard?.once('keydown-SPACE', () => {
+          this.completePuzzle();
+      });
+      this.input.once('pointerdown', () => {
           this.completePuzzle();
       });
   }
