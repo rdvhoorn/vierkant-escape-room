@@ -5,6 +5,16 @@ import { PUZZLE_REWARDS, PuzzleKey } from "../face_scenes/_FaceConfig";
 type Cell = { x: number; y: number };
 type Pair = { color: number; a: Cell; b: Cell };
 
+// Symbol types for colorblind accessibility
+const COLOR_SYMBOL_TYPES: Map<number, string> = new Map([
+  [0x9b59b6, "circle"],   // Purple
+  [0xf0c419, "square"],   // Yellow
+  [0xe74c3c, "triangle"], // Red
+  [0x29abe2, "diamond"],  // Blue
+  [0x2ecc71, "star"],     // Green
+  [0xe67e22, "plus"],     // Orange
+]);
+
 export default class ShipFuelScene extends Phaser.Scene {
   private lines: string[] = [];
   private i = 0;
@@ -33,6 +43,7 @@ export default class ShipFuelScene extends Phaser.Scene {
   private pulseTime = 0;
   private isShortCircuiting = false;
   private shortCircuitingColors = new Set<number>();
+  private symbolGfx?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("ShipFuelScene");
@@ -191,9 +202,13 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.drawDots();
     this.redrawPaths();
 
+    // Colorblind symbols on terminals (drawn with Graphics for consistency)
+    this.symbolGfx = this.add.graphics().setAlpha(0);
+    this.drawSymbols();
+
     // Fade in the puzzle and message
     this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Ze mogen niet overlappen. Vul elk vakje!");
-    this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx], alpha: 1, duration: 220 });
+    this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx, this.symbolGfx], alpha: 1, duration: 220 });
 
     // Remove advance hint
     this.advanceHint.setVisible(false);
@@ -212,9 +227,10 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.input.off("pointerup", this.onPointerUp, this);
 
     this.tweens.add({
-      targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx],
+      targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx, this.symbolGfx],
       alpha: 0, duration: 200, onComplete: () => {
         this.gridGfx?.destroy(); this.pathGfx?.destroy(); this.flowGfx?.destroy(); this.dotGfx?.destroy();
+        this.symbolGfx?.destroy();
       }
     });
 
@@ -298,6 +314,76 @@ export default class ShipFuelScene extends Phaser.Scene {
     }
   }
 
+  private drawSymbols() {
+    if (!this.symbolGfx) return;
+    const g = this.symbolGfx;
+    g.clear();
+    const size = 6.5; // symbol size
+    const lineWidth = 1.5;
+
+    for (const p of this.pairs) {
+      // Hide symbols for connected (locked) colors
+      if (this.lockedColors.has(p.color)) continue;
+
+      const symbolType = COLOR_SYMBOL_TYPES.get(p.color) || "circle";
+      g.lineStyle(lineWidth, 0x000000, 0.6);
+
+      for (const c of [p.a, p.b]) {
+        const v = this.toWorld(c);
+
+        switch (symbolType) {
+          case "circle":
+            g.strokeCircle(v.x, v.y, size);
+            break;
+          case "square":
+            g.strokeRect(v.x - size, v.y - size, size * 2, size * 2);
+            break;
+          case "triangle":
+            g.strokeTriangle(
+              v.x, v.y - size,           // top
+              v.x - size, v.y + size,    // bottom-left
+              v.x + size, v.y + size     // bottom-right
+            );
+            break;
+          case "diamond":
+            g.beginPath();
+            g.moveTo(v.x, v.y - size);       // top
+            g.lineTo(v.x + size, v.y);       // right
+            g.lineTo(v.x, v.y + size);       // bottom
+            g.lineTo(v.x - size, v.y);       // left
+            g.closePath();
+            g.strokePath();
+            break;
+          case "star":
+            this.drawStar(g, v.x, v.y, 5, size, size * 0.5);
+            break;
+          case "plus":
+            g.beginPath();
+            g.moveTo(v.x - size, v.y);
+            g.lineTo(v.x + size, v.y);
+            g.moveTo(v.x, v.y - size);
+            g.lineTo(v.x, v.y + size);
+            g.strokePath();
+            break;
+        }
+      }
+    }
+  }
+
+  private drawStar(g: Phaser.GameObjects.Graphics, cx: number, cy: number, points: number, outerR: number, innerR: number) {
+    g.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      const angle = (i * Math.PI / points) - Math.PI / 2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) g.moveTo(x, y);
+      else g.lineTo(x, y);
+    }
+    g.closePath();
+    g.strokePath();
+  }
+
   private redrawPaths() {
     const g = this.pathGfx!;
     g.clear();
@@ -340,6 +426,7 @@ export default class ShipFuelScene extends Phaser.Scene {
       g.strokePath();
     }
     this.drawDots(); // keep terminals on top
+    this.drawSymbols(); // update symbols based on locked state
   }
 
   private cellOccupied(target: Cell): number | null {
