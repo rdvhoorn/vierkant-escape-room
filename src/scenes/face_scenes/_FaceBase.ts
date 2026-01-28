@@ -874,7 +874,7 @@ export default abstract class FaceBase extends Phaser.Scene {
   /** Register edge travel interaction (call AFTER createPlayerAt). */
   protected registerEdgeTravelInteraction() {
     const isDesktop = getIsDesktop(this);
-    const edgeHint = "Ga naar volgende vlak: " + (isDesktop ? "E" : "I");
+    const edgeHint = isDesktop ? "E / spatie: Ga naar buurvlak" : "I: Ga naar buurvlak";
 
     this.registerInteraction(
       () => this.activeTravelEdge !== null,

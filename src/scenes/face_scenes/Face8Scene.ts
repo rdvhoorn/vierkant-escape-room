@@ -50,7 +50,7 @@ export default class Face8Scene extends FaceBase {
       hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
-      hintText: "E: Bekijk het bord",
+      hintText: "E / spatie: Bekijk het bord",
       onUse: () => {
         this.scene.start("kvq_vierkant");
       }
@@ -74,7 +74,7 @@ export default class Face8Scene extends FaceBase {
       hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
-      hintText: "E: Bekijk het bord",
+      hintText: "E / spatie: Bekijk het bord",
       onUse: () => {
         this.scene.start("kvq_fruit");
       }

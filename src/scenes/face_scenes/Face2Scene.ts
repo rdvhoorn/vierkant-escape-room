@@ -67,7 +67,7 @@ export default class Face2Scene extends FaceBase {
 
     const handle = this.createDialogInteraction(farmer, {
       hitRadius: 100,
-      hintText: "Praat met de boer: E",
+      hintText: "Praat met de boer: E / spatie",
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
           return [

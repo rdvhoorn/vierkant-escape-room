@@ -82,7 +82,7 @@ export default class Face1Scene extends FaceBase {
       hitRadius: 100,
       paddingX: 0,
       paddingY: 0,
-      hintText: "Interactie: " + (getIsDesktop(this) ? "E" : "I"),
+      hintText: "Interactie: " + (getIsDesktop(this) ? "E / spatie" : "I"),
       onUse: () => {
         this.scene.start("CockpitScene");
       }

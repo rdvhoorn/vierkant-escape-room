@@ -53,7 +53,7 @@ export default class Face4Scene extends FaceBase {
 
     const handle = this.createDialogInteraction(tower, {
       hitRadius: 100,
-      hintText: "Druk op E om de toren in te gaan",
+      hintText: "E / spatie: Ga de toren in",
 
       buildLines: () => {
         const solved = !!this.registry.get(rewardConfig.puzzleSolvedRegistryKey);

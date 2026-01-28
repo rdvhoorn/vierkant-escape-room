@@ -66,7 +66,7 @@ export default class Face11Scene extends FaceBase {
     // Interaction: go to SlotScene if not solved
     this.makeObjectInteractable(ufo, {
       hitRadius: 80,
-      hintText: isSolved ? "" : "Druk op E",
+      hintText: isSolved ? "" : "E / spatie: Onderzoek",
       onUse: () => {
         if (!isSolved) {
           this.scene.start("SlotScene", { returnScene: "Face11Scene" });

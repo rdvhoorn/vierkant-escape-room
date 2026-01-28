@@ -51,7 +51,7 @@ export default class Face9Scene extends FaceBase {
     const handle = this.createDialogInteraction(phonebox, {
       hitRadius: 100,
       paddingX: -80,
-      hintText: isSolved ? "Bekijk telefooncel" : "Druk op E",
+      hintText: isSolved ? "Bekijk telefooncel" : "E / spatie: Bekijk telefooncel",
       buildLines: () => {
         if (isSolved) {
             return [
