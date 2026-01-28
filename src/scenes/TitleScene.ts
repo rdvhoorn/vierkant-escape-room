@@ -196,6 +196,17 @@ export default class TitleScene extends Phaser.Scene {
   private handleStartClick() {
     if (this.isStarting) return;
     this.isStarting = true;
+
+    // Request fullscreen on mobile (works on Android, ignored on iOS)
+    const device = this.sys.game.device;
+    const isMobileOS = device.os.iOS || device.os.android;
+    if (isMobileOS) {
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {}); // silently ignore if denied
+      }
+    }
+
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
       if (p === 1) this.scene.start("IntroScene");
     });

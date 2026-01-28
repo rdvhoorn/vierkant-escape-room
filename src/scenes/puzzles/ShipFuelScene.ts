@@ -51,11 +51,11 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.twinklingStars = new TwinklingStars(this, 150, width, height);
 
     // Dialog UI
-    const box = this.add.rectangle(width / 2, height - 88, width - 80, 120, 0x1b2748, 0.85)
+    const box = this.add.rectangle(width / 2, height - 32, width - 80, 50, 0x1b2748, 0.85)
       .setStrokeStyle(2, 0x3c5a99);
     this.dialogText = this.add.text(
       box.x - box.width / 2 + 20,
-      box.y - 44,
+      box.y - 16,
       "",
       {
         fontFamily: "sans-serif",
@@ -151,12 +151,12 @@ export default class ShipFuelScene extends Phaser.Scene {
     // 5×5, one pair per row → guaranteed full coverage without overlaps
     // Just change this to change the whole puzzle. Very easy :D
     this.gridSize = 6;
-    this.cell = 54; // smaller cells to fit better
+    this.cell = 64; // cell size for 6x6 grid
 
-    // Layout: a centered square grid
+    // Layout: a centered square grid, shifted up to make room for text box
     const { width, height } = this.scale;
     this.gridOrigin.x = Math.floor((width - this.gridSize * this.cell) / 2);
-    this.gridOrigin.y = Math.floor((height - this.gridSize * this.cell) / 2) - 50;
+    this.gridOrigin.y = Math.floor((height - this.gridSize * this.cell) / 2) - 30;
 
     this.pairs = [
       { color: 0x9b59b6, a: { x: 0, y: 0 }, b: { x: 0, y: 4 } }, // Purple
@@ -192,7 +192,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.redrawPaths();
 
     // Fade in the puzzle and message
-    this.show("Verbind de elektriciteitskabels! Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
+    this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Ze mogen niet overlappen. Vul elk vakje!");
     this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx], alpha: 1, duration: 220 });
 
     // Remove advance hint
@@ -646,7 +646,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.resetPuzzle();
       this.isShortCircuiting = false;
-      this.show("Verbind de elektriciteitskabels. Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
+      this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Ze mogen niet overlappen. Vul elk vakje!");
     });
   }
 
