@@ -1,3 +1,4 @@
+// firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -14,8 +15,23 @@ service cloud.firestore {
       return e is string && e.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$');
     }
 
-    function isValidGroup(g) {
-      return g is int && (g == 5 || g == 6 || g == 7 || g == 8);
+    // For eligibilityGroup (6/7/8)
+    function isValidEligibilityGroup(g) {
+      return g is int && (g == 6 || g == 7 || g == 8);
+    }
+
+    // NL postcode: "1234 AB" or "1234AB"
+    function isValidNLPostcode(p) {
+      return p is string && p.upper().matches('^[1-9][0-9]{3}\\s?[A-Z]{2}$');
+    }
+
+    function isValidCampPreference(v) {
+      return v is string && (v == "A1" || v == "A2" || v == "geen");
+    }
+
+    // geboortedatum as "YYYY-MM-DD" (basic format validation)
+    function isValidBirthdate(b) {
+      return b is string && b.matches('^\\d{4}-\\d{2}-\\d{2}$');
     }
 
     // ----------------------------
@@ -44,22 +60,56 @@ service cloud.firestore {
 
       allow create: if
         request.resource.data.keys().hasOnly([
+          // required (*)
           "firstName",
           "lastName",
+          "address",
+          "postcode",
+          "city",
           "email",
+          "phone",
+          "birthdate",
+          "groupText",
+          "school",
+          "campPreference",
+
+          // optional
+          "gender",
+
+          // kept restriction fields
           "age",
-          "group",
+          "eligibilityGroup",
           "beenBefore",
           "parentsPhone",
           "createdAt"
         ]) &&
+
+        // required strings
         isNonEmptyString(request.resource.data.firstName, 1, 60) &&
         isNonEmptyString(request.resource.data.lastName, 1, 80) &&
+        isNonEmptyString(request.resource.data.address, 3, 120) &&
+        isValidNLPostcode(request.resource.data.postcode) &&
+        isNonEmptyString(request.resource.data.city, 1, 80) &&
         isValidEmail(request.resource.data.email) &&
+        isNonEmptyString(request.resource.data.phone, 6, 32) &&
+
+        // geboortedatum + school + group text + camp pref
+        isValidBirthdate(request.resource.data.birthdate) &&
+        isNonEmptyString(request.resource.data.groupText, 1, 24) &&
+        isNonEmptyString(request.resource.data.school, 1, 120) &&
+        isValidCampPreference(request.resource.data.campPreference) &&
+
+        // optional gender (if present, must be a reasonable string)
+        (
+          !("gender" in request.resource.data) ||
+          request.resource.data.gender == null ||
+          isNonEmptyString(request.resource.data.gender, 1, 40)
+        ) &&
+
+        // kept restrictions
         isValidAge(request.resource.data.age) &&
-        isValidGroup(request.resource.data.group) &&
+        isValidEligibilityGroup(request.resource.data.eligibilityGroup) &&
         (request.resource.data.beenBefore is bool) &&
-        // keep this lenient; phone formats vary
         isNonEmptyString(request.resource.data.parentsPhone, 6, 32) &&
         (request.resource.data.createdAt is timestamp);
 

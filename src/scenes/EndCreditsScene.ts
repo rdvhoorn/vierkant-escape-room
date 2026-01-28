@@ -3,6 +3,7 @@ import { WarpStars } from "../utils/TwinklingStars";
 import { submitLeaderboard, submitPrizes } from "../firebase/firestore";
 
 type Mode = "leaderboard" | "prizes";
+type KampVoorkeur = "A1" | "A2" | "geen";
 
 export default class EndCreditsScene extends Phaser.Scene {
   private stars?: WarpStars;
@@ -29,17 +30,29 @@ export default class EndCreditsScene extends Phaser.Scene {
   private lbFirstName?: HTMLInputElement;
   private lbAge?: HTMLInputElement;
 
-  // prizes fields
-  private pFirst?: HTMLInputElement;
-  private pLast?: HTMLInputElement;
-  private pEmail?: HTMLInputElement;
-  private pAge?: HTMLInputElement;
-  private pGroup?: HTMLSelectElement; // "6"/"7"/"8"/"nee"/""
+  // prizes fields (NEW)
+  private pFirst?: HTMLInputElement; // voornaam*
+  private pLast?: HTMLInputElement; // achternaam*
+  private pAddress?: HTMLInputElement; // adres*
+  private pPostcode?: HTMLInputElement; // postcode*
+  private pCity?: HTMLInputElement; // plaats*
+  private pEmail?: HTMLInputElement; // email*
+  private pPhone?: HTMLInputElement; // telefoon*
+  private pGender?: HTMLInputElement; // geslacht (open)
+  private pBirthdate?: HTMLInputElement; // geboortedatum*
+  private pGroup?: HTMLInputElement; // groep (met toevoeging)*
+  private pSchool?: HTMLInputElement; // school*
+  private pCampPref?: HTMLSelectElement; // kampvoorkeur* (A1/A2/geen)
+
+  // keep existing restrictions (age + group 6/7/8) as well:
+  // - Age is derived from birthdate (must be >= 8 to be eligible)
+  // - Group eligibility is separately selected as 6/7/8/nee (like before)
+  private pEligibilityGroup?: HTMLSelectElement; // 6/7/8/nee/""
   private pBeenBefore?: HTMLSelectElement; // ja/nee
-  private pParentsPhone?: HTMLInputElement;
+  private pParentsPhone?: HTMLInputElement; // phone parents (required if eligible like before)
 
   // prizes extra option
-  private pAlsoLeaderboard?: HTMLInputElement; // checkbox
+  private pAlsoLeaderboard?: HTMLInputElement;
 
   // shared
   private submitBtn?: HTMLButtonElement;
@@ -59,7 +72,7 @@ export default class EndCreditsScene extends Phaser.Scene {
     // Background: Warp Stars
     // -------------------------
     const stars = new WarpStars(this, 600, width, height, {
-      baseSpeed: 700,
+      baseSpeed: 200,
       depth: 1400,
       fov: 280,
       fadeInZPortion: 0.25,
@@ -209,11 +222,22 @@ export default class EndCreditsScene extends Phaser.Scene {
     styleControl(this.lbFirstName);
     styleControl(this.lbAge);
 
+    // prizes
     styleControl(this.pFirst);
     styleControl(this.pLast);
+    styleControl(this.pAddress);
+    styleControl(this.pPostcode);
+    styleControl(this.pCity);
     styleControl(this.pEmail);
-    styleControl(this.pAge);
+    styleControl(this.pPhone);
+    styleControl(this.pGender);
+    styleControl(this.pBirthdate);
     styleControl(this.pGroup);
+    styleControl(this.pSchool);
+    styleControl(this.pCampPref);
+
+    // eligibility bits (kept)
+    styleControl(this.pEligibilityGroup);
     styleControl(this.pBeenBefore);
     styleControl(this.pParentsPhone);
 
@@ -273,7 +297,7 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.domForm = form;
 
     const setControlStyle = (el: HTMLInputElement | HTMLSelectElement) => {
-      el.style.width = "100%";
+      el.style.width = "95%";
       el.style.boxSizing = "border-box";
       el.style.borderRadius = "14px";
       el.style.border = "2px solid rgba(60, 90, 153, 0.95)";
@@ -410,7 +434,7 @@ export default class EndCreditsScene extends Phaser.Scene {
     form.appendChild(prizesSection);
     this.prizesSection = prizesSection;
 
-    // ---------- leaderboard fields (voornaam + leeftijd) ----------
+    // ---------- leaderboard fields ----------
     this.lbFirstName = makeInput("Voornaam", "Bijv. Sam", "text", lbSection);
 
     this.lbAge = makeInput("Leeftijd", "Bijv. 11", "number", lbSection);
@@ -418,20 +442,55 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.lbAge.max = "120";
     this.lbAge.inputMode = "numeric";
 
-    // ---------- prizes fields ----------
-    this.pFirst = makeInput("Voornaam", "Bijv. Sam", "text", prizesSection);
-    this.pLast = makeInput("Achternaam", "Bijv. Jansen", "text", prizesSection);
+    // =========================
+    // ---------- prizes fields (NEW REQUIRED SET) ----------
+    // Voornaam*, achternaam*, adres*, postcode*, plaats*, email*, telefoon*,
+    // geslacht (open), geboortedatum*, groep (met toevoeging)*, school*, kampvoorkeur*
+    // Plus: keep eligibility warnings/restrictions from before (>=8 and group 6/7/8)
+    // =========================
 
-    this.pEmail = makeInput("E-mailadres", "Bijv. sam@email.nl", "email", prizesSection);
+    this.pFirst = makeInput("Voornaam *", "Bijv. Sam", "text", prizesSection);
+    this.pLast = makeInput("Achternaam *", "Bijv. Jansen", "text", prizesSection);
+
+    this.pAddress = makeInput("Adres *", "Straat + huisnummer", "text", prizesSection);
+
+    this.pPostcode = makeInput("Postcode *", "Bijv. 1234 AB", "text", prizesSection);
+    this.pPostcode.autocapitalize = "characters";
+
+    this.pCity = makeInput("Plaats *", "Bijv. Utrecht", "text", prizesSection);
+
+    this.pEmail = makeInput("E-mailadres *", "Bijv. sam@email.nl", "email", prizesSection);
     this.pEmail.autocomplete = "email";
 
-    this.pAge = makeInput("Leeftijd", "Bijv. 11", "number", prizesSection);
-    this.pAge.min = "1";
-    this.pAge.max = "120";
-    this.pAge.inputMode = "numeric";
+    this.pPhone = makeInput("Telefoon *", "Bijv. 06 12345678", "tel", prizesSection);
+    this.pPhone.autocomplete = "tel";
 
-    // UPDATED: no group 5; labels "Ik zit in groep X"; includes "Nee"
-    this.pGroup = makeSelect(
+    this.pGender = makeInput("Geslacht (optioneel)", "Bijv. jongen / meisje / non-binair / anders", "text", prizesSection);
+
+    // geboortedatum* (use date input)
+    this.pBirthdate = makeInput("Geboortedatum *", "YYYY-MM-DD", "date", prizesSection);
+
+    // groep (met toevoeging)* (free text, because you asked “inclusief mogelijke toevoeging”)
+    // Examples: "groep 7", "7A", "8b", etc.
+    this.pGroup = makeInput("Groep *", "Bijv. 7 / 7A / 8b", "text", prizesSection);
+
+    this.pSchool = makeInput("School *", "Naam van je school", "text", prizesSection);
+
+    this.pCampPref = makeSelect(
+      "Kampvoorkeur *",
+      [
+        { value: "", label: "Kies…" },
+        { value: "A1", label: "A1" },
+        { value: "A2", label: "A2" },
+        { value: "geen", label: "Geen voorkeur" },
+      ],
+      prizesSection
+    );
+
+    // ---------- keep existing eligibility controls (age+group restriction messaging) ----------
+    // We now compute age from geboortedatum, but we keep the same gating:
+    // "minimaal 8 jaar én in groep 6, 7 of 8"
+    this.pEligibilityGroup = makeSelect(
       "Zit je in groep 6, 7 of 8?",
       [
         { value: "", label: "Kies…" },
@@ -444,7 +503,7 @@ export default class EndCreditsScene extends Phaser.Scene {
     );
 
     this.pBeenBefore = makeSelect(
-      "Ben je ooit eerder op kamp mee geweest?",
+      "Ben je ooit eerder op kamp mee geweest? *",
       [
         { value: "", label: "Kies…" },
         { value: "ja", label: "Ja" },
@@ -453,7 +512,7 @@ export default class EndCreditsScene extends Phaser.Scene {
       prizesSection
     );
 
-    this.pParentsPhone = makeInput("Telefoonnummer ouders", "Bijv. 06 12345678", "tel", prizesSection);
+    this.pParentsPhone = makeInput("Telefoonnummer ouders *", "Bijv. 06 12345678", "tel", prizesSection);
     this.pParentsPhone.autocomplete = "tel";
 
     // Checkbox: also submit to leaderboard
@@ -467,6 +526,8 @@ export default class EndCreditsScene extends Phaser.Scene {
     cbWrap.style.background = "rgba(17, 26, 46, 0.55)";
     cbWrap.style.cursor = "pointer";
     cbWrap.style.userSelect = "none";
+    cbWrap.style.width = "95%";
+    cbWrap.style.boxSizing = "border-box";
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
@@ -503,6 +564,8 @@ export default class EndCreditsScene extends Phaser.Scene {
     row.style.justifyContent = "flex-end";
     row.style.gap = "12px";
     row.style.marginTop = "6px";
+    row.style.width = "95%";
+    row.style.boxSizing = "border-box";
     form.appendChild(row);
 
     const btn = document.createElement("button");
@@ -554,8 +617,8 @@ export default class EndCreditsScene extends Phaser.Scene {
 
     // keep eligibility up to date when prizes inputs change
     const updateEligibility = () => this.updatePrizeEligibilityUI();
-    this.pAge?.addEventListener("input", updateEligibility);
-    this.pGroup?.addEventListener("change", updateEligibility);
+    this.pBirthdate?.addEventListener("change", updateEligibility);
+    this.pEligibilityGroup?.addEventListener("change", updateEligibility);
 
     // Enter submits
     const onKey = (e: KeyboardEvent) => {
@@ -569,14 +632,24 @@ export default class EndCreditsScene extends Phaser.Scene {
     [
       this.lbFirstName,
       this.lbAge,
+
+      // prizes
       this.pFirst,
       this.pLast,
+      this.pAddress,
+      this.pPostcode,
+      this.pCity,
       this.pEmail,
-      this.pAge,
+      this.pPhone,
+      this.pGender,
+      this.pBirthdate,
+      this.pGroup,
+      this.pSchool,
       this.pParentsPhone,
     ].forEach((el) => el?.addEventListener("keydown", onKey));
 
-    this.pGroup?.addEventListener("keydown", onKey);
+    this.pCampPref?.addEventListener("keydown", onKey);
+    this.pEligibilityGroup?.addEventListener("keydown", onKey);
     this.pBeenBefore?.addEventListener("keydown", onKey);
 
     (root as any).__onKey = onKey;
@@ -634,18 +707,18 @@ export default class EndCreditsScene extends Phaser.Scene {
   private updatePrizeEligibilityUI() {
     if (this.mode !== "prizes") return;
 
-    const ageRaw = (this.pAge?.value ?? "").trim();
-    const age = Number(ageRaw);
-    const group = (this.pGroup?.value ?? "").trim();
+    const birthRaw = (this.pBirthdate?.value ?? "").trim();
+    const groupSel = (this.pEligibilityGroup?.value ?? "").trim();
 
+    const age = this.birthdateToAge(birthRaw);
     const eligible =
       Number.isFinite(age) &&
       age >= 8 &&
-      (group === "6" || group === "7" || group === "8");
+      (groupSel === "6" || groupSel === "7" || groupSel === "8");
 
     const msgEl = this.prizesSection?.querySelector<HTMLDivElement>('[data-eligibility="1"]');
     if (msgEl) {
-      if (ageRaw.length === 0 && !group) {
+      if (!birthRaw && !groupSel) {
         msgEl.textContent = "Voor prijzen: minimaal 8 jaar én in groep 6, 7 of 8.";
         msgEl.style.color = "#b6d5ff";
       } else if (!eligible) {
@@ -713,13 +786,23 @@ export default class EndCreditsScene extends Phaser.Scene {
       [
         this.lbFirstName,
         this.lbAge,
+
+        // prizes
         this.pFirst,
         this.pLast,
+        this.pAddress,
+        this.pPostcode,
+        this.pCity,
         this.pEmail,
-        this.pAge,
+        this.pPhone,
+        this.pGender,
+        this.pBirthdate,
+        this.pGroup,
+        this.pSchool,
         this.pParentsPhone,
       ].forEach((el) => el?.removeEventListener("keydown", onKey));
-      this.pGroup?.removeEventListener("keydown", onKey);
+      this.pCampPref?.removeEventListener("keydown", onKey);
+      this.pEligibilityGroup?.removeEventListener("keydown", onKey);
       this.pBeenBefore?.removeEventListener("keydown", onKey);
     }
 
@@ -737,13 +820,24 @@ export default class EndCreditsScene extends Phaser.Scene {
     this.lbFirstName = undefined;
     this.lbAge = undefined;
 
+    // prizes
     this.pFirst = undefined;
     this.pLast = undefined;
+    this.pAddress = undefined;
+    this.pPostcode = undefined;
+    this.pCity = undefined;
     this.pEmail = undefined;
-    this.pAge = undefined;
+    this.pPhone = undefined;
+    this.pGender = undefined;
+    this.pBirthdate = undefined;
     this.pGroup = undefined;
+    this.pSchool = undefined;
+    this.pCampPref = undefined;
+
+    this.pEligibilityGroup = undefined;
     this.pBeenBefore = undefined;
     this.pParentsPhone = undefined;
+
     this.pAlsoLeaderboard = undefined;
 
     this.submitBtn = undefined;
@@ -777,15 +871,15 @@ export default class EndCreditsScene extends Phaser.Scene {
         return;
       }
 
-      // prizes mode: enforce eligibility
-      const ageRaw = (this.pAge?.value ?? "").trim();
-      const age = Number(ageRaw);
-      const group = (this.pGroup?.value ?? "").trim();
+      // prizes mode: enforce eligibility (same rule as before)
+      const birthRaw = (this.pBirthdate?.value ?? "").trim();
+      const age = this.birthdateToAge(birthRaw);
+      const eligGroup = (this.pEligibilityGroup?.value ?? "").trim();
 
       const eligible =
         Number.isFinite(age) &&
         age >= 8 &&
-        (group === "6" || group === "7" || group === "8");
+        (eligGroup === "6" || eligGroup === "7" || eligGroup === "8");
 
       if (!eligible) {
         this.setStatus("Je kunt niet meedoen met de prijzen. Gebruik eventueel het leaderboard.", true);
@@ -795,35 +889,68 @@ export default class EndCreditsScene extends Phaser.Scene {
         return;
       }
 
+      // REQUIRED fields (*)
       const firstName = (this.pFirst?.value ?? "").trim();
       const lastName = (this.pLast?.value ?? "").trim();
+      const address = (this.pAddress?.value ?? "").trim();
+      const postcode = (this.pPostcode?.value ?? "").trim();
+      const city = (this.pCity?.value ?? "").trim();
       const email = (this.pEmail?.value ?? "").trim();
+      const phone = (this.pPhone?.value ?? "").trim();
+      const groupText = (this.pGroup?.value ?? "").trim();
+      const school = (this.pSchool?.value ?? "").trim();
+      const campPref = (this.pCampPref?.value ?? "").trim() as KampVoorkeur | "";
+
+      // OPTIONAL
+      const gender = (this.pGender?.value ?? "").trim();
+
+      // kept from before (still required in prizes mode)
       const beenBefore = (this.pBeenBefore?.value ?? "").trim();
       const parentsPhone = (this.pParentsPhone?.value ?? "").trim();
 
       if (!firstName) return this.setStatus("Vul je voornaam in.", true);
       if (!lastName) return this.setStatus("Vul je achternaam in.", true);
+      if (!address) return this.setStatus("Vul je adres in.", true);
+      if (!this.isValidPostcode(postcode)) return this.setStatus("Vul een geldige postcode in (bijv. 1234 AB).", true);
+      if (!city) return this.setStatus("Vul je plaats in.", true);
       if (!this.isValidEmail(email)) return this.setStatus("Vul een geldig e-mailadres in.", true);
+      if (!phone) return this.setStatus("Vul je telefoonnummer in.", true);
 
-      if (!ageRaw || !Number.isFinite(age) || age < 6 || age > 120) {
-        return this.setStatus("Vul een geldige leeftijd in.", true);
+      if (!birthRaw || !Number.isFinite(age) || age < 6 || age > 120) {
+        return this.setStatus("Vul een geldige geboortedatum in.", true);
       }
-      if (!group) return this.setStatus("Kies je groep (6, 7 of 8) of Nee.", true);
+
+      if (!groupText) return this.setStatus("Vul je groep in (bijv. 7A).", true);
+      if (!school) return this.setStatus("Vul je school in.", true);
+      if (!campPref) return this.setStatus("Kies je kampvoorkeur (A1, A2 of Geen voorkeur).", true);
+
       if (!beenBefore) return this.setStatus("Geef aan of je eerder mee op kamp bent geweest.", true);
       if (!parentsPhone) return this.setStatus("Vul het telefoonnummer van je ouders in.", true);
 
       const createdAt = new Date();
 
       await submitPrizes({
+        // new required dataset
         firstName,
         lastName,
+        address,
+        postcode: this.normalizePostcode(postcode),
+        city,
         email,
-        age,
+        phone,
+        gender: gender || null,
+        birthdate: birthRaw, // store ISO yyyy-mm-dd string
+        groupText,
+        eligibilityGroup: Number(eligGroup) as 6 | 7 | 8,
+        school,
+        campPreference: campPref as KampVoorkeur,
+        age, // derived
+
+        // kept fields
         createdAt,
-        group: Number(group) as 6 | 7 | 8,
         beenBefore: beenBefore === "ja",
         parentsPhone,
-      });
+      } as any);
 
       // Optional: also leaderboard (voornaam only)
       const alsoLb = !!this.pAlsoLeaderboard?.checked;
@@ -906,5 +1033,38 @@ export default class EndCreditsScene extends Phaser.Scene {
 
   private isValidEmail(email: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email);
+  }
+
+  // NL postcode (simple + practical)
+  private isValidPostcode(pc: string) {
+    const s = pc.trim().toUpperCase().replace(/\s+/g, "");
+    return /^[1-9][0-9]{3}[A-Z]{2}$/.test(s);
+  }
+
+  private normalizePostcode(pc: string) {
+    const s = pc.trim().toUpperCase().replace(/\s+/g, "");
+    return `${s.slice(0, 4)} ${s.slice(4)}`;
+  }
+
+  // Derive age from yyyy-mm-dd, using local date (good enough for eligibility)
+  private birthdateToAge(iso: string) {
+    if (!iso) return NaN;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return NaN;
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return NaN;
+
+    const now = new Date();
+    let age = now.getFullYear() - y;
+
+    const thisYearBirthdayPassed =
+      now.getMonth() + 1 > mo || (now.getMonth() + 1 === mo && now.getDate() >= d);
+
+    if (!thisYearBirthdayPassed) age -= 1;
+    return age;
   }
 }
