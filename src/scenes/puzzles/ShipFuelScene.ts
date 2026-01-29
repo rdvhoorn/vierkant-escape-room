@@ -38,7 +38,6 @@ export default class ShipFuelScene extends Phaser.Scene {
   private lockedColors = new Set<number>();
   private drawingColor?: number;
   private advanceHint!: Phaser.GameObjects.Text;
-  private restartBtn?: Phaser.GameObjects.Text;
   private flowOffset = 0;
   private pulseTime = 0;
   private isShortCircuiting = false;
@@ -170,18 +169,6 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.lockedColors.clear();
     this.pairs.forEach(p => this.paths.set(p.color, [p.a]));
 
-    // Restart button (↻) at top-right of the grid
-    const rx = this.gridOrigin.x + this.gridSize * this.cell + 8;
-    const ry = this.gridOrigin.y - 8;
-    this.restartBtn = this.add.text(rx, ry, "↻", {
-      fontFamily: "sans-serif",
-      fontSize: "28px",
-      color: "#e7f3ff"
-    }).setOrigin(0, 1).setAlpha(0).setInteractive({ useHandCursor: true });
-
-    this.restartBtn.on("pointerdown", () => this.resetPuzzle());
-    this.tweens.add({ targets: this.restartBtn, alpha: 1, duration: 220 });
-
     // DEBUG: Skip button (gold) at top-left of grid
     if (DEBUG) {
       const skipBtn = this.add.text(this.gridOrigin.x - 40, this.gridOrigin.y + 20, "⚡", {
@@ -206,7 +193,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.drawSymbols();
 
     // Fade in the puzzle and message
-    this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Ze mogen niet overlappen. Vul elk vakje!");
+    this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Geen overlappende kabels. Vul elk vakje!");
     this.tweens.add({ targets: [this.gridGfx, this.pathGfx, this.flowGfx, this.dotGfx, this.symbolGfx], alpha: 1, duration: 220 });
 
     // Remove advance hint
@@ -234,13 +221,6 @@ export default class ShipFuelScene extends Phaser.Scene {
     });
 
     this.advanceHint.setVisible(true);
-
-    if (this.restartBtn) {
-      this.tweens.add({
-        targets: this.restartBtn, alpha: 0, duration: 200,
-        onComplete: () => this.restartBtn?.destroy()
-      });
-    }
 
     // Continue dialog
     this.i++;
@@ -291,23 +271,23 @@ export default class ShipFuelScene extends Phaser.Scene {
         if (isLocked) {
           const pulse = Math.sin(this.pulseTime) * 0.3 + 0.7; // pulsing effect
           g.fillStyle(p.color, 0.3 * pulse);
-          g.fillRoundedRect(v.x - size/2 - 6, v.y - size/2 - 6, size + 12, size + 12, 6);
+          g.fillRoundedRect(v.x - size / 2 - 6, v.y - size / 2 - 6, size + 12, size + 12, 6);
         }
 
         // Draw as electrical terminals (rounded squares)
         // Outer border (darker)
         g.fillStyle(0x000000, 0.4);
-        g.fillRoundedRect(v.x - size/2 - 2, v.y - size/2 - 2, size + 4, size + 4, 4);
+        g.fillRoundedRect(v.x - size / 2 - 2, v.y - size / 2 - 2, size + 4, size + 4, 4);
 
         // Main terminal - duller when not connected
         const colorAlpha = isLocked ? 1 : 0.8;
         g.fillStyle(p.color, colorAlpha);
-        g.fillRoundedRect(v.x - size/2, v.y - size/2, size, size, 3);
+        g.fillRoundedRect(v.x - size / 2, v.y - size / 2, size, size, 3);
 
         // Inner highlight - only show when powered/locked
         if (isLocked) {
           g.fillStyle(0xffffff, 0.6);
-          g.fillRoundedRect(v.x - size/2 + 2, v.y - size/2 + 2, size * 0.5, size * 0.3, 2);
+          g.fillRoundedRect(v.x - size / 2 + 2, v.y - size / 2 + 2, size * 0.5, size * 0.3, 2);
         }
       }
     }
@@ -589,22 +569,22 @@ export default class ShipFuelScene extends Phaser.Scene {
   private solvePuzzle() {
     // Hardcoded solution for the 6x6 puzzle
     this.paths.set(0x9b59b6, [ // Purple
-      {x:0,y:0},{x:0,y:1},{x:0,y:2},{x:0,y:3},{x:0,y:4}
+      { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 }, { x: 0, y: 4 }
     ]);
     this.paths.set(0xf0c419, [ // Yellow
-      {x:2,y:0},{x:1,y:0},{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:1,y:4},{x:1,y:5},{x:0,y:5}
+      { x: 2, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 5 }, { x: 0, y: 5 }
     ]);
     this.paths.set(0xe74c3c, [ // Red
-      {x:3,y:0},{x:3,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}
+      { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 2 }, { x: 5, y: 2 }
     ]);
     this.paths.set(0x29abe2, [ // Blue
-      {x:4,y:1},{x:5,y:1},{x:5,y:0},{x:4,y:0},{x:3,y:0},{x:2,y:0},{x:2,y:1},{x:2,y:2},{x:2,y:3},{x:3,y:3},{x:4,y:3}
+      { x: 4, y: 1 }, { x: 5, y: 1 }, { x: 5, y: 0 }, { x: 4, y: 0 }, { x: 3, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 2 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 }
     ]);
     this.paths.set(0x2ecc71, [ // Green
-      {x:5,y:3},{x:5,y:4},{x:5,y:5}
+      { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 }
     ]);
     this.paths.set(0xe67e22, [ // Orange
-      {x:4,y:2},{x:4,y:3},{x:4,y:4},{x:4,y:5},{x:3,y:5},{x:2,y:5},{x:2,y:4},{x:3,y:4}
+      { x: 4, y: 2 }, { x: 4, y: 3 }, { x: 4, y: 4 }, { x: 4, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 5 }, { x: 2, y: 4 }, { x: 3, y: 4 }
     ]);
 
     // Lock all colors
@@ -763,7 +743,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.resetPuzzle();
       this.isShortCircuiting = false;
-      this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Ze mogen niet overlappen. Vul elk vakje!");
+      this.show("Trek elektriciteitskabels tussen terminals van dezelfde kleur. Geen overlappende kabels. Vul elk vakje!");
     });
   }
 
