@@ -67,7 +67,7 @@ export class Hud {
     }
   }
 
-  private getActiveInteraction(player: V2Like): Interaction | undefined {
+  getActiveInteraction(player: V2Like): Interaction | undefined {
     return this.interactions.find((i) => i.isInRange(player));
   }
 
@@ -78,7 +78,7 @@ export class Hud {
 
     if (active) {
       const defaultHint = this.opts.isDesktop
-        ? "Interact: press E"
+        ? "Interact: spatie / E"
         : "Interact: tap";
       const hint = active.hintText ?? defaultHint;
       this.portalHint.setText(hint).setAlpha(1);

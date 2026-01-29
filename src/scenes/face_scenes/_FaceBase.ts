@@ -222,6 +222,23 @@ export default abstract class FaceBase extends Phaser.Scene {
       maxEnergy: this.maxEnergy,
     });
 
+    // Support both E and SPACE for dialog advancement
+    this.input.keyboard?.on("keydown-SPACE", () => {
+      if (this.dialogActive) {
+        this.advanceDialog();
+      } else {
+        // Trigger active interaction if one exists
+        const active = this.hud.getActiveInteraction(this.player);
+        if (active) active.onUse();
+      }
+    });
+    this.input.keyboard?.on("keydown-E", () => {
+      if (this.dialogActive) {
+        this.advanceDialog();
+      }
+      // E for starting interaction is already handled by HUD
+    });
+
     this.setCameraToPlayerBounds();
 
     this.events.on("update", () => {
