@@ -57,8 +57,23 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     | { minX: number; minY: number; maxX: number; maxY: number }
     | null = null;
 
-  // NEW: track if we already solved this puzzle
+  // --- NEW: silhouette polygons with AABB bounds for fast pruning ----
+  private silhouettePolyBounds: {
+    poly: Phaser.Geom.Polygon;
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  }[] = [];
+
   protected isSolved = false;
+
+  // --- SOFT SNAP (per-piece fit + overlap penalty) -------------------
+  private pieceSampleCache = new Map<TangramPieceType, Phaser.Geom.Point[]>();
+
+  // Performance knobs:
+  private pieceSampleStep = 6; // increase for faster, decrease for more accurate
+  private maxPieceSamples = 350; // cap samples for stable snap time
 
   constructor(sceneKey: string) {
     super(sceneKey);
@@ -73,7 +88,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     height: number
   ): TangramPieceConfig[];
 
-  // NEW: subclasses decide what to do when solved (e.g. this.scene.start("NextScene"))
   protected abstract onPuzzleSolved(): void;
 
   /** Background color of the scene */
@@ -89,9 +103,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   /**
    * Default starting layout for the standard 7 tangram pieces.
    * Each entry corresponds to the piece at the same index in getPieceConfigs.
-   *
-   * This is where you can construct your “original tangram square” layout.
-   * You define each startX/startY/startRotation individually here.
    */
   protected getDefaultStartLayout(
     width: number,
@@ -100,51 +111,33 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     const squareCenterX = width * 0.1;
     const squareCenterY = height * 0.35;
 
-    // One entry per piece (in order).
-    // Adjust these values to form your canonical starting tangram square.
     return [
       // 0: largeTri
-      {
-        startX: squareCenterX,
-        startY: squareCenterY + 200,
-        startRotation: 225,
-      },
+      { startX: squareCenterX, startY: squareCenterY + 200, startRotation: 225 },
       // 1: largeTri2
-      {
-        startX: squareCenterX,
-        startY: squareCenterY,
-        startRotation: 360-45,
-      },
+      { startX: squareCenterX, startY: squareCenterY, startRotation: 360 - 45 },
       // 2: square
       {
-        startX: squareCenterX+150,
-        startY: squareCenterY+50,
+        startX: squareCenterX + 150,
+        startY: squareCenterY + 50,
         startRotation: 45,
       },
       // 3: smallTri2
-      {
-        startX: squareCenterX+200,
-        startY: squareCenterY,
-        startRotation: 45,
-      },
+      { startX: squareCenterX + 200, startY: squareCenterY, startRotation: 45 },
       // 4: smallTri1
       {
-        startX: squareCenterX+150,
-        startY: squareCenterY+151,
+        startX: squareCenterX + 150,
+        startY: squareCenterY + 151,
         startRotation: 135,
       },
       // 5: mediumTri
       {
-        startX: squareCenterX+102,
-        startY: squareCenterY+200,
-        startRotation: 6*45,
+        startX: squareCenterX + 102,
+        startY: squareCenterY + 200,
+        startRotation: 6 * 45,
       },
       // 6: parallelogram
-      {
-        startX: squareCenterX+1,
-        startY: squareCenterY+151,
-        startRotation: 0,
-      },
+      { startX: squareCenterX + 1, startY: squareCenterY + 151, startRotation: 0 },
     ];
   }
 
@@ -218,13 +211,13 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       }
     );
 
-    // On dragend we don't auto-check; we just let the player press "Check"
     this.input.on(
       "dragend",
-      (
-        _pointer: Phaser.Input.Pointer,
-        _gameObject: Phaser.GameObjects.Image
-      ) => {
+      (_pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Image) => {
+        const piece = this.pieces.find((p) => p.sprite === gameObject);
+        if (piece) {
+          this.trySoftSnap(piece);
+        }
         this.updateCoverageStatus();
       }
     );
@@ -267,7 +260,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       }
     });
 
-    // NEW: feedback text (replaces the old Check button)
+    // feedback text
     this.resultText = this.add
       .text(width * 0.5, height - 60, "", {
         fontSize: "20px",
@@ -276,28 +269,26 @@ export abstract class BaseTangramScene extends Phaser.Scene {
         padding: { x: 10, y: 6 },
       })
       .setOrigin(0.5)
-      .setVisible(false); // Hide initially since text is empty
+      .setVisible(false);
   }
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
-      // hook for escape if you want to use it in subclasses
+      // optional hook
     }
   }
 
   // --- TEXTURES ----------------------------------------------------
 
   private ensureTangramTextures() {
-    // Base size for the small triangle leg
     const SMALL = 70;
     const MEDIUM = Math.round(SMALL * Math.SQRT2); // ≈ 99
-    const LARGE = SMALL * 2;                        // = 140
-    const SQUARE = SMALL;                           // same as small-triangle leg
+    const LARGE = SMALL * 2; // 140
+    const SQUARE = SMALL;
 
-    // Parallelogram constructed with sides MEDIUM and SMALL, angle 45°
-    const PARA_SKEW = SMALL / Math.SQRT2;           // horizontal/vertical offset of slanted side
-    const PARA_W = MEDIUM;                          // horizontal length of top/bottom edge
-    const PARA_H = PARA_SKEW;                       // vertical height of the shape
+    const PARA_SKEW = SMALL / Math.SQRT2;
+    const PARA_W = MEDIUM;
+    const PARA_H = PARA_SKEW;
 
     const PARA_TEX_W = Math.ceil(PARA_W + PARA_SKEW);
     const PARA_TEX_H = Math.ceil(PARA_H);
@@ -343,14 +334,11 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       gfx.clear();
       gfx.fillStyle(0xffffff, 1);
 
-      // Coordinates chosen so the sides are:
-      // - top/bottom edges: length MEDIUM
-      // - left/right slanted edges: length SMALL
       gfx.beginPath();
-      gfx.moveTo(PARA_SKEW, 0);                 // top-left
-      gfx.lineTo(PARA_SKEW + PARA_W, 0);        // top-right
-      gfx.lineTo(PARA_W, PARA_H);               // bottom-right
-      gfx.lineTo(0, PARA_H);                    // bottom-left
+      gfx.moveTo(PARA_SKEW, 0);
+      gfx.lineTo(PARA_SKEW + PARA_W, 0);
+      gfx.lineTo(PARA_W, PARA_H);
+      gfx.lineTo(0, PARA_H);
       gfx.closePath();
       gfx.fillPath();
 
@@ -358,7 +346,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       gfx.destroy();
     }
   }
-
 
   // --- DEFAULT START LAYOUT MERGE ----------------------------------
 
@@ -387,12 +374,10 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
   // --- GEOMETRY HELPERS --------------------------------------------
 
-  // Base shapes in local coordinates (matching how textures & silhouette are drawn)
-  
   private getBasePolygonPoints(type: TangramPieceType): Phaser.Geom.Point[] {
     const SMALL = 70;
-    const MEDIUM = Math.round(SMALL * Math.SQRT2); // ≈ 99
-    const LARGE = SMALL * 2;                        // = 140
+    const MEDIUM = Math.round(SMALL * Math.SQRT2);
+    const LARGE = SMALL * 2;
 
     const PARA_SKEW = SMALL / Math.SQRT2;
     const PARA_W = MEDIUM;
@@ -440,7 +425,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     }
   }
 
-
   private transformPoints(
     points: Phaser.Geom.Point[],
     x: number,
@@ -458,10 +442,18 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     });
   }
 
-  // --- SILHOUETTE (geometry + draw) --------------------------------
+  // --- SILHOUETTE ---------------------------------------------------
 
   private buildSilhouetteGeometry(configs: TangramPieceConfig[]) {
     const polys: Phaser.Geom.Polygon[] = [];
+    const bounds: {
+      poly: Phaser.Geom.Polygon;
+      minX: number;
+      minY: number;
+      maxX: number;
+      maxY: number;
+    }[] = [];
+
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
     let maxX = Number.NEGATIVE_INFINITY;
@@ -475,9 +467,21 @@ export abstract class BaseTangramScene extends Phaser.Scene {
         cfg.targetY,
         cfg.targetRotation
       );
+
       const poly = new Phaser.Geom.Polygon(worldPoints);
       polys.push(poly);
 
+      // AABB for pruning (fast)
+      const aabb = Phaser.Geom.Polygon.GetAABB(poly);
+      bounds.push({
+        poly,
+        minX: aabb.x,
+        minY: aabb.y,
+        maxX: aabb.right,
+        maxY: aabb.bottom,
+      });
+
+      // overall bounds for coverage scan
       worldPoints.forEach((pt) => {
         if (pt.x < minX) minX = pt.x;
         if (pt.y < minY) minY = pt.y;
@@ -487,6 +491,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     });
 
     this.silhouettePolygons = polys;
+    this.silhouettePolyBounds = bounds;
     this.silhouetteBounds = { minX, minY, maxX, maxY };
   }
 
@@ -521,18 +526,15 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     sprite.angle = startRotation;
     sprite.setTint(cfg.color);
 
-    // ✅ Custom polygon hit area (local coords; Phaser will transform it with rotation/position)
+    // Polygon hit area in local coords
     const base = this.getBasePolygonPoints(cfg.type);
     const hitPoly = new Phaser.Geom.Polygon(base);
-
     sprite.setInteractive(hitPoly, Phaser.Geom.Polygon.Contains);
 
-    // If you want dragging, set it via input system (either way is fine)
     this.input.setDraggable(sprite);
 
     return { config: cfg, sprite };
   }
-
 
   private setSelectedPiece(piece: TangramPieceInstance | null) {
     if (this.selectedPiece) {
@@ -547,11 +549,13 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     }
   }
 
-
   private rotateSelectedPiece() {
     if (!this.selectedPiece) return;
     const sp = this.selectedPiece.sprite;
     sp.angle = Phaser.Math.Angle.WrapDegrees(sp.angle + 45);
+
+    // attempt snap after rotation too
+    this.trySoftSnap(this.selectedPiece);
 
     this.updateCoverageStatus();
   }
@@ -565,7 +569,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     const { minX, minY, maxX, maxY } = this.silhouetteBounds;
 
-    // Build current piece polygons in world space
     const piecePolys: Phaser.Geom.Polygon[] = this.pieces.map((p) => {
       const base = this.getBasePolygonPoints(p.config.type);
       const worldPoints = this.transformPoints(
@@ -577,7 +580,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
       return new Phaser.Geom.Polygon(worldPoints);
     });
 
-    const step = 5; // sampling resolution in pixels (smaller = more accurate, slower)
+    const step = 5;
 
     let silhouetteCount = 0;
     let coveredCount = 0;
@@ -587,7 +590,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
         const px = x + step / 2;
         const py = y + step / 2;
 
-        // inside any silhouette polygon?
         let inSilhouette = false;
         for (const sPoly of this.silhouettePolygons) {
           if (Phaser.Geom.Polygon.Contains(sPoly, px, py)) {
@@ -599,7 +601,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
         silhouetteCount++;
 
-        // inside any piece polygon?
         let inPiece = false;
         for (const pPoly of piecePolys) {
           if (Phaser.Geom.Polygon.Contains(pPoly, px, py)) {
@@ -608,9 +609,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
           }
         }
 
-        if (inPiece) {
-          coveredCount++;
-        }
+        if (inPiece) coveredCount++;
       }
     }
 
@@ -619,25 +618,369 @@ export abstract class BaseTangramScene extends Phaser.Scene {
   }
 
   private updateCoverageStatus() {
-  if (this.isSolved) {
-    // already solved, don't re-trigger
-    return;
-  }
+    if (this.isSolved) return;
 
-  const coverage = this.computeCoveragePercentage();
-    // console.log("Coverage:", coverage); // optional debug
+    const coverage = this.computeCoveragePercentage();
 
     if (coverage >= 95) {
-      // Solved: you can show a message if you like (optional)
       this.resultText.setText("Goed gedaan!").setVisible(true);
       this.isSolved = true;
       this.onPuzzleSolved();
     } else if (coverage >= 90) {
-      // Almost solved
       this.resultText.setText("Bijna goed!").setVisible(true);
     } else {
-      // Below 90%: no message
       this.resultText.setText("").setVisible(false);
+    }
+  }
+
+  // --- SOFT SNAP OPTIMIZED -----------------------------------------
+
+  /**
+   * Precompute sample points INSIDE the base polygon of a piece type (local coords).
+   * These points approximate the area of the piece.
+   * (Capped so it can’t explode in size.)
+   */
+  private getPieceLocalSamplePoints(type: TangramPieceType): Phaser.Geom.Point[] {
+    const cached = this.pieceSampleCache.get(type);
+    if (cached) return cached;
+
+    const base = this.getBasePolygonPoints(type);
+    const poly = new Phaser.Geom.Polygon(base);
+
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    for (const p of base) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+
+    const pts: Phaser.Geom.Point[] = [];
+    const step = this.pieceSampleStep;
+
+    // fewer offsets than before (2x2), still stable
+    const offsets = [step * 0.33, step * 0.66];
+
+    for (let x = minX; x <= maxX; x += step) {
+      for (let y = minY; y <= maxY; y += step) {
+        for (const ox of offsets) {
+          for (const oy of offsets) {
+            const px = x + ox;
+            const py = y + oy;
+
+            if (Phaser.Geom.Polygon.Contains(poly, px, py)) {
+              pts.push(new Phaser.Geom.Point(px, py));
+            }
+          }
+        }
+      }
+    }
+
+    // cap samples to keep snap fast
+    if (pts.length > this.maxPieceSamples) {
+      const picked: Phaser.Geom.Point[] = [];
+      const stride = Math.max(1, Math.floor(pts.length / this.maxPieceSamples));
+      for (let i = 0; i < pts.length && picked.length < this.maxPieceSamples; i += stride) {
+        picked.push(pts[i]);
+      }
+      this.pieceSampleCache.set(type, picked);
+      return picked;
+    }
+
+    this.pieceSampleCache.set(type, pts);
+    return pts;
+  }
+
+  /** Build world polygons + AABBs for all pieces except the one being moved/snapped. */
+  private buildOtherPiecePolys(except: TangramPieceInstance): {
+    poly: Phaser.Geom.Polygon;
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  }[] {
+    const out: {
+      poly: Phaser.Geom.Polygon;
+      minX: number;
+      minY: number;
+      maxX: number;
+      maxY: number;
+    }[] = [];
+
+    for (const p of this.pieces) {
+      if (p === except) continue;
+
+      const base = this.getBasePolygonPoints(p.config.type);
+      const pts = this.transformPoints(base, p.sprite.x, p.sprite.y, p.sprite.angle);
+      const poly = new Phaser.Geom.Polygon(pts);
+      const aabb = Phaser.Geom.Polygon.GetAABB(poly);
+
+      out.push({
+        poly,
+        minX: aabb.x,
+        minY: aabb.y,
+        maxX: aabb.right,
+        maxY: aabb.bottom,
+      });
+    }
+
+    return out;
+  }
+
+  /**
+   * FAST fit/overlap:
+   * - silhouette membership uses AABB prune before Polygon.Contains
+   * - overlap uses AABB prune before Polygon.Contains
+   * - early-aborts if overlap is already clearly too high
+   */
+  private computeFitAndOverlapFast(
+    pieceType: TangramPieceType,
+    worldX: number,
+    worldY: number,
+    angleDeg: number,
+    otherPolys: {
+      poly: Phaser.Geom.Polygon;
+      minX: number;
+      minY: number;
+      maxX: number;
+      maxY: number;
+    }[]
+  ): { fit: number; overlap: number } {
+    const localSamples = this.getPieceLocalSamplePoints(pieceType);
+    const denom = localSamples.length;
+    if (!denom) return { fit: 0, overlap: 0 };
+
+    const rad = Phaser.Math.DegToRad(angleDeg);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    let insideSil = 0;
+    let overlapCount = 0;
+
+    // early abort if overlap is already awful
+    const EARLY_OVERLAP_ABORT = 0.3;
+    const maxOverlapCount = Math.ceil(denom * EARLY_OVERLAP_ABORT);
+
+    for (let i = 0; i < denom; i++) {
+      const lp = localSamples[i];
+
+      const wx = lp.x * cos - lp.y * sin + worldX;
+      const wy = lp.x * sin + lp.y * cos + worldY;
+
+      // ---- silhouette union: AABB prune ----
+      let inSil = false;
+      for (const s of this.silhouettePolyBounds) {
+        if (wx < s.minX || wx > s.maxX || wy < s.minY || wy > s.maxY) continue;
+        if (Phaser.Geom.Polygon.Contains(s.poly, wx, wy)) {
+          inSil = true;
+          break;
+        }
+      }
+      if (inSil) insideSil++;
+
+      // ---- overlap: AABB prune ----
+      for (const o of otherPolys) {
+        if (wx < o.minX || wx > o.maxX || wy < o.minY || wy > o.maxY) continue;
+        if (Phaser.Geom.Polygon.Contains(o.poly, wx, wy)) {
+          overlapCount++;
+          break;
+        }
+      }
+
+      if (overlapCount > maxOverlapCount) {
+        // return partial estimate (good enough for pruning during search)
+        const used = i + 1;
+        return { fit: insideSil / used, overlap: overlapCount / used };
+      }
+    }
+
+    return { fit: insideSil / denom, overlap: overlapCount / denom };
+  }
+
+  /**
+   * Soft snap that:
+   * - optimizes per-piece fit to the silhouette union
+   * - penalizes overlap with other pieces
+   *
+   * Uses hill-climb search (fast) + micro-polish (pixel-perfect finish).
+   */
+  private trySoftSnap(piece: TangramPieceInstance) {
+    const sp = piece.sprite;
+    const type = piece.config.type;
+
+    // ---- TUNING ----
+    const TRIGGER_FIT = 0.84;
+    const FINAL_FIT = 0.985;
+    const MAX_OVERLAP = 0.06;
+    const OVERLAP_WEIGHT = 1.5;
+    const MIN_SCORE_IMPROVEMENT = 0.01;
+    const MAX_SNAP_DISTANCE = 24; // slightly larger since we polish in-place
+    // ----------------
+
+    if (this.silhouettePolygons.length === 0) return;
+
+    const otherPolys = this.buildOtherPiecePolys(piece);
+    const scoreOf = (fit: number, overlap: number) => fit - OVERLAP_WEIGHT * overlap;
+
+    const current = this.computeFitAndOverlapFast(type, sp.x, sp.y, sp.angle, otherPolys);
+    if (current.fit < TRIGGER_FIT) return;
+
+    const currentScore = scoreOf(current.fit, current.overlap);
+
+    // ---- Hill-climb search (FAST) ----
+    const hillClimb = (
+      startX: number,
+      startY: number,
+      startAngle: number,
+      angles: number[],
+      stepSizes: number[],
+      maxItersPerStep = 22
+    ) => {
+      let bestX = startX;
+      let bestY = startY;
+      let bestA = startAngle;
+
+      let bestEval = this.computeFitAndOverlapFast(type, bestX, bestY, bestA, otherPolys);
+      let bestScore = scoreOf(bestEval.fit, bestEval.overlap);
+
+      const dirs = (step: number) => [
+        [0, 0],
+        [step, 0],
+        [-step, 0],
+        [0, step],
+        [0, -step],
+        [step, step],
+        [step, -step],
+        [-step, step],
+        [-step, -step],
+      ] as const;
+
+      for (const step of stepSizes) {
+        let improved = true;
+        let iters = 0;
+
+        while (improved && iters++ < maxItersPerStep) {
+          improved = false;
+
+          let localBestScore = bestScore;
+          let localBestX = bestX;
+          let localBestY = bestY;
+          let localBestA = bestA;
+
+          for (const a of angles) {
+            for (const [dx, dy] of dirs(step)) {
+              const cx = bestX + dx;
+              const cy = bestY + dy;
+
+              const evalRes = this.computeFitAndOverlapFast(type, cx, cy, a, otherPolys);
+              if (evalRes.overlap > 0.25) continue;
+
+              const sc = scoreOf(evalRes.fit, evalRes.overlap);
+              if (sc > localBestScore) {
+                localBestScore = sc;
+                localBestX = cx;
+                localBestY = cy;
+                localBestA = a;
+                improved = true;
+              }
+            }
+          }
+
+          if (improved) {
+            bestScore = localBestScore;
+            bestX = localBestX;
+            bestY = localBestY;
+            bestA = localBestA;
+          }
+        }
+      }
+
+      const finalEval = this.computeFitAndOverlapFast(type, bestX, bestY, bestA, otherPolys);
+      return {
+        x: bestX,
+        y: bestY,
+        angle: bestA,
+        fit: finalEval.fit,
+        overlap: finalEval.overlap,
+        score: scoreOf(finalEval.fit, finalEval.overlap),
+      };
+    };
+
+    // ---- Micro-polish (pixel-perfect finish) ----
+    const microPolish = (centerX: number, centerY: number, centerAngle: number) => {
+      let bestX = centerX;
+      let bestY = centerY;
+      let bestA = centerAngle;
+
+      let bestEval = this.computeFitAndOverlapFast(type, bestX, bestY, bestA, otherPolys);
+      let bestScore = scoreOf(bestEval.fit, bestEval.overlap);
+
+      const R = 4; // radius in pixels
+      const STEP = 1;
+
+      // keep angle fixed for polish (fast + stable). If you want, change to: [centerAngle, ...angleCandidates]
+      const angles = [centerAngle];
+
+      for (const a of angles) {
+        for (let dx = -R; dx <= R; dx += STEP) {
+          for (let dy = -R; dy <= R; dy += STEP) {
+            const x = centerX + dx;
+            const y = centerY + dy;
+
+            const e = this.computeFitAndOverlapFast(type, x, y, a, otherPolys);
+            if (e.overlap > 0.25) continue;
+
+            const sc = scoreOf(e.fit, e.overlap);
+            if (sc > bestScore) {
+              bestScore = sc;
+              bestX = x;
+              bestY = y;
+              bestA = a;
+            }
+          }
+        }
+      }
+
+      const finalEval = this.computeFitAndOverlapFast(type, bestX, bestY, bestA, otherPolys);
+      return {
+        x: bestX,
+        y: bestY,
+        angle: bestA,
+        fit: finalEval.fit,
+        overlap: finalEval.overlap,
+        score: bestScore,
+      };
+    };
+
+    // 1) fast local solve
+    const angleCandidates = [sp.angle];
+    let best = hillClimb(sp.x, sp.y, sp.angle, angleCandidates, [6, 2, 1]);
+
+    // 2) pixel-level polish around the best result
+    best = microPolish(best.x, best.y, best.angle);
+
+    const dist = Phaser.Math.Distance.Between(sp.x, sp.y, best.x, best.y);
+    const improved = best.score >= currentScore + MIN_SCORE_IMPROVEMENT;
+
+    if (
+      improved &&
+      best.fit >= FINAL_FIT &&
+      best.overlap <= MAX_OVERLAP &&
+      dist <= MAX_SNAP_DISTANCE
+    ) {
+      this.tweens.add({
+        targets: sp,
+        x: best.x,
+        y: best.y,
+        angle: best.angle,
+        duration: 120,
+        ease: "Sine.easeOut",
+        onComplete: () => this.updateCoverageStatus(),
+      });
     }
   }
 }
