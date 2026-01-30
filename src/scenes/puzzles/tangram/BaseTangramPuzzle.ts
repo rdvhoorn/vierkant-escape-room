@@ -819,8 +819,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     const OVERLAP_WEIGHT = 1.5;
     const MIN_SCORE_IMPROVEMENT = 0.01;
     const MAX_SNAP_DISTANCE = 24; // slightly larger since we polish in-place
-
-    const ROT_OFFSETS = [0, 45, -45, 90, -90];
     // ----------------
 
     if (this.silhouettePolygons.length === 0) return;
@@ -832,11 +830,6 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     if (current.fit < TRIGGER_FIT) return;
 
     const currentScore = scoreOf(current.fit, current.overlap);
-
-    const nearest45 = Math.round(sp.angle / 45) * 45;
-    const angleCandidates = ROT_OFFSETS.map((d) =>
-      Phaser.Math.Angle.WrapDegrees(nearest45 + d)
-    );
 
     // ---- Hill-climb search (FAST) ----
     const hillClimb = (
@@ -964,6 +957,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     };
 
     // 1) fast local solve
+    const angleCandidates = [sp.angle];
     let best = hillClimb(sp.x, sp.y, sp.angle, angleCandidates, [6, 2, 1]);
 
     // 2) pixel-level polish around the best result
