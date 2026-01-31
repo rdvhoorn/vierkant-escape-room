@@ -223,7 +223,7 @@ export const FACE_CONFIGS: Record<FaceKey, FaceConfig> = {
     radius: 300,
     neighbors: getNeighborsForFace("Face9Scene"),
     visuals: {
-      mainFill: 0x2f5a1f, // green variant
+      mainFill: 0x8a1c1c, // dark red (phonebox face)
     },
   },
 
@@ -232,7 +232,7 @@ export const FACE_CONFIGS: Record<FaceKey, FaceConfig> = {
     radius: 300,
     neighbors: getNeighborsForFace("Face10Scene"),
     visuals: {
-      mainFill: 0x5a2f1f, // reddish brown
+      mainFill: 0x1a1a2e, // dark navy (energy cube face)
     },
   },
 

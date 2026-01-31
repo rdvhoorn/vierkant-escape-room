@@ -26,8 +26,8 @@ export default class Face10Scene extends FaceBase {
     this.initStandardFace({
       radius,
       faceTravelTargets: neighbors,
-      mainFill: 0x1a1a2e, 
-      neighborFill: visuals.neighborFill ?? visuals.mainFill,
+      mainFill: visuals.mainFill,
+      neighborFill: visuals.neighborFill,
       colorMap,
       edgeTriggerScale: visuals.edgeTriggerScale,
       backgroundColor: visuals.backgroundColor,
