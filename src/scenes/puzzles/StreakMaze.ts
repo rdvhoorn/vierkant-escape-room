@@ -19,13 +19,10 @@ interface MazeRoom {
 export default class StreakMaze extends Phaser.Scene {
   private currentRoom!: MazeRoom;
   private rooms: Record<string, MazeRoom> = {};
-
   private mainSignText!: Phaser.GameObjects.Text;
   private choiceContainer!: Phaser.GameObjects.Container;
-  private inputBox?: HTMLInputElement;
-
+  private inputDOM?: Phaser.GameObjects.DOMElement;
   private failedLastStage: boolean = false;
-
   private dialogText?: Phaser.GameObjects.Text;
   private dialogHint?: Phaser.GameObjects.Text;
   private dialogLines: string[] = [];
@@ -144,8 +141,8 @@ export default class StreakMaze extends Phaser.Scene {
       ? [
           "Zippu: Hoi! Ik ben Zippu, kom jij me helpen om mijn poffel te vinden?",
           "Zippu: Ze heet Poffie en is het doolhof hierachter in gerend…",
-          "Zippu: maar ik weet niet welke kant ik op moet!",
-          "Jij: Euhm, ik moet eigenlijk op zoek naar energie voor mijn capsule om naar huis terug te keren. En wat is trouwens een poffel?",
+          "Zippu: ,maar ik weet niet welke kant ik op moet!",
+          "Jij: Euhm, ik moet eigenlijk op zoek naar energie voor mijn capsule, om naar huis terug te keren. En wat is trouwens een poffel?",
           "Zippu: O ja, natuurlijk! Een poffel is een pluizig beestje, net zo groot als een kat. Poffie is heel nieuwsgierig, dus ze rende weg toen ze een geluidje hoorde.",
           "Jij: Poffie klinkt behoorlijk schattig, misschien moet ik Zippu toch helpen? Of is het slimmer om op zoek te gaan naar energie?",
           "Zippu: Hoorde je wat ik zei? Als je mij helpt om Poffie te vinden, dan mag je al mijn extra energie hebben, ik heb 10 energie. Wat zeg je ervan",
@@ -297,9 +294,9 @@ export default class StreakMaze extends Phaser.Scene {
   }
 
   private enterRoom(roomId: string) {
-    if (this.inputBox) {
-      this.inputBox.remove();
-      this.inputBox = undefined;
+    if (this.inputDOM) {
+        this.inputDOM.destroy();
+        this.inputDOM = undefined;
     }
 
     const room = this.rooms[roomId];
@@ -332,7 +329,7 @@ export default class StreakMaze extends Phaser.Scene {
     this.mainSignText.setText(room.clue ?? "");
 
     if (room.isInputRoom) {
-      this.createInputBox();
+      this.createDigitInputUI(); 
       return;
     }
 
@@ -388,54 +385,109 @@ export default class StreakMaze extends Phaser.Scene {
       this.choiceContainer.add(container);
   }
 
-  private createInputBox() {
+  private createDigitInputUI() {
     const { width, height } = this.scale;
+    this.inputDOM = this.add.dom(width / 2, height / 2 + 50).createFromHTML(`
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+            
+            <div style="display: flex; gap: 15px;">
+                ${[0, 1].map((index) => `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        
+                        <button name="btnUp" data-index="${index}" style="
+                            background: transparent; border: none; color: #ffff00; font-size: 24px; cursor: pointer; padding: 0; margin-bottom: 2px;
+                        ">▲</button>
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.style.position = "absolute";
-    
-    const boxWidth = 200;
-    const boxHeight = 50;
-    
-    input.style.width = `${boxWidth}px`;
-    input.style.height = `${boxHeight}px`;
-    input.style.fontSize = "28px";
-    input.style.padding = "6px";
-    input.style.textAlign = "center";
+                        <input type="text" id="digit${index}" readonly value="0"
+                            style="
+                                width: 50px; 
+                                height: 50px; 
+                                font-size: 30px; 
+                                text-align: center; 
+                                background: #222; 
+                                color: white; 
+                                border: 3px solid #8b5a2b; 
+                                border-radius: 8px;
+                                outline: none;
+                                font-weight: bold;
+                            "
+                        >
 
-    //weigert te werken
-    input.style.left = `${(width / 2) - (boxWidth / 2)}px`;
-    input.style.top = `${(height / 2) - (boxHeight / 2)}px`;
+                        <button name="btnDown" data-index="${index}" style="
+                            background: transparent; border: none; color: #ffff00; font-size: 24px; cursor: pointer; padding: 0; margin-top: 2px;
+                        ">▼</button>
+                    </div>
+                `).join('')}
+            </div>
 
-    document.body.appendChild(input);
-    this.inputBox = input;
-    input.focus();
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+                <button id="hintBtn" style="padding: 10px 20px; cursor: pointer; background: #555; color: #ffff00; border: 2px solid #fff; border-radius: 5px; font-size: 16px;">
+                    HINT
+                </button>
+                <button id="checkBtn" style="padding: 10px 20px; cursor: pointer; background: #3e2723; color: white; border: 2px solid #8b5a2b; border-radius: 5px; font-size: 16px; font-weight: bold;">
+                    CHECK
+                </button>
+            </div>
+            
+            <div id="hintText" style="
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                min-width: 400px;
+                color: #ffff00; 
+                font-size: 16px; 
+                margin-top: 10px; 
+                text-align: center; 
+                display: none; 
+                background: rgba(0,0,0,0.8); 
+                padding: 15px; 
+                border-radius: 5px;
+                z-index: 10;
+            ">
+                Een priemgetal is een getal dat alleen deelbaar is door 1 en zichzelf (zoals 2, 3, 5, 7, 11), maar bijvoorbeeld niet 15 (want 15 / 3 = 5 en 15 / 5 = 3).
+            </div>
+        </div>
+    `);
 
-    if (this.failedLastStage) {
-        const hintBtn = this.add.text(width / 2, (height / 2) + 80, "[ Hint Tonen ]", {
-            fontSize: "20px", color: "#ffff00", backgroundColor: "#333", padding: { x: 10, y: 5 }
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => {
-            hintBtn.setText("Hint: Ik denk dat je er met deze hint PRIEMa uit komt!");
-            hintBtn.disableInteractive();
-        });
-        this.choiceContainer.add(hintBtn);
-    }
+    this.inputDOM.addListener("click");
+    this.inputDOM.on("click", (e: any) => {
+        const target = e.target;
 
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        const num = Number(input.value);
-        const correct = this.currentRoom.correctInput;
-        if (num === correct) {
-          this.enterRoom("EndRoom");
-        } else {
-          this.failedLastStage = true; 
-          this.enterRoom("WrongRoom");
+
+        if (target.id === "checkBtn") {
+            const digit0 = (this.inputDOM?.getChildByID("digit0") as HTMLInputElement).value;
+            const digit1 = (this.inputDOM?.getChildByID("digit1") as HTMLInputElement).value;
+            const fullNumber = parseInt(digit0 + digit1);
+
+            if (fullNumber === this.currentRoom.correctInput) {
+                this.enterRoom("EndRoom");
+            } else {
+                this.failedLastStage = true;
+                this.enterRoom("WrongRoom");
+            }
         }
-      }
+
+        if (target.id === "hintBtn") {
+            const hintDiv = this.inputDOM?.getChildByID("hintText") as HTMLElement;
+            if (hintDiv) hintDiv.style.display = "block";
+        }
+
+        if (target.name === "btnUp" || target.name === "btnDown") {
+            const idx = target.getAttribute("data-index");
+            const inputEl = this.inputDOM?.getChildByID(`digit${idx}`) as HTMLInputElement;
+            
+            if (inputEl) {
+                let val = parseInt(inputEl.value);
+                if (target.name === "btnUp") {
+                    val = (val + 1) % 10;
+                } else {
+                    val = (val - 1 + 10) % 10;
+                }
+                inputEl.value = val.toString();
+            }
+        }
     });
   }
 }

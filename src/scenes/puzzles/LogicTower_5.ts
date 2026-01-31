@@ -25,6 +25,7 @@ export default class LogicTower_5 extends Phaser.Scene {
   private isSignalPlaying = false;
   private wrongAnswersCount = 0;
   private currentSignalTimer?: Phaser.Time.TimerEvent;
+  private introClickHandler?: () => void;
 
   constructor() {
     super("LogicTower_5");
@@ -45,28 +46,24 @@ export default class LogicTower_5 extends Phaser.Scene {
     createBackButton(this, undefined, undefined, () => {
       this.exitScene();
     });
+
     this.createTowerBackground(width, height);
     this.createSignalBox(width / 2, height / 2 - 200); 
-
     this.npcImage = this.add.image(width / 2 - this.sideOffset, height / 2 + 100, "quadratus");
     this.npcImage.setScale(this.quadratusScale);
     this.npcImage.setAlpha(0);
-
     this.morseSheet = this.add.image(width / 2 + this.sideOffset, height / 2 + 100, "morsesheet");
     this.morseSheet.setScale(this.morsesheetScale);
     this.morseSheet.setAlpha(0); 
-
     this.startIntroDialog();
   }
 
   private createTowerBackground(width: number, height: number) {
     const skyColor = 0x0f182b;
     this.add.rectangle(0, 0, width, height, skyColor).setOrigin(0);
-
     const windowRadius = 80; 
     const windowX = width * 0.15; 
     const windowY = height * 0.2;
-
     const starGraphics = this.add.graphics();
     starGraphics.fillStyle(0xffffff, 1.0); 
     
@@ -81,15 +78,12 @@ export default class LogicTower_5 extends Phaser.Scene {
 
     const wallGraphics = this.add.graphics();
     wallGraphics.fillStyle(0x222222); 
-
     wallGraphics.beginPath();
     wallGraphics.arc(windowX, windowY, windowRadius, 0, Math.PI * 2, false);
     wallGraphics.arc(windowX, windowY, 3000, 0, Math.PI * 2, true);
     wallGraphics.fillPath();
-
     wallGraphics.lineStyle(12, 0x111111);
     wallGraphics.strokeCircle(windowX, windowY, windowRadius);
-    
     wallGraphics.fillStyle(0x333333, 0.4);
     for (let i = 0; i < 30; i++) {
         const bx = Math.random() * width;
@@ -133,20 +127,20 @@ export default class LogicTower_5 extends Phaser.Scene {
       duration: 1000,
       onComplete: () => {
         this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        this.input.keyboard?.once("keydown-E", () => {
-          this.startFlashingSequence();
-        });
-        this.input.keyboard?.once("keydown-SPACE", () => {
-          this.startFlashingSequence();
-        });
-        this.input.once("pointerdown", () => {
-          this.startFlashingSequence();
-        });
+        this.input.keyboard?.once("keydown-E", () => this.startFlashingSequence());
+        this.input.keyboard?.once("keydown-SPACE", () => this.startFlashingSequence());
+        this.introClickHandler = () => this.startFlashingSequence();
+        this.input.once("pointerdown", this.introClickHandler);
       }
     });
   }
 
   private startFlashingSequence() {
+    if (this.introClickHandler) {
+        this.input.off("pointerdown", this.introClickHandler);
+        this.introClickHandler = undefined;
+    }
+
     this.dialogText?.destroy();
     this.dialogHint?.destroy();
     
@@ -279,7 +273,9 @@ export default class LogicTower_5 extends Phaser.Scene {
       fontFamily: "sans-serif", fontSize: "28px", color: "#ffffff"
     }).setOrigin(0.5);
 
-    this.createInput(width / 2, height - 100);
+    this.time.delayedCall(50, () => {
+        this.createInput(width / 2, height - 100);
+    });
   }
 
   private createInput(x: number, y: number) {
@@ -378,7 +374,7 @@ export default class LogicTower_5 extends Phaser.Scene {
     this.registry.set("tower_solved", true);
 
     const { width, height } = this.scale;
-    const finalText = this.add.text(width/2, height/2, "Correct.\n\nHet signaal is verzonden.\nDe toren sluit zich.", {
+    const finalText = this.add.text(width/2, height/2, "Correct.\n\nJe hebt het einde van de toren bereikt.\n Deze toren gebruikten we altijd om andere wezens in de gaten te houden en met hen te communiceren.", {
         fontFamily: 'sans-serif', fontSize: "32px", color: "#00ff00", align: "center", backgroundColor: "#000000", padding: {x:20, y:20}
     }).setOrigin(0.5).setDepth(2000).setAlpha(0);
 

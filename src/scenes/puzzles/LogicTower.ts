@@ -15,6 +15,8 @@ export default class LogicTowerScene extends Phaser.Scene {
   private answerInput: Phaser.GameObjects.DOMElement | undefined; 
   private onKeyHandler?: (event: KeyboardEvent) => void;
   private onPointerHandler?: () => void;
+  private wrongAttempts = 0;
+  private hintText?: Phaser.GameObjects.Text;
 
   constructor() {
     super("LogicTower");
@@ -35,6 +37,8 @@ export default class LogicTowerScene extends Phaser.Scene {
     this.answerInput = undefined; 
     this.onKeyHandler = undefined;
     this.onPointerHandler = undefined;
+    this.wrongAttempts = 0;
+    this.hintText = undefined;
     
     this.isSolved = !!this.registry.get("logic_tower_0_solved");
 
@@ -263,6 +267,26 @@ export default class LogicTowerScene extends Phaser.Scene {
     if (value === "sterren" || value === "ster") {
       this.completePuzzle();
     } else {
+      this.wrongAttempts++;
+  
+      if (this.wrongAttempts >= 2 && !this.hintText) {
+          const { width, height } = this.scale;
+
+          this.hintText = this.add.text(width / 2, height * 0.8, "Hint: Kijk eens uit het raampje...", {
+              fontFamily: "sans-serif",
+              fontSize: "18px",
+              color: "#ffffaa", 
+              fontStyle: "italic"
+          }).setOrigin(0.5);
+        
+          this.tweens.add({
+              targets: this.hintText,
+              alpha: { from: 0, to: 1 },
+              duration: 500,
+              ease: 'Sine.easeInOut'
+          });
+      }
+
       inputElement.style.border = "2px solid #ff4444";
       this.tweens.add({
         targets: this.answerInput,

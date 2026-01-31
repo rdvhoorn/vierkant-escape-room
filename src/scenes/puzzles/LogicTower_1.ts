@@ -283,7 +283,7 @@ export default class LogicTower_1 extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
           if (this.hintButton) {
-              this.hintButton.setText("Hint: misschien is het niet iets wat je op de planeten vind, maar meer letterlijk");
+              this.hintButton.setText("Hint: Misschien is het niet iets wat je op de planeten vind, maar meer LETTERlijk");
               this.hintButton.disableInteractive();
           }
       });

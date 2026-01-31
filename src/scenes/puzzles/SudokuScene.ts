@@ -34,7 +34,6 @@ export default class SudokuScene extends Phaser.Scene {
     { r: 7, c: 0, color: "#ff0000", hex: 0xff0000, type: "diamond",  char: "◆" }  
   ];
 
-  //Iedereen kent wel een sudoku toch?
   private readonly rules = [
     "Vul elk vakje met een cijfer van 1 t/m 9.",
     "Elke rij moet de cijfers 1 t/m 9 bevatten.",
@@ -59,7 +58,6 @@ export default class SudokuScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.currentGrid = this.initialGrid.map(row => [...row]);
 
-    //achtergrond (mag nog wel wat opfleuren gebruiken)
     const bg = this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0).setInteractive();
     bg.on('pointerdown', () => {
         if (!this.isPopupOpen) this.deselectCell();
@@ -70,12 +68,11 @@ export default class SudokuScene extends Phaser.Scene {
       else this.exitScene();
     });
 
-    //grid/logica
     this.drawGridVisuals();
     this.createInteractiveZones();
-    this.createRuleUI();//regel ui (nieuw)
+    this.createRuleUI();
     this.selectorGraphics = this.add.graphics();
-    //ui button
+    
     const uiX = this.gridStartX + (9 * this.cellSize) + 40;
     const uiY = this.gridStartY + 50;
 
@@ -115,38 +112,48 @@ export default class SudokuScene extends Phaser.Scene {
             wordWrap: { width: 250 }
         });
         
-        y += 50; //ruimte per regel
+        y += 50;
     });
   }
 
-  //popup werkte beter om inputs te vermijden
   private openCodePopup() {
     if (this.isPopupOpen) return;
     this.isPopupOpen = true;
     this.deselectCell(); 
+    
     const { width, height } = this.scale;
-    this.popupContainer = this.add.container(0, 0).setDepth(2000);
-    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.85).setOrigin(0).setInteractive();
-    const boxW = 450;
-    const boxH = 350; 
-    const box = this.add.rectangle(width/2, height/2, boxW, boxH, 0x222222).setStrokeStyle(4, 0x555555);
+    const popupX = width * 0.75; 
+    const popupY = height * 0.75;
 
-    const title = this.add.text(width/2, height/2 - 120, "VOER DE CODE IN", {
+    this.popupContainer = this.add.container(0, 0).setDepth(2000);
+    
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.5).setOrigin(0).setInteractive();
+    
+    const boxW = 450;
+    const boxH = 400; 
+    const box = this.add.rectangle(popupX, popupY, boxW, boxH, 0x222222).setStrokeStyle(4, 0x555555);
+
+    const title = this.add.text(popupX, popupY - 140, "VOER DE CODE IN", {
         fontSize: "24px", fontStyle: "bold", color: "#ffffff"
     }).setOrigin(0.5);
 
-    const sub = this.add.text(width/2, height/2 - 90, "(Kijk naar de gemarkeerde vakjes)", {
+    const sub = this.add.text(popupX, popupY - 110, "(Kijk naar de gemarkeerde vakjes)", {
         fontSize: "16px", color: "#cccccc"
     }).setOrigin(0.5);
 
-    this.codeDOM = this.add.dom(width/2, height/2 + 20).createFromHTML(`
+    this.codeDOM = this.add.dom(popupX, popupY + 20).createFromHTML(`
         <div style="display: flex; flex-direction: column; align-items: center; gap: 20px;">
             
             <div style="display: flex; gap: 15px;">
                 ${this.specialCells.map((cell, index) => `
                     <div style="display: flex; flex-direction: column; align-items: center;">
                         <span style="color: ${cell.color}; font-size: 24px; margin-bottom: 5px;">${cell.char}</span>
-                        <input type="text" id="digit${index}" maxlength="1"
+                        
+                        <button name="btnUp" data-index="${index}" style="
+                            background: transparent; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0; margin-bottom: 2px;
+                        ">▲</button>
+
+                        <input type="text" id="digit${index}" name="codeDigit" data-index="${index}" maxlength="1"
                             style="
                                 width: 50px; 
                                 height: 50px; 
@@ -159,6 +166,10 @@ export default class SudokuScene extends Phaser.Scene {
                                 font-weight: bold;
                             "
                         >
+
+                        <button name="btnDown" data-index="${index}" style="
+                            background: transparent; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0; margin-top: 2px;
+                        ">▼</button>
                     </div>
                 `).join('')}
             </div>
@@ -174,20 +185,46 @@ export default class SudokuScene extends Phaser.Scene {
         </div>
     `);
 
-    //listeners
+
     this.codeDOM.addListener("click");
+    this.codeDOM.addListener("input"); 
+    this.codeDOM.addListener("keydown");
     this.codeDOM.on("click", (e: any) => {
         if (e.target.id === "btnCheck") this.checkCode();
         if (e.target.id === "btnCancel") this.closeCodePopup();
+        if (e.target.name === "btnUp" || e.target.name === "btnDown") {
+            const idx = parseInt(e.target.getAttribute("data-index"));
+            const inputEl = this.codeDOM?.getChildByID(`digit${idx}`) as HTMLInputElement;
+            if (inputEl) {
+                let currentVal = parseInt(inputEl.value) || 0;
+                if (e.target.name === "btnUp") {
+                    currentVal = (currentVal + 1) % 10;
+                } else {
+                    currentVal = (currentVal - 1 + 10) % 10;
+                }
+                inputEl.value = currentVal.toString();
+            }
+        }
+    });
+    //autojump als typen niet pijlen
+    this.codeDOM.on("input", (e: any) => {
+        if (e.target.name === "codeDigit") {
+            const idx = parseInt(e.target.getAttribute("data-index"));
+            const val = e.target.value;
+      
+            if (val.length === 1 && idx < 3) {
+                const nextInput = this.codeDOM?.getChildByID(`digit${idx + 1}`) as HTMLInputElement;
+                if (nextInput) nextInput.focus();
+            }
+        }
     });
     
-    this.codeDOM.addListener("keydown");
     this.codeDOM.on("keydown", (e: any) => {
         e.stopPropagation(); 
         if (e.key === "Enter") this.checkCode();
         if (e.key === "Escape") this.closeCodePopup();
     });
-    //automatisch naar de eerste slot
+    
     const firstInput = this.codeDOM.getChildByID("digit0") as HTMLInputElement;
     if (firstInput) firstInput.focus();
 
@@ -211,7 +248,6 @@ export default class SudokuScene extends Phaser.Scene {
     let enteredCode: string[] = [];
     let inputs: HTMLInputElement[] = [];
 
-    //input
     for (let i = 0; i < 4; i++) {
         const el = this.codeDOM.getChildByID(`digit${i}`) as HTMLInputElement;
         if (el) {
@@ -220,7 +256,6 @@ export default class SudokuScene extends Phaser.Scene {
         }
     }
 
-    //check
     let isCorrect = true;
     for (let i = 0; i < 4; i++) {
         if (enteredCode[i] !== this.correctCode[i]) {
@@ -241,7 +276,6 @@ export default class SudokuScene extends Phaser.Scene {
             yoyo: true,
             repeat: 3,
             onComplete: () => {
-                //reset want anders schud je soms oneindig
                 inputs.forEach(el => el.style.backgroundColor = "#000");
                 inputs[0].focus();
             }
@@ -249,13 +283,10 @@ export default class SudokuScene extends Phaser.Scene {
     }
   }
 
-  //grid logica
-
   private drawGridVisuals() {
     const graphics = this.add.graphics();
     graphics.lineStyle(1, 0x555555, 1);
 
-    //achtergrond, met scaling en symbolen
     for (const special of this.specialCells) {
       const x = this.gridStartX + special.c * this.cellSize;
       const y = this.gridStartY + special.r * this.cellSize;
@@ -292,25 +323,21 @@ export default class SudokuScene extends Phaser.Scene {
       }
     }
 
-    //lijnen
     for (let i = 0; i <= 9; i++) {
       const thickness = (i % 3 === 0) ? 3 : 1;
       const color = (i % 3 === 0) ? 0xffffff : 0x888888;
       graphics.lineStyle(thickness, color, 1);
       
-      //verticaal
       graphics.beginPath();
       graphics.moveTo(this.gridStartX + i * this.cellSize, this.gridStartY);
       graphics.lineTo(this.gridStartX + i * this.cellSize, this.gridStartY + 9 * this.cellSize);
       graphics.strokePath();
 
-      //horizontaal
       graphics.beginPath();
       graphics.moveTo(this.gridStartX, this.gridStartY + i * this.cellSize);
       graphics.lineTo(this.gridStartX + 9 * this.cellSize, this.gridStartY + i * this.cellSize);
       graphics.strokePath();
     }
-
 
     this.cellTexts = [];
     for (let r = 0; r < 9; r++) {
@@ -389,8 +416,6 @@ export default class SudokuScene extends Phaser.Scene {
     const textObj = this.cellTexts[r][c];
     textObj.setText(value === 0 ? "" : value.toString());
   }
-
-  //exit clauses 
 
   private puzzleSolved() {
     this.registry.set("sudoku_solved", true);

@@ -111,21 +111,43 @@ export default class DominoScene extends Phaser.Scene {
   private undoBtnText = "Stap terug";
   private resetBtnText = "Reset alles";
 
+  // Plok & Dialogue variables
+  private plok!: Phaser.GameObjects.Image;
+  private dialogContainer!: Phaser.GameObjects.Container;
+  private dialogText!: Phaser.GameObjects.Text;
+  private speakerText!: Phaser.GameObjects.Text;
+  private isDialogueActive = false;
+  private dialogueLines: { speaker: string; text: string }[] = [];
+  private currentLineIndex = 0;
+
   constructor() {
     super("DominoScene");
   }
 
   init(data: { returnScene?: string }) {
     if (data?.returnScene) this.returnSceneKey = data.returnScene;
+    
+    // Reset dialogue state
+    this.isDialogueActive = false;
+    this.currentLineIndex = 0;
+    this.dialogueLines = [];
+  }
+
+  preload() {
+    // Load Plok image
+    this.load.image("plok", "assets/decor/plok.png"); 
   }
 
   create() {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0);
-    createBackButton(this, this.returnSceneKey, { spawnX: this.scale.width/2, spawnY: this.scale.height/2 + 60, cameFromScene: "DominoScene", entry_from_puzzle: true }); 
     
-    // Bigger text and higher contrast
+    // Disable back button during dialogue
+    createBackButton(this, undefined, undefined, () => {
+        if (!this.isDialogueActive) this.exitScene();
+    });
+    
     const infoStyle = { fontSize: "24px", color: "#ffffff", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 };
     this.add.text(width - 300, 20, "R: Draai steen 90°", infoStyle);
 
@@ -135,11 +157,30 @@ export default class DominoScene extends Phaser.Scene {
 
     this.spawnDominos(height);
 
+    // Setup Plok off-screen
+    this.plok = this.add.image(width + 200, height - 200, "plok")
+        .setOrigin(0.5, 1)
+        .setScale(0.35) 
+        .setDepth(20);
+
+    this.createDialogUI(width, height);
+
     this.input.keyboard?.on("keydown-R", () => {
-        if (this.activeDomino) {
+        if (this.activeDomino && !this.isDialogueActive) {
             this.saveState();
             this.activeDomino.angle += 90;
             this.checkRules();
+        }
+    });
+
+    // Handle dialogue input
+    this.input.on('pointerdown', () => {
+        if (this.isDialogueActive) this.advanceDialogue();
+    });
+    
+    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+        if (this.isDialogueActive && (event.key === " " || event.key === "Enter")) {
+            this.advanceDialogue();
         }
     });
 
@@ -151,11 +192,15 @@ export default class DominoScene extends Phaser.Scene {
     
     this.add.text(width - 150, height - 80, this.undoBtnText, btnStyle)
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.undoLastMove());
+        .on('pointerdown', () => {
+            if (!this.isDialogueActive) this.undoLastMove();
+        });
 
     this.add.text(width - 150, height - 40, this.resetBtnText, { ...btnStyle, backgroundColor: "#aa3333" })
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.resetBoard());
+        .on('pointerdown', () => {
+            if (!this.isDialogueActive) this.resetBoard();
+        });
   }
 
   private saveState() {
@@ -259,6 +304,9 @@ export default class DominoScene extends Phaser.Scene {
 
   //logica
   private checkRules() {
+    // If dialogue active, don't re-check or trigger solved again
+    if (this.isDialogueActive) return;
+
     const boardState = new Map<string, number>();
     this.dominos.forEach(d => {
         if (d.x === d.getData("homeX") && d.y === d.getData("homeY")) return;
@@ -331,7 +379,92 @@ export default class DominoScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(100);
 
     this.tweens.add({ targets: txt, scale: 1.2, duration: 300, yoyo: true });
-    this.time.delayedCall(2000, () => this.exitScene());
+    
+    this.time.delayedCall(1500, () => {
+        txt.destroy();
+        this.startEndingSequence();
+    });
+  }
+
+  private createDialogUI(width: number, height: number) {
+    this.dialogContainer = this.add.container(0, 0).setDepth(30).setVisible(false);
+
+    const panelHeight = 160;
+    const panelY = height - panelHeight - 20;
+
+    const bg = this.add.rectangle(width / 2, panelY + panelHeight / 2, width - 100, panelHeight, 0x000000, 0.9)
+        .setStrokeStyle(4, 0xffffff);
+    
+    this.speakerText = this.add.text(width / 2 - (width - 140) / 2, panelY + 20, "", {
+        fontFamily: "sans-serif",
+        fontSize: "24px",
+        color: "#ffff00", 
+        fontStyle: "bold"
+    }).setOrigin(0, 0);
+
+    this.dialogText = this.add.text(width / 2, panelY + 80, "", {
+        fontFamily: "monospace",
+        fontSize: "20px",
+        color: "#ffffff",
+        align: "left",
+        wordWrap: { width: width - 150 }
+    }).setOrigin(0.5, 0.5);
+
+    const hint = this.add.text(width - 80, height - 50, "▼", {
+        fontSize: "20px", color: "#ffff00"
+    }).setOrigin(1);
+
+    this.tweens.add({
+        targets: hint,
+        y: height - 40,
+        duration: 500,
+        yoyo: true,
+        repeat: -1
+    });
+
+    this.dialogContainer.add([bg, this.speakerText, this.dialogText, hint]);
+  }
+
+  private startEndingSequence() {
+    this.isDialogueActive = true;
+    const { width, height } = this.scale;
+    this.tweens.add({
+        targets: this.plok,
+        x: width - 150, 
+        duration: 1000,
+        ease: 'Back.out',
+        onComplete: () => {
+            this.startDialogue([
+                { speaker: "Plok", text: "Goed zo! De stenen liggen perfect!" },
+                { speaker: "Plok", text: "Wat goed! Hier heb je 10 energie, succes me thet verzamelen en je terugreis naar Aarde." },
+                { speaker: "Jij", text: "Graag gedaan en dank je wel!" },
+            ]);
+        }
+    });
+  }
+
+  private startDialogue(lines: { speaker: string; text: string }[]) {
+    this.dialogueLines = lines;
+    this.currentLineIndex = 0;
+    this.dialogContainer.setVisible(true);
+    this.showNextLine();
+  }
+
+  private showNextLine() {
+    if (this.currentLineIndex < this.dialogueLines.length) {
+        const line = this.dialogueLines[this.currentLineIndex];
+        this.speakerText.setText(line.speaker);
+        this.dialogText.setText(line.text);
+        this.currentLineIndex++;
+    } else {
+        this.dialogContainer.setVisible(false);
+        this.exitScene();
+    }
+  }
+
+  private advanceDialogue() {
+    if (!this.dialogContainer.visible) return;
+    this.showNextLine();
   }
 
   private getSnapPosition(domino: Phaser.GameObjects.Container): { x: number, y: number } | null {
@@ -379,13 +512,21 @@ export default class DominoScene extends Phaser.Scene {
       this.dominos.push(container);
     });
     this.input.on('dragstart', (_p: any, obj: any) => {
+        // Prevent interaction during dialogue
+      if (this.isDialogueActive) return;
+
       this.saveState();
       this.children.bringToTop(obj); this.activeDomino = obj;
       // Scale up slightly for drag effect (relative to base 0.95)
       this.tweens.add({ targets: obj, scale: 1.05, duration: 100 });
     });
-    this.input.on('drag', (_p: any, obj: any, x: number, y: number) => { obj.x = x; obj.y = y; });
+    this.input.on('drag', (_p: any, obj: any, x: number, y: number) => { 
+        if (this.isDialogueActive) return;
+        obj.x = x; obj.y = y; 
+    });
     this.input.on('dragend', (_p: any, obj: any) => {
+        if (this.isDialogueActive) return;
+
       // Return to base size
       this.tweens.add({ targets: obj, scale: 0.95, duration: 100 });
       const snapPos = this.getSnapPosition(obj);
