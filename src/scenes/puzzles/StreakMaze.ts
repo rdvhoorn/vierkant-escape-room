@@ -49,7 +49,7 @@ export default class StreakMaze extends Phaser.Scene {
     this.buildMazeData();
     this.drawForestBackground();
     this.createMainSign();
-    createBackButton(this, "Face3Scene", { entry_from_puzzle: true });
+    createBackButton(this, "Face3Scene", { entry_from_puzzle: true, spawnX: this.scale.width / 2, spawnY: this.scale.height / 2 + 80 - 30  });
     this.choiceContainer = this.add.container(0, 0);
 
     this.addNpcDialog(true, () => {
