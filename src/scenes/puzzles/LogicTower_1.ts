@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class LogicTower_1 extends Phaser.Scene {
   private readonly objectScale = 0.3;
@@ -39,9 +40,10 @@ export default class LogicTower_1 extends Phaser.Scene {
     this.hintButton = undefined;
     const { width, height } = this.scale;
     this.createTowerBackground(width, height);
-    this.add.text(20, 20, "ESC om terug te gaan", {
-      fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
-    }).setOrigin(0, 0).setAlpha(0.7);
+    
+    createBackButton(this, undefined, undefined, () => {
+      this.exitPuzzle();
+    });
 
     this.telescope = this.add.image(width / 2, height / 2 + 20, "telescope")
       .setScale(this.objectScale);
@@ -61,8 +63,6 @@ export default class LogicTower_1 extends Phaser.Scene {
         "Er staat iets geschreven op de voet."
       ]);
     });
-
-    this.input.keyboard?.on("keydown-ESC", () => this.exitPuzzle());
 
     this.createDialogUI();
 

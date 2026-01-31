@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 //types
 type DominoData = {
@@ -122,10 +123,10 @@ export default class DominoScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0);
+    createBackButton(this, this.returnSceneKey, { spawnX: this.scale.width/2, spawnY: this.scale.height/2 + 60, cameFromScene: "DominoScene", entry_from_puzzle: true }); 
     
     // Bigger text and higher contrast
     const infoStyle = { fontSize: "24px", color: "#ffffff", fontStyle: "bold", stroke: "#000000", strokeThickness: 4 };
-    this.add.text(20, 20, "ESC: Terug", infoStyle);
     this.add.text(width - 300, 20, "R: Draai steen 90°", infoStyle);
 
     this.createGrid(width, height);
@@ -134,7 +135,6 @@ export default class DominoScene extends Phaser.Scene {
 
     this.spawnDominos(height);
 
-    this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
     this.input.keyboard?.on("keydown-R", () => {
         if (this.activeDomino) {
             this.saveState();
@@ -241,8 +241,7 @@ export default class DominoScene extends Phaser.Scene {
 
   private createRuleUI() {
     let y = 60;
-    const x = 20;
-    //this.add.text(x, y - 25, "Regels:", { fontSize: "22px", color: "#fff", fontStyle: "bold" });
+    const x = 300;
     this.rules.forEach(rule => {
         const colorHex = rule.color ? `#${rule.color.toString(16).padStart(6, '0')}` : "#aaaaaa";
         const txt = this.add.text(x, y, `[ ] ${rule.description}`, { 
@@ -424,4 +423,5 @@ export default class DominoScene extends Phaser.Scene {
   private exitScene() {
     this.scene.start(this.returnSceneKey, { spawnX: this.scale.width/2, spawnY: this.scale.height/2 + 60, cameFromScene: "DominoScene", entry_from_puzzle: true });
   }
+
 }

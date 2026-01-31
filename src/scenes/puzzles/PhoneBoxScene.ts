@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class PhoneBoxScene extends Phaser.Scene {
   private returnSceneKey: string = "Face9Scene";
@@ -31,6 +32,7 @@ export default class PhoneBoxScene extends Phaser.Scene {
     // Reset state on each scene start
     this.enteredCode = "";
     this.currentWallIndex = 0;
+    createBackButton(this, undefined, undefined, () => this.exitScene());
 
     const { width, height } = this.scale;
     this.add.rectangle(0, 0, width, height, 0x2a0a0a).setOrigin(0);
@@ -38,7 +40,6 @@ export default class PhoneBoxScene extends Phaser.Scene {
     this.wallContainer = this.add.container(0, 0).setVisible(false);
     this.createNumpadView(width, height);
     this.createWallView(width, height);
-    this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
   }
 
   //numpad

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class SlotScene extends Phaser.Scene {
   private returnSceneKey = "Face11Scene";
@@ -21,6 +22,8 @@ export default class SlotScene extends Phaser.Scene {
 
     // Background
     this.add.rectangle(0, 0, width, height, 0x1a1a2e).setOrigin(0);
+
+    createBackButton(this, undefined, undefined, () => this.exitScene());
 
     // Title
     this.add.text(width / 2, 50, "Cijferslot", {
@@ -108,15 +111,7 @@ export default class SlotScene extends Phaser.Scene {
       color: "#ff6666",
     }).setOrigin(0.5);
 
-    // ESC hint
-    this.add.text(20, height - 30, "ESC om terug te gaan", {
-      fontFamily: "sans-serif",
-      fontSize: "16px",
-      color: "#8fd5ff",
-    }).setOrigin(0, 0.5).setAlpha(0.7);
-
     // Keyboard input
-    this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
     this.input.keyboard?.on("keydown-ENTER", () => this.checkCode());
   }
 

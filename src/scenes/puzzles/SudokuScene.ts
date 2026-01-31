@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class SudokuScene extends Phaser.Scene {
   private returnSceneKey: string = "Face10Scene";
@@ -64,9 +65,10 @@ export default class SudokuScene extends Phaser.Scene {
         if (!this.isPopupOpen) this.deselectCell();
     });
 
-    this.add.text(20, height - 30, "ESC om terug te gaan", {
-      fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
-    }).setOrigin(0, 0.5).setAlpha(0.7);
+    createBackButton(this, undefined, undefined, () => {
+      if (this.isPopupOpen) this.closeCodePopup();
+      else this.exitScene();
+    });
 
     //grid/logica
     this.drawGridVisuals();
@@ -84,11 +86,6 @@ export default class SudokuScene extends Phaser.Scene {
     })
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.openCodePopup());
-
-    this.input.keyboard?.on("keydown-ESC", () => {
-        if (this.isPopupOpen) this.closeCodePopup();
-        else this.exitScene();
-    });
     
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
         if (!this.isPopupOpen) this.handleGridInput(event);
@@ -96,7 +93,7 @@ export default class SudokuScene extends Phaser.Scene {
   }
 
   private createRuleUI() {
-    let y = 80;
+    let y = 120;
     const x = 20;
     
     this.add.text(x, y, "Regels:", { 
