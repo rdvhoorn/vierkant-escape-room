@@ -108,7 +108,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     width: number,
     height: number
   ): { startX: number; startY: number; startRotation: number }[] {
-    const squareCenterX = width * 0.1;
+    const squareCenterX = width * 0.25;
     const squareCenterY = height * 0.35;
 
     return [
@@ -238,7 +238,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     // Rotate button (45°)
     this.rotateButton = this.add
-      .text(width * 0.15, height - 60, "Draai stukje (45°)", {
+      .text(width * 0.15, height - 60, "R: Draai stukje 45°", {
         fontSize: "20px",
         backgroundColor: "#222222",
         color: "#ffffff",

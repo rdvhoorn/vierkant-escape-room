@@ -60,7 +60,7 @@ export default class Face2Scene extends FaceBase {
 
     const center= this.getPolygonCenter(this.poly);
     const farmerPos = new Phaser.Math.Vector2(center.x + 40, center.y);
-    const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(44*2.5, 56*2.5).setDepth(70);
+    const farmer = this.add.image(farmerPos.x, farmerPos.y, "farmer").setOrigin(0.5, 0.6).setDisplaySize(56*2.4, 56*2.4).setDepth(70);
     layers.actors.add(farmer);
 
     const puzzleSolved = !!this.registry.get(PUZZLE_REWARDS[PuzzleKey.Tangram].puzzleSolvedRegistryKey);
@@ -71,24 +71,24 @@ export default class Face2Scene extends FaceBase {
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
           return [
-            { speaker: "Henk", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!" },
+            { speaker: "Lunea", text: "Dankjewel voor je hulp! Ik ben zo blij dat al mijn dieren terug zijn!" },
+            { speaker: "Lunea", text: "Hier is de brandstof die ik je beloofd had. Succes met je reis terug naar huis!" },
           ];
         } else if (this.entry_from_puzzle && !puzzleSolved) {
           return [
-            { speaker: "Henk", text: "Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!" }
+            { speaker: "Lunea", text: "Ik zoek zelf wel nog wat verder, maar ik kan altijd nog je hulp gebruiken. Kom vooral later nog terug!" }
           ]
         } else if (!this.entry_from_puzzle && puzzleSolved) {
           return [
-            { speaker: "Henk", text: "Dankjewel voor je hulp! Ik ben zo blij dat al mijn dieren terug zijn!" },
-            { speaker: "Henk", text: "Hier is de brandstof die ik je beloofd had. Succes met je reis terug naar huis!" },
+            { speaker: "Lunea", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!" },
           ];
         } else {
           return [
-            { speaker: "Henk", text: "Hoi! Ik ben Henk. Ik ben hier wat ze op aarde boer noemen geloof ik. Welkom op onze planeet!" },
-            { speaker: "Jij", text: "Hoi Henk! Ik ben hier neergestort en ik probeer nu genoeg energie te verzamelen om terug naar huis te reizen. Kun jij me misschien helpen?" },
-            { speaker: "Henk", text: "Ja, als jij me helpt om mijn dieren weer terug te krijgen, dan krijg jij een deel van mijn energievoorraad." },
-            { speaker: "Henk", text: "Ik heb een speciaal compas om ze terug te halen. Het enige wat jij hoeft te doen is hun schaduw precies na te maken met mijn speciale stenen." },
-            { speaker: "Henk", text: "Er zijn drie soorten dieren, de schaduw van de kikker is het makkelijkst, die van de krab het moeilijkst en die van de schildpad zit er tussen in." },
+            { speaker: "Lunea", text: "Hoi! Ik ben Lunea. Ik ben hier wat ze op aarde boer noemen geloof ik. Welkom op onze planeet!" },
+            { speaker: "Jij", text: "Hoi Lunea! Ik ben hier neergestort en ik probeer nu genoeg energie te verzamelen om terug naar huis te reizen. Kun jij me misschien helpen?" },
+            { speaker: "Lunea", text: "Ja, als jij me helpt om mijn dieren weer terug te krijgen, dan krijg jij een deel van mijn energievoorraad." },
+            { speaker: "Lunea", text: "Ik heb een speciaal compas om ze terug te halen. Het enige wat jij hoeft te doen is hun schaduw precies na te maken met mijn speciale stenen." },
+            { speaker: "Lunea", text: "Er zijn drie soorten dieren, de schaduw van de kikker is het makkelijkst, die van de krab het moeilijkst en die van de schildpad zit er tussen in." },
           ];
         }
       },
