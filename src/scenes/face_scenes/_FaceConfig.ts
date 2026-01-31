@@ -17,20 +17,23 @@
 
 type TopoFace = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L";
 
-// Correct dodecahedron topology (validated to be symmetric)
+// Dodecahedron topology with correct cyclic edge ordering.
+// Each entry lists the 5 neighbors in the order they appear around the
+// pentagon edges (CW as seen from outside the dodecahedron).
+// Consecutive entries MUST be mutual neighbors (they share a dodecahedron edge).
 const DODECAHEDRON_TOPOLOGY: Record<TopoFace, TopoFace[]> = {
-  F: ["A", "B", "C", "D", "E"],
-  A: ["F", "B", "E", "K", "G"],
-  B: ["F", "C", "A", "G", "H"],
-  C: ["F", "D", "B", "H", "I"],
-  D: ["F", "E", "C", "I", "J"],
-  E: ["F", "A", "D", "J", "K"],
-  G: ["A", "B", "H", "K", "L"],
-  H: ["B", "C", "I", "G", "L"],
-  I: ["C", "D", "J", "H", "L"],
-  J: ["D", "E", "K", "I", "L"],
-  K: ["E", "A", "G", "J", "L"],
-  L: ["K", "G", "H", "I", "J"],
+  F: ["A", "B", "C", "D", "E"],       // top cap
+  A: ["F", "E", "K", "G", "B"],       // top ring
+  B: ["F", "A", "G", "H", "C"],
+  C: ["F", "B", "H", "I", "D"],
+  D: ["F", "C", "I", "J", "E"],
+  E: ["F", "D", "J", "K", "A"],
+  G: ["A", "B", "H", "L", "K"],       // bottom ring
+  H: ["B", "C", "I", "L", "G"],
+  I: ["C", "D", "J", "L", "H"],
+  J: ["D", "E", "K", "L", "I"],
+  K: ["E", "A", "G", "L", "J"],
+  L: ["G", "H", "I", "J", "K"],       // bottom cap
 };
 
 // Puzzle keys
