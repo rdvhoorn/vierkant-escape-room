@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class LogicTowerScene extends Phaser.Scene {
   private readonly returnSceneKeyDefault = "Face4Scene";
@@ -39,13 +40,11 @@ export default class LogicTowerScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
     
-    this.createTowerBackground(width, height);
+    createBackButton(this, undefined, undefined, () => {
+      this.exitPuzzle();
+    });
 
-    this.add.text(20, 20, "ESC om terug te gaan", {
-      fontFamily: "sans-serif",
-      fontSize: "16px",
-      color: "#8fd5ff",
-    }).setOrigin(0, 0).setAlpha(0.7);
+    this.createTowerBackground(width, height);
 
     this.panel = this.add.image(width / 2, height / 2, "brokenpanel")
       .setScale(this.panelScale)

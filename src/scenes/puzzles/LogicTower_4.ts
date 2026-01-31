@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class LogicTower_4 extends Phaser.Scene {
   private returnSceneKey: string = "Face4Scene";
@@ -25,22 +26,20 @@ export default class LogicTower_4 extends Phaser.Scene {
     this.hintButton = undefined;
 
     this.createTowerBackground(width, height);
+    createBackButton(this, undefined, undefined, () => {
+      this.exitScene();
+    });
 
     this.add.text(width / 2, 40, "Logica Toren: Niveau 4", {
       fontFamily: "sans-serif", fontSize: "28px", color: "#ffffff", stroke: "#000", strokeThickness: 4
     }).setOrigin(0.5);
 
-    this.add.text(20, 20, "ESC om terug te gaan", {
-      fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
-    }).setAlpha(0.7);
     const contentX = width * 0.45;
 
     const whiteboard = this.add.image(contentX, height / 2 - 30, "whiteboard");
     whiteboard.setScale(this.puzzleScale);
 
     this.createInput(contentX, height - 100);
-
-    this.input.keyboard?.on("keydown-ESC", () => this.exitScene());
   }
 
   private createTowerBackground(width: number, height: number) {

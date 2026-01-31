@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class LogicTower_5 extends Phaser.Scene {
   private returnSceneKey: string = "Face4Scene";
@@ -41,6 +42,9 @@ export default class LogicTower_5 extends Phaser.Scene {
   create() {
     const { width, height } = this.scale;
 
+    createBackButton(this, undefined, undefined, () => {
+      this.exitScene();
+    });
     this.createTowerBackground(width, height);
     this.createSignalBox(width / 2, height / 2 - 200); 
 

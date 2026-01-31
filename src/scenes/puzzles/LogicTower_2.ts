@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { createBackButton } from "../../utils/BackButton";
 
 export default class LogicTower_2 extends Phaser.Scene {
   private returnSceneKey: string = "Face4Scene"; 
@@ -39,6 +40,14 @@ export default class LogicTower_2 extends Phaser.Scene {
     this.add.image(width / 2, height / 2, "background_tower")
       .setScale(0.5); 
 
+    createBackButton(this, undefined, undefined, () => {
+        if (this.isPuzzleOpen) {
+            this.closePuzzle();
+        } else {
+            this.exitScene();
+        }
+    });
+
 
     const hoverGuide = this.add.graphics();
     hoverGuide.lineStyle(4, 0x00ff00, 0.6);
@@ -72,18 +81,6 @@ export default class LogicTower_2 extends Phaser.Scene {
         hoverGuide.setVisible(false); 
         this.openGridPuzzle();
       }
-    });
-
-    this.add.text(20, 20, "ESC om terug te gaan", {
-      fontFamily: "sans-serif", fontSize: "16px", color: "#8fd5ff",
-    }).setAlpha(0.7);
-
-    this.input.keyboard?.on("keydown-ESC", () => {
-        if (this.isPuzzleOpen) {
-            this.closePuzzle();
-        } else {
-            this.exitScene();
-        }
     });
   }
 
