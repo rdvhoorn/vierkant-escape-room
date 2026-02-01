@@ -7,14 +7,14 @@ import { WarpStars } from "../utils/TwinklingStars";
  * before continuing to the real first game scene.
  */
 
-const INTRO_BODY = `Je gaat zo beginnen aan de nieuwe escaperoom van Vierkant voor Wiskunde. Als je deze escaperoom helemaal uit speelt, maak je kans op een prijs van €395! Je maakt namelijk kans op een gratis plek op zomerkamp 2026!
+const INTRO_BODY = `Je gaat zo beginnen aan de nieuwe escaperoom van Vierkant voor Wiskunde. Als je deze escaperoom helemaal uitspeelt, maak je kans op een prijs van €395! Je maakt namelijk kans op een gratis plek op zomerkamp 2026!
 
 Voordat je begint, even het volgende:
-- De escaperoom duurt ongeveer 60 tot 90 minuten.
+- De escaperoom duurt ongeveer 90 minuten.
 - Het is het beste om deze escaperoom te spelen op de computer (niet op een telefoon of tablet). We kunnen niet garanderen dat alles goed werkt op een telefoon of tablet.
 - Zorg dat je pen en papier bij de hand hebt, dat kan soms handig zijn.
 - Je tussentijdse voortgang wordt niet opgeslagen. Als je de escaperoom verlaat, moet je helemaal opnieuw beginnen.
-- Ga lekker opzoek naar de puzzels en probeer ze op te lossen! Veel plezier!
+- Ga lekker op zoek naar de puzzels en probeer ze op te lossen! Veel plezier!
 
 Klaar om te starten? Klik op Verder.`;
 
@@ -145,13 +145,13 @@ export default class IntroScene extends Phaser.Scene {
     const BTN_H = 80;
 
     const nextBtn = this.makeMenuButton({
-        x: width / 2 + 190,
-        y: btnY,
-        width: BTN_W,
-        height: BTN_H,
-        label: "Verder",
-        onClick: () => this.goNext(),
-        lockWhenStarting: true,
+      x: width / 2 + 190,
+      y: btnY,
+      width: BTN_W,
+      height: BTN_H,
+      label: "Verder",
+      onClick: () => this.goNext(),
+      lockWhenStarting: true,
     });
 
     // Depth tweaks (match your title scene habit)
@@ -187,7 +187,7 @@ export default class IntroScene extends Phaser.Scene {
       thumbStartY: 0,
       nextBtn: nextBtn,
       canContinue: false,
-      cleanup: () => {},
+      cleanup: () => { },
     };
 
     this.setNextEnabled(false);
@@ -410,11 +410,11 @@ export default class IntroScene extends Phaser.Scene {
 
     // input
     if (enabled) {
-        pad.setInteractive({ useHandCursor: true });
-        text.setInteractive({ useHandCursor: true });
+      pad.setInteractive({ useHandCursor: true });
+      text.setInteractive({ useHandCursor: true });
     } else {
-        pad.disableInteractive();
-        text.disableInteractive();
+      pad.disableInteractive();
+      text.disableInteractive();
     }
   }
 
@@ -429,15 +429,15 @@ export default class IntroScene extends Phaser.Scene {
     const trackH = st.trackH;
 
     if (st.maxScroll <= 0) {
-        st.scrollThumb.y = trackTop;
-        st.scrollThumb.height = trackH;
+      st.scrollThumb.y = trackTop;
+      st.scrollThumb.height = trackH;
 
-        // If no scrolling needed, allow continue immediately
-        if (!st.canContinue) {
+      // If no scrolling needed, allow continue immediately
+      if (!st.canContinue) {
         st.canContinue = true;
         this.setNextEnabled(true);
-        }
-        return;
+      }
+      return;
     }
 
     const thumbH = st.scrollThumb.height;
@@ -450,10 +450,10 @@ export default class IntroScene extends Phaser.Scene {
     const atBottom = st.scrollY >= st.maxScroll - threshold;
 
     if (atBottom !== st.canContinue) {
-        st.canContinue = atBottom;
-        this.setNextEnabled(atBottom);
+      st.canContinue = atBottom;
+      this.setNextEnabled(atBottom);
     }
-    }
+  }
 
 
 }
