@@ -121,8 +121,10 @@ export default class TitleScene extends Phaser.Scene {
       this.warpStars?.update(delta);
     });
 
+    const hasSave = this.hasSavedGame();
+
     this.add
-      .text(width / 2, height * 0.28, "Verzamelmania op Dezonia!", {
+      .text(width / 2, height * (hasSave ? 0.20 : 0.28), "Verzamelmania op Dezonia!", {
         fontFamily: "sans-serif",
         fontSize: "80px",
         fontStyle: "900",
@@ -133,7 +135,7 @@ export default class TitleScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height * 0.38, "Lukt het jou om terug te keren naar Aarde?", {
+      .text(width / 2, height * (hasSave ? 0.30 : 0.38), "Lukt het jou om terug te keren naar Aarde?", {
         fontFamily: "sans-serif",
         fontSize: "35px",
         color: "#b6d5ff",
@@ -146,7 +148,6 @@ export default class TitleScene extends Phaser.Scene {
     const BTN_W = 600;
     const BTN_H = 90;
 
-    const hasSave = this.hasSavedGame();
     let nextY = hasSave ? height * 0.47 : height * 0.57;
 
     if (hasSave) {
