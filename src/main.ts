@@ -72,6 +72,7 @@ const config: Phaser.Types.Core.GameConfig = {
   render: { pixelArt: true},
 
   scene: [
+  BootScene,
   PreloadScene,
   ShipFuelScene,
   EndCreditsScene,
@@ -88,7 +89,6 @@ const config: Phaser.Types.Core.GameConfig = {
   Face10Scene,
   Face11Scene,
   Face12Scene,
-  BootScene,
   TitleScene,
   CockpitScene,
   KVQDriehoeken,
