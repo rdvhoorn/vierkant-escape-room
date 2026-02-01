@@ -311,22 +311,20 @@ export class DebugMenu {
     }
 
     if (solved) {
-      // When toggling ON: set energy WITHOUT this puzzle, then play animation to add it
-      this.recalculateEnergy(key); // exclude this puzzle
+      // Set energy WITHOUT this puzzle first, then let animation add it
+      this.recalculateEnergy(key);
 
       // Trigger animation on current scene if it supports it
       const scene = this.currentScene as any;
       if (scene?.debugTestRewardAnimation) {
         scene.debugTestRewardAnimation(config.rewardEnergy);
       } else {
-        // Fallback: just add energy directly if not on a Face scene
+        // Fallback: just recalculate with all puzzles included
         this.recalculateEnergy();
         this.currentScene?.events.emit("energyChanged", this.registry.get("energy"));
       }
 
-      // Show expected total in debug display (current + this puzzle's reward)
-      const expectedTotal = (this.registry.get("energy") ?? 0) + config.rewardEnergy;
-      this.updateEnergyDisplay(expectedTotal);
+      this.updateEnergyDisplay();
     } else {
       // When toggling OFF: recalculate immediately
       this.recalculateEnergy();

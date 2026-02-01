@@ -161,12 +161,15 @@ export default abstract class FaceBase extends Phaser.Scene {
     const obtainedKey = rewardInfo.rewardObtainedRegistryKey;
     if (!this.registry.get(obtainedKey)) {
       this.registry.set(obtainedKey, true);
-      // Don't add energy immediately - the animation will do it gradually
-      this.playEnergyRewardAnimation(rewardInfo.rewardEnergy);
+      const energyBefore = this.getEnergy();
+      // Set energy immediately so it's safe even if the player leaves the scene
+      this.addEnergy(rewardInfo.rewardEnergy);
+      // Play animation purely as visual feedback
+      this.playEnergyRewardAnimation(rewardInfo.rewardEnergy, energyBefore);
     }
   }
 
-  private playEnergyRewardAnimation(amount: number) {
+  private playEnergyRewardAnimation(amount: number, displayFrom: number) {
     // Get player screen position (center of screen since camera follows player)
     const playerScreenX = this.scale.width / 2;
     const playerScreenY = this.scale.height / 2;
@@ -174,6 +177,9 @@ export default abstract class FaceBase extends Phaser.Scene {
     // Energy bar position (left edge of bar)
     const barX = this.scale.width - 180 - 16; // bar width + margin
     const barY = 35 + 22; // bar top + half height
+
+    // Temporarily show old energy value so the count-up animation makes sense
+    this.events.emit("energyChanged", displayFrom);
 
     // Create floating text at player position
     const text = this.add.text(playerScreenX, playerScreenY - 50, `+${amount}`, {
@@ -197,21 +203,22 @@ export default abstract class FaceBase extends Phaser.Scene {
       ease: "Power2",
       onComplete: () => {
         text.destroy();
-        // Start counting up the energy
-        this.countUpEnergy(amount);
+        // Visually count up to the real energy value (already set in registry)
+        this.countUpEnergyDisplay(displayFrom, displayFrom + amount);
       },
     });
   }
 
-  private countUpEnergy(amount: number) {
+  private countUpEnergyDisplay(from: number, to: number) {
+    const amount = to - from;
     let added = 0;
-    const interval = Math.max(30, 500 / amount); // Faster for larger amounts, min 30ms
+    const interval = Math.max(30, 500 / amount);
 
     const timer = this.time.addEvent({
       delay: interval,
       callback: () => {
         added++;
-        this.addEnergy(1);
+        this.events.emit("energyChanged", from + added);
         if (added >= amount) {
           timer.destroy();
         }
@@ -222,7 +229,9 @@ export default abstract class FaceBase extends Phaser.Scene {
 
   // Debug method to test the reward animation from debug menu
   public debugTestRewardAnimation(amount: number) {
-    this.playEnergyRewardAnimation(amount);
+    const energyBefore = this.getEnergy();
+    this.addEnergy(amount);
+    this.playEnergyRewardAnimation(amount, energyBefore);
   }
 
   // ---------------------------
