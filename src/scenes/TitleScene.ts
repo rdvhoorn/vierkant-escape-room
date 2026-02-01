@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { TwinklingStars, WarpStars } from "../utils/TwinklingStars";
 import { getLeaderboardKampA } from "../firebase/firestore";
+import { enterAndKeepFullscreen } from "../utils/fullscreen";
 
 /**
  * Links supported as markdown:
@@ -197,14 +198,11 @@ export default class TitleScene extends Phaser.Scene {
     if (this.isStarting) return;
     this.isStarting = true;
 
-    // Request fullscreen on mobile (works on Android, ignored on iOS)
+    // Request fullscreen on mobile and keep it across screen-off / app-switch
     const device = this.sys.game.device;
     const isMobileOS = device.os.iOS || device.os.android;
     if (isMobileOS) {
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(() => {}); // silently ignore if denied
-      }
+      enterAndKeepFullscreen();
     }
 
     this.cameras.main.fadeOut(200, 0, 0, 0, (_: any, p: number) => {
