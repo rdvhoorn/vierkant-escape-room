@@ -646,7 +646,7 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.resetPuzzle();
       this.isShortCircuiting = false;
-      this.show("Verbind de elektriciteitskabels! Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
+      this.show("Verbind de elektriciteitskabels. Trek kabels tussen gekleurde terminals. Kabels mogen niet overlappen—vul elk vakje!");
     });
   }
 
