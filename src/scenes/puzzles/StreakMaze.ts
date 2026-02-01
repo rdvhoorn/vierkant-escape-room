@@ -141,11 +141,11 @@ export default class StreakMaze extends Phaser.Scene {
           "Zippu: Hoi! Ik ben Zippu, kom jij me helpen om mijn poffel te vinden?",
           "Zippu: Ze heet Poffie en is het doolhof hierachter in gerend…",
           "Zippu: ,maar ik weet niet welke kant ik op moet!",
-          "Jij: Euhm, ik moet eigenlijk op zoek naar energie voor mijn capsule, om naar huis terug te keren. En wat is trouwens een poffel?",
+          "Jij: Euhm, ik moet eigenlijk op zoek naar energie voor mijn raket, om naar huis terug te keren. En wat is trouwens een poffel?",
           "Zippu: O ja, natuurlijk! Een poffel is een pluizig beestje, net zo groot als een kat. Poffie is heel nieuwsgierig, dus ze rende weg toen ze een geluidje hoorde.",
           "Jij: Poffie klinkt behoorlijk schattig, misschien moet ik Zippu toch helpen? Of is het slimmer om op zoek te gaan naar energie?",
           "Zippu: Hoorde je wat ik zei? Als je mij helpt om Poffie te vinden, dan mag je al mijn extra energie hebben, ik heb 10 energie. Wat zeg je ervan",
-          "Jij: Dat klinkt als een goede deal! Ik zal je helpen Zippu, kom dan gaan we naar binnen.",
+          "Jij: Dat klinkt als een goede deal! Ik zal je helpen Zippu, kom dan gaan we het doolhof in.",
           "Zippu: Dank je, dank je, dank je! Er staan wel bordjes binnen die je waarschijnlijk helpen met welke kant je op moet, maar ik weet het niet."
         ]
       : [

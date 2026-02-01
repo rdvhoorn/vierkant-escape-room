@@ -27,7 +27,7 @@ export default class KVQSom1 extends Phaser.Scene {
 
     // --- Question text ---
     this.add
-      .text(centerX, centerY, "Je moet 3 keer hetzelfde cijfer gebruiken in een plussom waarvan de uitkomst twaalf is. Je mag het cijfer 4 niet gebruiken. Welk cijfer heb je nodig?", {
+      .text(centerX, centerY, "Je moet 3 keer hetzelfde cijfer gebruiken in een plussom waarvan de uitkomst 12 is. Je mag geen andere cijfers gebruiken en ook niet het cijfer 4. Welk cijfer heb je nodig?", {
         fontFamily: "Arial",
         fontSize: "32px",
         color: "#000000",

@@ -77,8 +77,7 @@ export default class Face4Scene extends FaceBase {
           { speaker: "Jij", text: "O wat jammer! Het leek me super vet als ik mijn vrienden over jullie kon vertellen en dan samen met hen nog een keer terug kon keren." },
           { speaker: "Quadratus", text: "Wat een goed idee! Wat nou als jij ons helpt om het mechanisme in de toren te repareren?" },
           { speaker: "Jij", text: "Maar Quadratus, ik heb toch helemaal geen tijd? Ik moet genoeg energie verzamelen zodat ik naar huis terug kan." },
-          { speaker: "Quadratus", text: "Ja natuurlijk, dat snap ik. Wat nou als je energie kunt verdienen voor elke verdieping waarop je het mechanisme repareert?" },
-          { speaker: "Quadratus", text: "Je kan dan zelf bepalen wanneer je wilt stoppen. Natuurlijk kun je altijd nog een keer terugkomen om verder te werken zodat je ook genoeg hebt voor je terugkomst naar Dezonia samen met je vrienden." },
+          { speaker: "Quadratus", text: "Ja natuurlijk, dat snap ik. Wat nou als je energie kunt verdienen als je het heel mechanisme repareert?" },
           { speaker: "Jij", text: "Ja, dat is goed! Ik ga binnen kijken of ik jullie kan helpen." },
         ];
       },

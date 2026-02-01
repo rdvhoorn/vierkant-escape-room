@@ -13,17 +13,17 @@ export default class TangramSelectScene extends Phaser.Scene {
   private levels: TangramLevel[] = [
     {
       key: "TangramKikkerScene",
-      label: "Mijn kikkertje",
+      label: "Kikker",
       registryFlag: "tangram_kikker_solved",
     },
     {
       key: "TangramSchildpadScene",
-      label: "Mijn schildpad",
+      label: "Schildpad",
       registryFlag: "tangram_schildpad_solved",
     },
     {
       key: "TangramKrabScene",
-      label: "En mijn krabbetje",
+      label: "Krab",
       registryFlag: "tangram_krab_solved",
     },
   ];

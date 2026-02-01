@@ -123,8 +123,7 @@ export default class Face1Scene extends FaceBase {
             { speaker: "Jij", text: "Hoi Quadratus. Fijn om iemand te leren kennen. Ik was onderweg naar huis toen ik problemen kreeg met mijn raket. Nu heb ik te weinig energie om terug naar huis te reizen. Weet jij misschien hoe ik op Dezonia energie kan krijgen?" },
             { speaker: "Quadratus", text: "Energie is er genoeg op Dezonia. Je moet alleen weten waar je moet zoeken. Ik denk dat je gewoon maar moet gaan zoeken! Er zullen vast veel bewoners zijn die je hulp kunnen gebruiken in ruil voor wat energie. Op ieder van de twaalf vlakken van deze planeet is wel wat unieks te vinden." },
             { speaker: "Jij", text: "Dankjewel voor de tip! Ik heb nog 10 energie, maar ik moet nog een lang stuk naar huis. Ik moet dus proberen om in totaal 90 energie te verzamelen om weer terug te kunnen reizen."},
-            { speaker: "Jij", text: "He Quadratus, heb je misschien nog meer tips voor me?" },
-            { speaker: "Quadratus", text: "Zeker! Je kunt over de hele planeet heen lopen door gebruik te maken van de pijltjes toetsen of de WASD toetsen. Als je in de buurt van de rand van dit vlak komt, dan kun je je naar een ander vlak verplaatsen door op de spatiebalk te drukken." },
+            { speaker: "Quadratus", text: "Je kunt over de hele planeet heen lopen door gebruik te maken van de pijltjes toetsen of de WASD toetsen. Als je in de buurt van de rand van dit vlak komt, dan kun je je naar een ander vlak verplaatsen door op de spatiebalk te drukken." },
             { speaker: "Jij", text: "Super handig, dankjewel! Ik ga nu op onderzoek uit." },
 
           ];

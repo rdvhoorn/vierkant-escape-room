@@ -436,7 +436,7 @@ export default class DominoScene extends Phaser.Scene {
         onComplete: () => {
             this.startDialogue([
                 { speaker: "Plok", text: "Goed zo! De stenen liggen perfect!" },
-                { speaker: "Plok", text: "Wat goed! Hier heb je 10 energie, succes me thet verzamelen en je terugreis naar Aarde." },
+                { speaker: "Plok", text: "Wat goed! Hier heb je 10 energie, succes met het verzamelen en je terugreis naar Aarde." },
                 { speaker: "Jij", text: "Graag gedaan en dank je wel!" },
             ]);
         }
