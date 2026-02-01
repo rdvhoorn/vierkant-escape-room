@@ -49,6 +49,9 @@ export enum PuzzleKey {
   Domino = "domino",
 }
 
+// Energy threshold to fly home (used for cockpit check + energy bar color)
+export const ENERGY_THRESHOLD_HOME = 80;
+
 // Constant of puzzle key, reward, and reward obtained key
 export const PUZZLE_REWARDS: Record<PuzzleKey, { rewardEnergy: number; rewardObtainedRegistryKey: string; puzzleSolvedRegistryKey: string }> = {
   [PuzzleKey.KistVanQuadratus]: { rewardEnergy: 20, rewardObtainedRegistryKey: "kvq_puzzle_solved_fuel_obtained", puzzleSolvedRegistryKey: "kvq_puzzle_solved" },

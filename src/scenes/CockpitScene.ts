@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { TwinklingStars } from "../utils/TwinklingStars";
 import { DialogManager } from "../ui/DialogManager";
+import { ENERGY_THRESHOLD_HOME } from "./face_scenes/_FaceConfig";
 
 export default class CockpitScene extends Phaser.Scene {
   private stars?: TwinklingStars;
@@ -716,8 +717,8 @@ export default class CockpitScene extends Phaser.Scene {
 
     const barWidth = (this.energyLevel / 100) * maxWidth;
     let color = 0x00ff00;
-    if (this.energyLevel < 30) color = 0xff0000;
-    else if (this.energyLevel < 60) color = 0xffaa00;
+    if (this.energyLevel < ENERGY_THRESHOLD_HOME / 2) color = 0xff0000;
+    else if (this.energyLevel < ENERGY_THRESHOLD_HOME) color = 0xffaa00;
 
     // Only draw bar if energy > 0
     if (this.energyLevel > 0) {
@@ -1084,7 +1085,7 @@ export default class CockpitScene extends Phaser.Scene {
     const regFuel = this.registry.get("energy");
     const fuel = typeof regFuel === "number" ? regFuel : 0;
 
-    if (fuel >= 80) {
+    if (fuel >= ENERGY_THRESHOLD_HOME) {
       this.animateJoystickDownOnly(() => {
         this.inputLocked = true;
         this.dialogManager?.confirm("Weet je zeker dat je naar huis wilt vliegen? Als je naar huis vliegt kun je niet meer terugkomen om verder te puzzelen.", {

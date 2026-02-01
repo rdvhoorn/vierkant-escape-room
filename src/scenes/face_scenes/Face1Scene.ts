@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import FaceBase, { Edge } from "./_FaceBase";
 import { getIsDesktop } from "../../ControlsMode";
-import { resolveFaceConfig, buildNeighborColorMap } from "./_FaceConfig";
+import { resolveFaceConfig, buildNeighborColorMap, ENERGY_THRESHOLD_HOME } from "./_FaceConfig";
 
 export default class Face1Scene extends FaceBase {
   constructor() {
@@ -122,7 +122,7 @@ export default class Face1Scene extends FaceBase {
             { speaker: "Quadratus", text: "Ah hallo vreemdeling! Welkom op Dezonia, onze twaalf vlakkige planeet. Ik ben Quadratus. Is er iets waarmee ik je kan helpen?" },
             { speaker: "Jij", text: "Hoi Quadratus. Fijn om iemand te leren kennen. Ik was onderweg naar huis toen ik problemen kreeg met mijn raket. Nu heb ik te weinig energie om terug naar huis te reizen. Weet jij misschien hoe ik op Dezonia energie kan krijgen?" },
             { speaker: "Quadratus", text: "Energie is er genoeg op Dezonia. Je moet alleen weten waar je moet zoeken. Ik denk dat je gewoon maar moet gaan zoeken! Er zullen vast veel bewoners zijn die je hulp kunnen gebruiken in ruil voor wat energie. Op ieder van de twaalf vlakken van deze planeet is wel wat unieks te vinden." },
-            { speaker: "Jij", text: "Dankjewel voor de tip! Ik heb nog 10 energie, maar ik moet nog een lang stuk naar huis. Ik moet dus proberen om in totaal 80 energie te verzamelen om weer terug te kunnen reizen."},
+            { speaker: "Jij", text: `Dankjewel voor de tip! Ik heb nog 10 energie, maar ik moet nog een lang stuk naar huis. Ik moet dus proberen om in totaal ${ENERGY_THRESHOLD_HOME} energie te verzamelen om weer terug te kunnen reizen.`},
             { speaker: "Quadratus", text: "Je kunt over de hele planeet heen lopen door gebruik te maken van de pijltjes toetsen of de WASD toetsen. Als je in de buurt van de rand van dit vlak komt, dan kun je je naar een ander vlak verplaatsen door op de spatiebalk te drukken." },
             { speaker: "Jij", text: "Super handig, dankjewel! Ik ga nu op onderzoek uit." },
 
@@ -133,9 +133,9 @@ export default class Face1Scene extends FaceBase {
         if (current_energie == 10) {
           return [
             { speaker: "Quadratus", text: "Je kunt bewegen met de pijltjes toetsen of de WASD toetsen. Aan de rand van het vlak kun je met behulp van de spatiebalk je naar een ander vlak verplaatsen" },
-            { speaker: "Quadratus", text: "Als je 80 energie hebt verzameld, dan kun je terug naar huis reizen! Heel veel succes!" },
+            { speaker: "Quadratus", text: `Als je ${ENERGY_THRESHOLD_HOME} energie hebt verzameld, dan kun je terug naar huis reizen! Heel veel succes!` },
           ];
-        } else if (current_energie < 80) {
+        } else if (current_energie < ENERGY_THRESHOLD_HOME) {
           return [
             { speaker: "Quadratus", text: "Hoi! Hoe gaat het met je zoektocht naar energie?" },
             { speaker: "Jij", text: `Ik heb nu ${current_energie} energie verzameld.` },

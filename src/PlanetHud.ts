@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { PlayerController } from "./PlanetPlayer";
 import { toggleControlsMode } from "./ControlsMode";
 import { DEBUG } from "./main";
+import { ENERGY_THRESHOLD_HOME } from "./scenes/face_scenes/_FaceConfig";
 
 type V2Like = { x: number; y: number };
 
@@ -195,11 +196,12 @@ export class Hud {
     const fillWidth = Math.min((current / max) * maxFillWidth, maxFillWidth);
     if (fillWidth <= 0) return;
 
-    // Color based on level (same as cockpit)
+    // Color based on level (same as cockpit) — green at threshold to fly home
     let color = 0x00ff00; // green
     const percentage = (current / max) * 100;
-    if (percentage < 30) color = 0xff0000; // red
-    else if (percentage < 60) color = 0xffaa00; // orange
+    const thresholdPct = (ENERGY_THRESHOLD_HOME / (max || 100)) * 100;
+    if (percentage < thresholdPct / 2) color = 0xff0000; // red
+    else if (percentage < thresholdPct) color = 0xffaa00; // orange
 
     this.energyBar.fillStyle(color, 0.8);
     this.energyBar.fillRect(2, 2, fillWidth, barHeight - 4);
