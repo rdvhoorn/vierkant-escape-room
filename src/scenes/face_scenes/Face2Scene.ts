@@ -67,7 +67,7 @@ export default class Face2Scene extends FaceBase {
 
     const handle = this.createDialogInteraction(farmer, {
       hitRadius: 100,
-      hintText: "Praat met de boer: E / spatie",
+      hintText: "Praat met de boerin: E / spatie",
       buildLines: () => {
         if (this.entry_from_puzzle && puzzleSolved) {
           return [
@@ -80,7 +80,7 @@ export default class Face2Scene extends FaceBase {
           ]
         } else if (!this.entry_from_puzzle && puzzleSolved) {
           return [
-            { speaker: "Lunea", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de brandstof!" },
+            { speaker: "Lunea", text: "Dankjewel voor het helpen! Ik hoop dat je goed gebruik kan maken van de energie!" },
           ];
         } else {
           return [
@@ -88,7 +88,6 @@ export default class Face2Scene extends FaceBase {
             { speaker: "Jij", text: "Hoi Lunea! Ik ben hier neergestort en ik probeer nu genoeg energie te verzamelen om terug naar huis te reizen. Kun jij me misschien helpen?" },
             { speaker: "Lunea", text: "Ja, als jij me helpt om mijn dieren weer terug te krijgen, dan krijg jij een deel van mijn energievoorraad." },
             { speaker: "Lunea", text: "Ik heb een speciaal compas om ze terug te halen. Het enige wat jij hoeft te doen is hun schaduw precies na te maken met mijn speciale stenen." },
-            { speaker: "Lunea", text: "Er zijn drie soorten dieren, de schaduw van de kikker is het makkelijkst, die van de krab het moeilijkst en die van de schildpad zit er tussen in." },
           ];
         }
       },
