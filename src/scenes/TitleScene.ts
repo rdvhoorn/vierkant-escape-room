@@ -100,6 +100,9 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    this.isStarting = false;
+    this.popup = undefined;
+
     const { width, height } = this.scale;
 
     // -------------------------
