@@ -427,7 +427,7 @@ export default class DominoScene extends Phaser.Scene {
 
   private startEndingSequence() {
     this.isDialogueActive = true;
-    const { width, height } = this.scale;
+    const { width } = this.scale;
     this.tweens.add({
         targets: this.plok,
         x: width - 150, 

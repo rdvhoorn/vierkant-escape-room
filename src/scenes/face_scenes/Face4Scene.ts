@@ -174,8 +174,6 @@ export default class Face4Scene extends FaceBase {
     const pRight = { x: lerp(rB.x, bWingTip.x), y: lerp(rB.y, bWingTip.y) };
     const pBottom = { x: lerp(rC.x, bTail.x), y: lerp(rC.y, bTail.y) };
     const pLeft = { x: lerp(rD.x, bChest.x), y: lerp(rD.y, bChest.y) };
-    const anchorTR = { x: size, y: 0 };
-    const anchorBL = { x: 0, y: size };
     g.fillStyle(fillColor);
     g.beginPath();
     g.moveTo(pLeft.x + x, pLeft.y + y); 

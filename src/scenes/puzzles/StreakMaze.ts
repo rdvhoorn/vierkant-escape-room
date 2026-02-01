@@ -22,7 +22,6 @@ export default class StreakMaze extends Phaser.Scene {
   private mainSignText!: Phaser.GameObjects.Text;
   private choiceContainer!: Phaser.GameObjects.Container;
   private inputDOM?: Phaser.GameObjects.DOMElement;
-  private failedLastStage: boolean = false;
   private dialogText?: Phaser.GameObjects.Text;
   private dialogHint?: Phaser.GameObjects.Text;
   private dialogLines: string[] = [];
@@ -464,7 +463,6 @@ export default class StreakMaze extends Phaser.Scene {
             if (fullNumber === this.currentRoom.correctInput) {
                 this.enterRoom("EndRoom");
             } else {
-                this.failedLastStage = true;
                 this.enterRoom("WrongRoom");
             }
         }
