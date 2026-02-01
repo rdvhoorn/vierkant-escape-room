@@ -86,6 +86,10 @@ export class DialogManager {
   private boundHandleAdvance: () => void;
   private boundPointerHandler: () => void;
 
+  private buttonsContainer?: Phaser.GameObjects.Container;
+  private buttonsHitAreas: Phaser.GameObjects.Rectangle[] = [];
+  private suppressAdvance: boolean = false;
+
   constructor(scene: Phaser.Scene, config?: DialogConfig) {
     this.scene = scene;
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -180,13 +184,16 @@ export class DialogManager {
 
   private handleAdvance(): void {
     if (!this.active || !this.inputEnabled) return;
+    if (this.suppressAdvance) return; // <-- add
     this.advance();
   }
 
   private handlePointer(): void {
     if (!this.active || !this.inputEnabled) return;
+    if (this.suppressAdvance) return; // <-- add
     this.advance();
   }
+
 
   private createUI(): void {
     const { width, height } = this.scene.scale;
@@ -318,6 +325,11 @@ export class DialogManager {
   }
 
   private cleanupUI(): void {
+    this.buttonsContainer?.destroy(true);
+    this.buttonsHitAreas.forEach((r) => r.destroy());
+    this.buttonsContainer = undefined;
+    this.buttonsHitAreas = [];
+
     this.overlay?.destroy();
     this.box?.destroy();
     this.speakerText?.destroy();
@@ -329,5 +341,153 @@ export class DialogManager {
     this.speakerText = undefined;
     this.dialogText = undefined;
     this.hintText = undefined;
+
+    this.suppressAdvance = false;
   }
+
+
+  confirm(
+    text: string,
+    opts: {
+      yesText?: string;
+      noText?: string;
+      onYes?: () => void;
+      onNo?: () => void;
+    } = {}
+  ): void {
+    const yesText = opts.yesText ?? "Ja";
+    const noText = opts.noText ?? "Nee";
+
+    // Show as a single-line dialog, but suppress normal advance behavior.
+    this.suppressAdvance = true;
+
+    this.show([{ text }], () => {
+      // When dialog closes normally we don't want that path for confirm.
+      // We'll control close ourselves.
+    });
+
+    // Once UI exists, add buttons (after inputDelay so no accidental click-through)
+    this.scene.time.delayedCall(this.config.inputDelay, () => {
+      if (!this.active) return;
+      this.createConfirmButtons({
+        yesText,
+        noText,
+        onYes: opts.onYes,
+        onNo: opts.onNo,
+      });
+    });
+  }
+
+  private createConfirmButtons(args: {
+    yesText: string;
+    noText: string;
+    onYes?: () => void;
+    onNo?: () => void;
+  }) {
+    // Remove hint while confirm is active
+    this.hintText?.setVisible(false);
+
+    const { width, height } = this.scene.scale;
+    const cfg = this.config;
+
+    // Recompute same box placement as createUI() so we can position buttons inside it
+    let boxY: number;
+    switch (cfg.position) {
+      case "top":
+        boxY = cfg.marginY + cfg.boxHeight / 2;
+        break;
+      case "center":
+        boxY = height * 0.35;
+        break;
+      case "bottom":
+      default:
+        boxY = height - cfg.marginY;
+        break;
+    }
+
+    const boxWidth = cfg.position === "bottom" ? width - 100 : cfg.boxWidth;
+    const boxX = width / 2 - boxWidth / 2;
+
+    const btnY = boxY + cfg.boxHeight / 2 - 26; // near bottom inside box
+    const btnW = 110;
+    const btnH = 30;
+    const gap = 14;
+
+    const centerX = boxX + boxWidth / 2;
+    const yesX = centerX - gap / 2 - btnW;
+    const noX = centerX + gap / 2;
+
+    this.buttonsContainer?.destroy(true);
+    this.buttonsHitAreas.forEach((r) => r.destroy());
+    this.buttonsHitAreas = [];
+
+    this.buttonsContainer = this.scene.add.container(0, 0).setDepth(1001).setScrollFactor(0);
+
+    const makeButton = (x: number, label: string, onClick: () => void) => {
+      const g = this.scene.add.graphics();
+
+      // background
+      g.fillStyle(0x0a0a0a, 1);
+      g.fillRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+
+      // border
+      g.lineStyle(2, 0x00ff88, 0.7);
+      g.strokeRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+
+      const t = this.scene.add
+        .text(x + btnW / 2, btnY, label, {
+          fontFamily: "sans-serif",
+          fontSize: "14px",
+          color: "#e7f3ff",
+          fontStyle: "bold",
+        })
+        .setOrigin(0.5);
+
+      const hit = this.scene.add
+        .rectangle(x + btnW / 2, btnY, btnW, btnH, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true });
+
+      hit.on("pointerover", () => {
+        g.clear();
+        g.fillStyle(0x111111, 1);
+        g.fillRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+        g.lineStyle(2, 0x00ffff, 0.9);
+        g.strokeRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+      });
+
+      hit.on("pointerout", () => {
+        g.clear();
+        g.fillStyle(0x0a0a0a, 1);
+        g.fillRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+        g.lineStyle(2, 0x00ff88, 0.7);
+        g.strokeRoundedRect(x, btnY - btnH / 2, btnW, btnH, 6);
+      });
+
+      hit.on("pointerdown", () => onClick());
+
+      this.buttonsContainer!.add([g, t, hit]);
+      this.buttonsHitAreas.push(hit);
+    };
+
+    const cleanupAndClose = () => {
+      this.buttonsContainer?.destroy(true);
+      this.buttonsContainer = undefined;
+      this.buttonsHitAreas.forEach((r) => r.destroy());
+      this.buttonsHitAreas = [];
+      this.suppressAdvance = false;
+      this.close();
+    };
+
+    makeButton(yesX, args.yesText, () => {
+      cleanupAndClose();
+      args.onYes?.();
+    });
+
+    makeButton(noX, args.noText, () => {
+      cleanupAndClose();
+      args.onNo?.();
+    });
+  }
+
+
 }

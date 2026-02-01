@@ -1086,17 +1086,29 @@ export default class CockpitScene extends Phaser.Scene {
 
     if (fuel >= 80) {
       this.animateJoystickDownOnly(() => {
-        this.cameras.main.shake(800, 0.02);
+        this.inputLocked = true;
+        this.dialogManager?.confirm("Weet je zeker dat je naar huis wilt vliegen? Als je naar huis vliegt kun je niet meer terugkomen om verder te puzzelen.", {
+          yesText: "Ja",
+          noText: "Nee",
+          onYes: () => {
+            this.cameras.main.shake(800, 0.02);
 
-        // Go to new scene after the shake starts (pick your scene name)
-        this.time.delayedCall(500, () => {
-          this.cameras.main.fadeOut(600, 0, 0, 0);
-        });
+            this.time.delayedCall(500, () => {
+              this.cameras.main.fadeOut(600, 0, 0, 0);
+            });
+            this.inputLocked = false;
 
-        this.cameras.main.once("camerafadeoutcomplete", () => {
-          this.scene.start("EndCreditsScene");
+            this.cameras.main.once("camerafadeoutcomplete", () => {
+              this.scene.start("EndCreditsScene");
+            });
+          },
+          onNo: () => {
+            // Do nothing: player stays in cockpit and can exit again / do puzzles
+            this.inputLocked = false;
+          },
         });
       });
+      return;
     } else {
       // Not enough fuel/energy
       this.animateJoystickDownOnly(() => {
