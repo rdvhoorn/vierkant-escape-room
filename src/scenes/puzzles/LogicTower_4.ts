@@ -7,6 +7,7 @@ export default class LogicTower_4 extends Phaser.Scene {
   private readonly puzzleScale = 0.2;
   private wrongAnswersCount = 0;
   private hintButton?: Phaser.GameObjects.Text;
+  private isSolved = false;
 
   constructor() {
     super("LogicTower_4");
@@ -21,6 +22,8 @@ export default class LogicTower_4 extends Phaser.Scene {
   }
 
   create() {
+    this.isSolved = !!this.registry.get("logic_tower_4_solved");
+
     const { width, height } = this.scale;
     this.wrongAnswersCount = 0;
     this.hintButton = undefined;
@@ -39,7 +42,18 @@ export default class LogicTower_4 extends Phaser.Scene {
     const whiteboard = this.add.image(contentX, height / 2 - 30, "whiteboard");
     whiteboard.setScale(this.puzzleScale);
 
-    this.createInput(contentX, height - 100);
+    if (this.isSolved) {
+        whiteboard.setInteractive({ useHandCursor: true });
+        whiteboard.on('pointerdown', () => {
+            this.scene.start("LogicTower_5", { returnScene: this.returnSceneKey });
+        });
+
+        this.add.text(contentX, height - 100, "(Puzzel opgelost - Klik op het bord)", {
+            fontFamily: "sans-serif", fontSize: "18px", color: "#00ff00"
+        }).setOrigin(0.5);
+    } else {
+        this.createInput(contentX, height - 100);
+    }
   }
 
   private createTowerBackground(width: number, height: number) {
@@ -183,7 +197,6 @@ export default class LogicTower_4 extends Phaser.Scene {
       const { width, height } = this.scale;
       const btnY = height - 40; 
       
-      // Align hint button with the shifted content X
       const btnX = width * 0.45; 
 
       this.hintButton = this.add.text(btnX, btnY, "[ Hint Tonen ]", {
@@ -232,6 +245,7 @@ export default class LogicTower_4 extends Phaser.Scene {
 
   private completePuzzle() {
     console.log("Tower Level 4 Completed!");
+    this.registry.set("logic_tower_4_solved", true);
     this.scene.start("LogicTower_5", { 
         returnScene: this.returnSceneKey 
     });

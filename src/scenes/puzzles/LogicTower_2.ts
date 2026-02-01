@@ -8,7 +8,7 @@ export default class LogicTower_2 extends Phaser.Scene {
   private isPuzzleOpen = false;
   private wrongAnswersCount = 0; 
   private hintButton?: Phaser.GameObjects.Text;
-
+  private isSolved = false;
   private readonly gridSize = 320; 
   private readonly step = 32;      
   private readonly starsData = [
@@ -35,6 +35,8 @@ export default class LogicTower_2 extends Phaser.Scene {
   }
 
   create() {
+    this.isSolved = !!this.registry.get("logic_tower_2_solved");
+
     const { width, height } = this.scale;
     this.createTowerBackground(width, height);
     this.add.image(width / 2, height / 2, "background_tower")
@@ -69,7 +71,7 @@ export default class LogicTower_2 extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
     triggerZone.on("pointerover", () => {
-        if (!this.isPuzzleOpen) hoverGuide.setVisible(true);
+        if (!this.isPuzzleOpen && !this.isSolved) hoverGuide.setVisible(true);
     });
 
     triggerZone.on("pointerout", () => {
@@ -78,8 +80,12 @@ export default class LogicTower_2 extends Phaser.Scene {
     
     triggerZone.on("pointerdown", () => {
       if (!this.isPuzzleOpen) {
-        hoverGuide.setVisible(false); 
-        this.openGridPuzzle();
+        if (this.isSolved) {
+            this.scene.start("LogicTower_3", { returnScene: this.returnSceneKey });
+        } else {
+            hoverGuide.setVisible(false); 
+            this.openGridPuzzle();
+        }
       }
     });
   }
@@ -96,7 +102,6 @@ export default class LogicTower_2 extends Phaser.Scene {
     }
   }
 
-  //grid puzzle UI
   private openGridPuzzle() {
     this.isPuzzleOpen = true;
     this.wrongAnswersCount = 0; 
@@ -129,7 +134,6 @@ export default class LogicTower_2 extends Phaser.Scene {
     }).setOrigin(0.5);
     this.puzzleContainer.add(instructionText);
 
-    // grid visual
     const gfx = this.add.graphics();
     this.puzzleContainer.add(gfx);
     gfx.lineStyle(1, 0x3c5a99, 0.3); 
@@ -248,6 +252,7 @@ export default class LogicTower_2 extends Phaser.Scene {
   }
 
   private completePuzzle() {
+      this.registry.set("logic_tower_2_solved", true);
       this.closePuzzle();
       this.scene.start("LogicTower_3", { returnScene: this.returnSceneKey });
   }

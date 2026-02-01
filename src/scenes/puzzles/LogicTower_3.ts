@@ -7,6 +7,7 @@ export default class LogicTower_3 extends Phaser.Scene {
   private readonly puzzleScale = 0.25; 
   private wrongAnswersCount = 0;
   private hintButton?: Phaser.GameObjects.Text;
+  private isSolved = false;
 
   constructor() {
     super("LogicTower_3");
@@ -22,6 +23,8 @@ export default class LogicTower_3 extends Phaser.Scene {
   }
 
   create() {
+    this.isSolved = !!this.registry.get("logic_tower_3_solved");
+
     const { width, height } = this.scale;
     this.wrongAnswersCount = 0;
     this.hintButton = undefined;
@@ -46,7 +49,19 @@ export default class LogicTower_3 extends Phaser.Scene {
 
     const puzzleImg = this.add.image(width / 2, height / 2 + 30, "balance_scale_puzzle");
     puzzleImg.setScale(this.puzzleScale); 
-    this.createInput(width / 2, height - 80);
+
+    if (this.isSolved) {
+        puzzleImg.setInteractive({ useHandCursor: true });
+        puzzleImg.on('pointerdown', () => {
+            this.scene.start("LogicTower_4", { returnScene: this.returnSceneKey });
+        });
+        
+        this.add.text(width / 2, height - 80, "(Puzzel opgelost - Klik op de afbeelding)", {
+            fontFamily: "sans-serif", fontSize: "18px", color: "#00ff00"
+        }).setOrigin(0.5);
+    } else {
+        this.createInput(width / 2, height - 80);
+    }
   }
 
   private createTowerBackground(width: number, height: number) {
@@ -90,7 +105,6 @@ export default class LogicTower_3 extends Phaser.Scene {
     }
   }
 
-  //interactie
   private createInput(x: number, y: number) {
     this.inputElement = this.add.dom(x, y).createFromHTML(`
       <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
@@ -199,6 +213,7 @@ export default class LogicTower_3 extends Phaser.Scene {
 
   private completePuzzle() {
     console.log("Tower Level 3 Completed!");
+    this.registry.set("logic_tower_3_solved", true);
     this.scene.start("LogicTower_4", { 
         returnScene: this.returnSceneKey 
     });

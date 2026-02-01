@@ -16,6 +16,7 @@ export default class LogicTower_1 extends Phaser.Scene {
   private dialogIndex = 0;
   private dialogKeyHandler?: (ev: KeyboardEvent) => void;
   private pointerHandler?: () => void;
+  private isSolved = false;
 
   constructor() {
     super("LogicTower_1");
@@ -38,6 +39,7 @@ export default class LogicTower_1 extends Phaser.Scene {
     this.dialogIndex = 0;
     this.answerInput = undefined;
     this.hintButton = undefined;
+    this.isSolved = !!this.registry.get("logic_tower_1_solved");
     const { width, height } = this.scale;
     this.createTowerBackground(width, height);
     
@@ -56,6 +58,12 @@ export default class LogicTower_1 extends Phaser.Scene {
       if (pointer.event) pointer.event.stopPropagation();
 
       if (this.isInteracting) return;
+
+      if (this.isSolved) {
+          console.log("Floor 1 already solved, moving to Floor 2");
+          this.scene.start("LogicTower_2", { returnScene: this.returnSceneKey });
+          return;
+      }
 
       console.log("Telescope clicked!");
       this.startDialog([
@@ -291,6 +299,7 @@ export default class LogicTower_1 extends Phaser.Scene {
 
   private completePuzzle() {
     console.log("Puzzle 2 Complete!");
+    this.registry.set("logic_tower_1_solved", true);
     this.scene.start("LogicTower_2", { 
         returnScene: this.returnSceneKey 
     }); 
