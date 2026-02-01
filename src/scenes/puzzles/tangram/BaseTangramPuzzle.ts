@@ -238,7 +238,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
 
     // Rotate button (45°)
     this.rotateButton = this.add
-      .text(width * 0.15, height - 60, "R: Draai stukje 45°", {
+      .text(width * 0.15, height - 60, "Spatie: Draai stukje 45°", {
         fontSize: "20px",
         backgroundColor: "#222222",
         color: "#ffffff",
@@ -254,7 +254,7 @@ export abstract class BaseTangramScene extends Phaser.Scene {
     });
 
     // Keyboard R to rotate
-    this.input.keyboard!.on("keydown-R", () => {
+    this.input.keyboard!.on("keydown-SPACE", () => {
       if (this.selectedPiece) {
         this.rotateSelectedPiece();
       }
