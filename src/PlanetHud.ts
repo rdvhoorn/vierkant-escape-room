@@ -123,7 +123,7 @@ export class Hud {
         .text(
           this.scene.scale.width - 12,
           this.scene.scale.height - 10,
-          "Lopen: WASD / Pijltjes   |  E:  Interactie",
+          "Lopen: WASD / Pijltjes   |  Spatie: Interactie",
           { fontFamily: "sans-serif", fontSize: "14px", color: "#b6d5ff" }
         )
         .setScrollFactor(0)
