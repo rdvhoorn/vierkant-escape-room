@@ -48,52 +48,63 @@ npx tsc --noEmit
 Moet **0 errors** geven. De CI op Hildo's repo is strenger dan lokaal ontwikkelen —
 unused variables, type-only imports etc. breken de build.
 
-### 2. Maak een worktree van Hildo's full_version
+### 2. Maak (of hergebruik) een worktree
 
+**Eerste keer:**
 ```bash
 git fetch hildo
 git worktree add /tmp/hildo-deploy hildo/full_version
+cd /tmp/hildo-deploy
+git checkout -b misha/preview
 ```
 
-Dit checkt Hildo's `full_version` branch uit in een aparte map,
-zonder je werkdirectory te verstoren.
+**Volgende keren:**
+```bash
+git fetch hildo
+cd /tmp/hildo-deploy
+git reset --hard hildo/full_version
+```
+
+Dit hergebruikt dezelfde branch en worktree. De PR op Hildo's repo
+wordt automatisch bijgewerkt bij elke push.
 
 ### 3. Kopieer onze broncode
 
 ```bash
 rsync -av --delete src/ /tmp/hildo-deploy/apps/escape_a_2025/src/
 rsync -av --delete public/ /tmp/hildo-deploy/apps/escape_a_2025/public/
+cp index.html /tmp/hildo-deploy/apps/escape_a_2025/index.html
 ```
 
 `--delete` verwijdert bestanden die bij ons niet meer bestaan.
-Kopieer ALLEEN `src/` en `public/`. Config bestanden (`package.json`,
-`tsconfig.json`, `vite.config.js`) staan al goed in Hildo's repo.
 
-### 4. Commit en push naar `full_version`
+**Wat kopiëren:**
+- `src/` en `public/` — altijd
+- `index.html` — bevat portrait overlay en andere HTML-wijzigingen
+
+**Wat NIET kopiëren:**
+Config bestanden (`package.json`, `tsconfig.json`, `vite.config.js`) staan
+al goed in Hildo's repo en hebben een andere opzet (monorepo).
+
+### 4. Commit en push
 
 ```bash
 cd /tmp/hildo-deploy
 git add apps/escape_a_2025/
 git commit -m "Update escape_a_2025 with latest changes"
-git push hildo HEAD:full_version
+git push hildo misha/preview --force-with-lease
 ```
 
-Dit updatet Robin's `full_version` branch direct. Zijn bestaande PR #5
-(full_version → main) wordt automatisch bijgewerkt, inclusief de preview URL.
+Bij de eerste push moet je ook een PR aanmaken:
+```bash
+gh pr create --repo HildoBijl/escaperoom \
+  --base full_version \
+  --head misha/preview \
+  --title "Preview: latest updates"
+```
 
-> **Alternatief: eigen branch + aparte PR**
->
-> Als je liever niet direct op `full_version` pusht (bijv. om eerst te testen):
-> ```bash
-> git checkout -b misha/mijn-update
-> git push hildo misha/mijn-update
-> gh pr create --repo HildoBijl/escaperoom \
->   --base full_version \
->   --head misha/mijn-update \
->   --title "Update beschrijving"
-> ```
-> Dit maakt een aparte PR met een eigen preview URL. Nadeel: de wijzigingen
-> zitten dan niet in Robin's PR totdat je merget.
+Daarna hoef je alleen te pushen — de PR wordt automatisch bijgewerkt.
+`--force-with-lease` is nodig omdat we in stap 2 een `reset --hard` doen.
 
 ### 5. Wacht op de preview URL
 
@@ -101,12 +112,13 @@ GitHub Actions bouwt automatisch een preview bij elke PR (naar elke branch).
 Na ~2 minuten verschijnt een comment op de PR met een URL als:
 `https://vierkantescaperoom--pr5-full-version-abc123.web.app`
 
-### 7. Opruimen
+### 6. Opruimen (optioneel)
 
+De worktree mag blijven staan voor hergebruik. Wil je opruimen:
 ```bash
-# Na afloop worktree verwijderen:
 git worktree remove /tmp/hildo-deploy
 ```
+Bij de volgende deploy begin je dan weer bij stap 2 ("Eerste keer").
 
 ## Veelvoorkomende problemen
 
