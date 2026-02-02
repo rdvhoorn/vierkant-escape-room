@@ -82,18 +82,18 @@ export type FaceKey =
 // Mapping from topology letters to actual Face scenes
 // You can rearrange this mapping to change which puzzle is on which face
 const TOPOLOGY_TO_FACE: Record<TopoFace, FaceKey> = {
-  F: "Face1Scene",  // Top cap - starting face
-  A: "Face2Scene",  // Top ring
-  B: "Face3Scene",
-  C: "Face4Scene",
-  D: "Face5Scene",
-  E: "Face6Scene",
-  G: "Face7Scene",  // Bottom ring
-  H: "Face8Scene",
-  I: "Face9Scene",
-  J: "Face10Scene",
-  K: "Face11Scene",
-  L: "Face12Scene", // Bottom cap
+  F: "Face1Scene",   // Top cap  - Crash site (raket)
+  A: "Face2Scene",   // Top ring - Tangram
+  B: "Face3Scene",   //          - StreakMaze
+  C: "Face9Scene",   //          - PhoneBox
+  D: "Face11Scene",  //          - Slot
+  E: "Face8Scene",   //          - KVQ (vierkant, fruit) bordjes
+  G: "Face6Scene",   // Bot ring - KVQ (eieren, oneven)
+  H: "Face12Scene",  //          - Domino
+  I: "Face5Scene",   //          - KVQ (driehoeken, som)
+  J: "Face10Scene",  //          - Sudoku
+  K: "Face4Scene",   //          - LogicTower
+  L: "Face7Scene",   // Bot cap  - KVQ (antwoorden invullen)
 };
 
 // Reverse mapping for lookup
