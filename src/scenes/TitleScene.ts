@@ -34,6 +34,8 @@ const CONTACT_TAB_BODY = `Makers escaperoom 2025-2026:
 - Illustraties: Gegenereerd met AI.
 
 Bugs kunnen worden gemeld via [escaperoom@vierkantvoorwiskunde.nl](mailto:escaperoom@vierkantvoorwiskunde.nl)
+
+[Privacybeleid](https://www.vierkantvoorwiskunde.nl/stichting/privacybeleid/)
 `;
 
 type Tab = { title: string; body: string };
