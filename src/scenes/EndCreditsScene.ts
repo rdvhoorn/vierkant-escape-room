@@ -66,6 +66,11 @@ export default class EndCreditsScene extends Phaser.Scene {
   }
 
   create() {
+    // Clear all Phaser key captures so DOM input fields receive every keystroke.
+    // Previous scenes (PlanetPlayer) capture W/A/S/D globally via addKey(),
+    // which persists and blocks those keys from reaching HTML inputs.
+    this.input.keyboard?.clearCaptures();
+
     const { width, height } = this.scale;
 
     // -------------------------
