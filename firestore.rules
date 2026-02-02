@@ -115,5 +115,74 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
+    // ----------------------------
+    // Telemetry: Bug Reports
+    // ----------------------------
+    match /telemetry-bug-reports/{docId} {
+      allow read, list: if false;
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          "description", "currentScene", "sessionId",
+          "deviceInfo", "registrySnapshot", "createdAt"
+        ]) &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 2000 &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
+    // Telemetry: Error Logs
+    // ----------------------------
+    match /telemetry-errors/{docId} {
+      allow read, list: if false;
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          "message", "stack", "type", "currentScene",
+          "sessionId", "deviceInfo", "url", "createdAt"
+        ]) &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() <= 500 &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
+    // Telemetry: Analytics
+    // ----------------------------
+    match /telemetry-analytics/{docId} {
+      allow read, list: if false;
+
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          "sessionId", "deviceInfo", "events", "createdAt"
+        ]) &&
+        request.resource.data.sessionId is string &&
+        request.resource.data.events is list &&
+        request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
+    // ----------------------------
+    // Telemetry: Budget Counter
+    // ----------------------------
+    match /telemetry-meta/{docId} {
+      allow read: if true;
+
+      allow create, update: if
+        request.resource.data.keys().hasOnly(["date", "count"]) &&
+        request.resource.data.date is string &&
+        request.resource.data.count is int;
+
+      allow delete: if false;
+    }
   }
 }

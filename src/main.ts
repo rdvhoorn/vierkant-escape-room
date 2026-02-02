@@ -45,6 +45,7 @@ import SudokuScene from "./scenes/puzzles/SudokuScene";
 import DominoScene from "./scenes/puzzles/DominoScene";
 import SlotScene from "./scenes/puzzles/SlotScene";
 import { DebugMenu } from "./ui/DebugMenu";
+import { initTelemetry } from "./telemetry/session";
 
 // Debug mode - set to false for release
 export const DEBUG = true;
@@ -122,3 +123,6 @@ const game = new Phaser.Game(config);
 if (DEBUG) {
   new DebugMenu(game);
 }
+
+// Initialize telemetry (bug reports, error logging, analytics)
+initTelemetry(game);
