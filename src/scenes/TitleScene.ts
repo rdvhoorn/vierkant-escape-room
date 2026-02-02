@@ -221,8 +221,8 @@ export default class TitleScene extends Phaser.Scene {
       const saved = localStorage.getItem(SAVE_KEY);
       if (!saved) return false;
       const data = JSON.parse(saved);
-      // Any meaningful progress: intro done, energy gained, or a puzzle solved
-      return !!data.introDone || (data.energy ?? 0) > 0
+      // Show resume if player solved at least the first puzzle
+      return !!data.ship_fuel_solved || (data.energy ?? 0) > 0
         || Object.keys(data).some((k) => k.endsWith("_solved") && data[k]);
     } catch {
       return false;
