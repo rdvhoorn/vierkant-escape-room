@@ -842,28 +842,28 @@ export default abstract class FaceBase extends Phaser.Scene {
 
       this.faceLayers.fx.add(gfx);
 
-      // DEV: Add label showing target scene name
-      const center = this.getPolygonCenter(this.poly);
-      const dx = e.mid.x - center.x;
-      const dy = e.mid.y - center.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      const pushDistance = 25;
-      const labelX = e.mid.x + (dx / dist) * pushDistance;
-      const labelY = e.mid.y + (dy / dist) * pushDistance;
-
-      const labelText = target.replace("Scene", "");
-
-      const label = this.add.text(labelX, labelY, labelText, {
-        fontFamily: "monospace",
-        fontSize: "12px",
-        color: "#00ff00",
-        backgroundColor: "#000000",
-        padding: { x: 4, y: 2 }
-      })
-      .setOrigin(0.5)
-      .setDepth(61);
-      this.faceLayers.ui.add(label);
+      // // DEV: Add label showing target scene name
+      // const center = this.getPolygonCenter(this.poly);
+      // const dx = e.mid.x - center.x;
+      // const dy = e.mid.y - center.y;
+      // const dist = Math.sqrt(dx * dx + dy * dy);
+      //
+      // const pushDistance = 25;
+      // const labelX = e.mid.x + (dx / dist) * pushDistance;
+      // const labelY = e.mid.y + (dy / dist) * pushDistance;
+      //
+      // const labelText = target.replace("Scene", "");
+      //
+      // const label = this.add.text(labelX, labelY, labelText, {
+      //   fontFamily: "monospace",
+      //   fontSize: "12px",
+      //   color: "#00ff00",
+      //   backgroundColor: "#000000",
+      //   padding: { x: 4, y: 2 }
+      // })
+      // .setOrigin(0.5)
+      // .setDepth(61);
+      // this.faceLayers.ui.add(label);
 
       const edge: Edge = { a: e.start, b: e.end };
 
