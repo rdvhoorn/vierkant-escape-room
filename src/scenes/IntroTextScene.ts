@@ -16,6 +16,13 @@ Voordat je begint, even het volgende:
 - Je tussentijdse voortgang wordt niet opgeslagen. Als je de escaperoom verlaat, moet je helemaal opnieuw beginnen.
 - Ga lekker op zoek naar de puzzels en probeer ze op te lossen! Veel plezier!
 
+Als je mee wilt doen voor de prijzen gelden de volgende regels:
+- Je moet ouder dan 8 jaar zijn.
+- Je bent nog niet eerder mee geweest met zomerkamp van Vierkant voor Wiskunde.
+- Je zit in groep 6, 7 of 8 van de basisschool.
+
+Je bent natuurlijk meer dan welkom om de escaperoom te spelen zonder mee te doen voor de prijzen.
+
 Klaar om te starten? Klik op Verder.`;
 
 // Reuse the Tab type idea, but we only need one body here.
