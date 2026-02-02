@@ -18,8 +18,8 @@ export class BugReportButton {
 
   private createButton(): void {
     const btn = document.createElement("button");
-    btn.textContent = "\u{1f41b}"; // bug emoji
-    btn.title = "Bug melden";
+    btn.textContent = "\u{1f4ac}"; // speech bubble emoji
+    btn.title = "Feedback geven";
     btn.style.cssText = `
       position: fixed; bottom: 12px; left: 12px; z-index: 9998;
       width: 40px; height: 40px; border-radius: 50%;
@@ -46,7 +46,7 @@ export class BugReportButton {
     if (this.modal) return;
 
     if (this.reportCount >= MAX_REPORTS) {
-      this.showToast("Je hebt al 5 bugs gemeld deze sessie.");
+      this.showToast("Je hebt al 5 berichten gestuurd deze sessie.");
       return;
     }
 
@@ -66,20 +66,26 @@ export class BugReportButton {
     panel.style.cssText = `
       background: #0f1a30; color: #dce6f5;
       border: 2px solid rgba(60, 90, 153, 0.7);
-      border-radius: 12px; padding: 20px;
-      width: 90%; max-width: 400px;
-      font-family: sans-serif; font-size: 14px;
+      border-radius: 12px; padding: 24px;
+      width: 92%; max-width: 480px;
+      font-family: sans-serif; font-size: 15px;
     `;
 
     const title = document.createElement("h3");
-    title.textContent = "Bug melden";
-    title.style.cssText = "margin: 0 0 12px; font-size: 16px; color: #fff;";
+    title.textContent = "Feedback geven";
+    title.style.cssText = "margin: 0 0 6px; font-size: 18px; color: #fff;";
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent =
+      "Ben je een bug tegengekomen? Is iets onduidelijk of heb je een suggestie? Laat het ons weten!";
+    subtitle.style.cssText =
+      "margin: 0 0 14px; font-size: 14px; color: #c8d8ef; line-height: 1.4;";
 
     const textarea = document.createElement("textarea");
-    textarea.placeholder = "Beschrijf de bug...";
+    textarea.placeholder = "Schrijf hier je feedback...";
     textarea.maxLength = 2000;
     textarea.style.cssText = `
-      width: 100%; height: 100px; box-sizing: border-box;
+      width: 100%; height: 120px; box-sizing: border-box;
       background: #1a2744; color: #dce6f5;
       border: 1px solid rgba(60, 90, 153, 0.5);
       border-radius: 6px; padding: 8px; resize: vertical;
@@ -124,7 +130,7 @@ export class BugReportButton {
         });
         this.reportCount++;
         this.closeModal();
-        this.showToast("Bedankt voor je melding!");
+        this.showToast("Bedankt voor je feedback!");
       } catch (err) {
         console.error("[BUG REPORT FAILED]", err);
         status.textContent = "Versturen mislukt. Probeer opnieuw.";
@@ -137,6 +143,7 @@ export class BugReportButton {
     btnRow.appendChild(cancelBtn);
     btnRow.appendChild(submitBtn);
     panel.appendChild(title);
+    panel.appendChild(subtitle);
     panel.appendChild(textarea);
     panel.appendChild(btnRow);
     panel.appendChild(status);
