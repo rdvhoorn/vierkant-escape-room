@@ -44,6 +44,10 @@ export default class ShipFuelScene extends Phaser.Scene {
   private shortCircuitingColors = new Set<number>();
   private symbolGfx?: Phaser.GameObjects.Graphics;
 
+  private onAdvancePointer?: () => void;
+  private onAdvanceSpace?: () => void;
+  private onEscHandler?: () => void;
+
   constructor() {
     super("ShipFuelScene");
   }
@@ -83,14 +87,29 @@ export default class ShipFuelScene extends Phaser.Scene {
     this.startPuzzle();
 
     // Input for dialog advance (disabled while puzzle is active)
-    this.input.on("pointerdown", () => this.advance());
-    this.input.keyboard?.on("keydown-SPACE", () => this.advance());
+    this.onAdvancePointer = () => this.advance();
+    this.input.on("pointerdown", this.onAdvancePointer);
 
-    //terug met escape (rondlopen)
-    this.input.keyboard?.on("keydown-ESC", () => {
+    this.onAdvanceSpace = () => this.advance();
+    this.input.keyboard?.on("keydown-SPACE", this.onAdvanceSpace);
+
+    this.onEscHandler = () => {
       this.scene.stop(this.scene.key);
       this.scene.start("CockpitScene");
+    };
+    this.input.keyboard?.on("keydown-ESC", this.onEscHandler);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.onAdvancePointer) this.input.off("pointerdown", this.onAdvancePointer);
+      if (this.onAdvanceSpace) this.input.keyboard?.off("keydown-SPACE", this.onAdvanceSpace);
+      if (this.onEscHandler) this.input.keyboard?.off("keydown-ESC", this.onEscHandler);
+
+      // make sure puzzle listeners are gone too (safe even if already removed)
+      this.input.off("pointerdown", this.onPointerDown, this);
+      this.input.off("pointermove", this.onPointerMove, this);
+      this.input.off("pointerup", this.onPointerUp, this);
     });
+
   }
 
   update(_time: number, delta: number) {

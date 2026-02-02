@@ -87,6 +87,11 @@ export default class SudokuScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
         if (!this.isPopupOpen) this.handleGridInput(event);
     });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off("keydown");          // remove the grid handler you attach in create()
+      this.closeCodePopup();                        // destroys DOM + popup container safely
+    });
   }
 
   private createRuleUI() {
@@ -220,11 +225,15 @@ export default class SudokuScene extends Phaser.Scene {
     });
     
     this.codeDOM.on("keydown", (e: any) => {
-        e.stopPropagation(); 
-        if (e.key === "Enter") this.checkCode();
-        if (e.key === "Escape") this.closeCodePopup();
+      e.stopPropagation();
+
+      if (e.key === "Enter" || e.key === "Escape") e.preventDefault();
+
+      if (e.key === "Enter") this.checkCode();
+      if (e.key === "Escape") this.closeCodePopup();
     });
-    
+
+  
     const firstInput = this.codeDOM.getChildByID("digit0") as HTMLInputElement;
     if (firstInput) firstInput.focus();
 
@@ -233,14 +242,21 @@ export default class SudokuScene extends Phaser.Scene {
 
   private closeCodePopup() {
     this.isPopupOpen = false;
+
     if (this.codeDOM) {
-        this.codeDOM.destroy();
-        this.codeDOM = undefined;
+      this.codeDOM.removeListener("click");
+      this.codeDOM.removeListener("input");
+      this.codeDOM.removeListener("keydown");
+      this.codeDOM.destroy();
+      this.codeDOM = undefined;
     }
+
     if (this.popupContainer) {
-        this.popupContainer.destroy();
+      this.popupContainer.destroy();
+      // (optional) this.popupContainer = undefined as any;
     }
   }
+
 
   private checkCode() {
     if (!this.codeDOM) return;

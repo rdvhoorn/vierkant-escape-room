@@ -16,6 +16,9 @@ export default class SlotScene extends Phaser.Scene {
   private isDialogueActive = false;
   private dialogueLines: { speaker: string; text: string }[] = [];
   private currentLineIndex = 0;
+  private onKeyDown?: (event: KeyboardEvent) => void;
+  private onDialogPointerDown?: () => void;
+
 
   constructor() {
     super("SlotScene");
@@ -164,37 +167,49 @@ export default class SlotScene extends Phaser.Scene {
     this.createDialogUI(width, height);
 
     // Keyboard input
-    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
-        if (this.isDialogueActive) {
-            if (event.key === " " || event.key === "Enter") {
-                this.advanceDialogue();
-            }
-            return;
+    this.onKeyDown = (event: KeyboardEvent) => {
+      if (this.isDialogueActive) {
+        if (event.key === " " || event.key === "Enter") {
+          this.advanceDialogue();
         }
+        return;
+      }
 
-        const key = event.key;
-        if (key === "Enter") {
-            this.checkCode();
-        } else if (/^[0-9]$/.test(key)) {
-            this.setDigit(this.selectedIndex, parseInt(key));
-            this.selectSlot((this.selectedIndex + 1) % 3);
-        } else if (key === "ArrowLeft") {
-            this.selectSlot((this.selectedIndex - 1 + 3) % 3);
-        } else if (key === "ArrowRight") {
-            this.selectSlot((this.selectedIndex + 1) % 3);
-        } else if (key === "ArrowUp") {
-            this.changeDigit(this.selectedIndex, 1);
-        } else if (key === "ArrowDown") {
-            this.changeDigit(this.selectedIndex, -1);
-        } else if (key === "Backspace") {
-            this.setDigit(this.selectedIndex, 0);
-            this.selectSlot(Math.max(0, this.selectedIndex - 1));
-        }
+      const key = event.key;
+      if (key === "Enter") {
+        this.checkCode();
+      } else if (/^[0-9]$/.test(key)) {
+        this.setDigit(this.selectedIndex, parseInt(key));
+        this.selectSlot((this.selectedIndex + 1) % 3);
+      } else if (key === "ArrowLeft") {
+        this.selectSlot((this.selectedIndex - 1 + 3) % 3);
+      } else if (key === "ArrowRight") {
+        this.selectSlot((this.selectedIndex + 1) % 3);
+      } else if (key === "ArrowUp") {
+        this.changeDigit(this.selectedIndex, 1);
+      } else if (key === "ArrowDown") {
+        this.changeDigit(this.selectedIndex, -1);
+      } else if (key === "Backspace") {
+        this.setDigit(this.selectedIndex, 0);
+        this.selectSlot(Math.max(0, this.selectedIndex - 1));
+      }
+    };
+
+    this.input.keyboard?.on("keydown", this.onKeyDown);
+
+    this.onDialogPointerDown = () => {
+      if (this.isDialogueActive) this.advanceDialogue();
+    };
+    this.input.on("pointerdown", this.onDialogPointerDown);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.onKeyDown) this.input.keyboard?.off("keydown", this.onKeyDown);
+      if (this.onDialogPointerDown) this.input.off("pointerdown", this.onDialogPointerDown);
+
+      this.onKeyDown = undefined;
+      this.onDialogPointerDown = undefined;
     });
 
-    this.input.on('pointerdown', () => {
-        if (this.isDialogueActive) this.advanceDialogue();
-    });
   }
 
   private createDialogUI(width: number, height: number) {

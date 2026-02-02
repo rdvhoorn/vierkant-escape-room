@@ -26,6 +26,11 @@ export default class LogicTower_5 extends Phaser.Scene {
   private wrongAnswersCount = 0;
   private currentSignalTimer?: Phaser.Time.TimerEvent;
   private introClickHandler?: () => void;
+  private onIntroE?: () => void;
+  private onIntroSpace?: () => void;
+  private onReplayR?: () => void;
+  private onContinueC?: () => void;
+
 
   constructor() {
     super("LogicTower_5");
@@ -56,6 +61,8 @@ export default class LogicTower_5 extends Phaser.Scene {
     this.morseSheet.setScale(this.morsesheetScale);
     this.morseSheet.setAlpha(0); 
     this.startIntroDialog();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanup, this);
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.cleanup, this);
   }
 
   private createTowerBackground(width: number, height: number) {
@@ -126,9 +133,12 @@ export default class LogicTower_5 extends Phaser.Scene {
       alpha: 1,
       duration: 1000,
       onComplete: () => {
-        this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-        this.input.keyboard?.once("keydown-E", () => this.startFlashingSequence());
-        this.input.keyboard?.once("keydown-SPACE", () => this.startFlashingSequence());
+        this.onIntroE = () => this.startFlashingSequence();
+        this.onIntroSpace = () => this.startFlashingSequence();
+
+        this.input.keyboard?.once("keydown-E", this.onIntroE);
+        this.input.keyboard?.once("keydown-SPACE", this.onIntroSpace);
+
         this.introClickHandler = () => this.startFlashingSequence();
         this.input.once("pointerdown", this.introClickHandler);
       }
@@ -238,15 +248,42 @@ export default class LogicTower_5 extends Phaser.Scene {
 
       this.continueText.on('pointerdown', () => this.showMorsePaper());
 
-      this.input.keyboard?.once('keydown-R', () => this.startFlashingSequence());
-      this.input.keyboard?.once('keydown-C', () => this.showMorsePaper());
+      this.onReplayR = () => this.startFlashingSequence();
+      this.onContinueC = () => this.showMorsePaper();
+
+      this.input.keyboard?.once("keydown-R", this.onReplayR);
+      this.input.keyboard?.once("keydown-C", this.onContinueC);
+
   }
 
   private clearReplayUI() {
-      this.replayText?.destroy();
-      this.continueText?.destroy();
-      this.input.keyboard?.off('keydown-R');
-      this.input.keyboard?.off('keydown-C');
+    this.replayText?.destroy();
+    this.replayText = undefined;
+    this.continueText?.destroy();
+    this.continueText = undefined;
+
+    if (this.onReplayR) this.input.keyboard?.off("keydown-R", this.onReplayR);
+    if (this.onContinueC) this.input.keyboard?.off("keydown-C", this.onContinueC);
+    this.onReplayR = undefined;
+    this.onContinueC = undefined;
+  }
+
+  private cleanup() {
+    this.stopSignalTimers();
+    this.clearReplayUI();
+    this.cleanupInputUI();
+
+    // intro pointer handler
+    if (this.introClickHandler) {
+      this.input.off("pointerdown", this.introClickHandler);
+      this.introClickHandler = undefined;
+    }
+
+    // intro key handlers (if they never fired)
+    if (this.onIntroE) this.input.keyboard?.off("keydown-E", this.onIntroE);
+    if (this.onIntroSpace) this.input.keyboard?.off("keydown-SPACE", this.onIntroSpace);
+    this.onIntroE = undefined;
+    this.onIntroSpace = undefined;
   }
 
   private showMorsePaper() {
@@ -356,15 +393,20 @@ export default class LogicTower_5 extends Phaser.Scene {
   }
 
   private cleanupInputUI() {
-      this.inputElement?.destroy();
+    if (this.inputElement) {
+      this.inputElement.removeListener("click");
+      this.inputElement.removeListener("keydown");
+      this.inputElement.destroy();
       this.inputElement = undefined;
-      this.dialogText?.destroy();
-      this.dialogText = undefined;
-      this.backOptionText?.destroy();
-      this.backOptionText = undefined;
-      this.hintButton?.destroy();
-      this.hintButton = undefined;
+    }
+    this.dialogText?.destroy();
+    this.dialogText = undefined;
+    this.backOptionText?.destroy();
+    this.backOptionText = undefined;
+    this.hintButton?.destroy();
+    this.hintButton = undefined;
   }
+
 
   private completeTower() {
     this.inputElement?.setVisible(false);
@@ -395,6 +437,7 @@ export default class LogicTower_5 extends Phaser.Scene {
   private exitScene(solved = false) {
     const spawnX = this.scale.width / 2;
     const spawnY = this.scale.height / 2 + 90;
+    this.cleanup();
 
     this.scene.start(this.returnSceneKey, {
       spawnX,

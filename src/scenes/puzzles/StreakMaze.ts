@@ -31,6 +31,9 @@ export default class StreakMaze extends Phaser.Scene {
   private poffieImage?: Phaser.GameObjects.Image;
   private readonly zippuScale = 0.3; 
   private readonly poffieScale = 0.3; 
+  private onDialogAdvance?: () => void;
+  private keyE?: Phaser.Input.Keyboard.Key;
+
 
   constructor() {
     super("StreakMaze");
@@ -52,6 +55,13 @@ export default class StreakMaze extends Phaser.Scene {
       this.cleanupDialog();
       this.enterRoom("stage1");
     });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.detachDialogAdvanceListeners();
+      this.inputDOM?.destroy();
+      this.inputDOM = undefined;
+    });
+
   }
 
   private drawForestBackground() {
@@ -121,16 +131,19 @@ export default class StreakMaze extends Phaser.Scene {
   }
 
   private cleanupDialog() {
+    this.detachDialogAdvanceListeners();
+
     this.dialogText?.destroy();
     this.dialogHint?.destroy();
-    this.zippuImage?.destroy(); 
-    this.poffieImage?.destroy(); 
-    
+    this.zippuImage?.destroy();
+    this.poffieImage?.destroy();
+
     this.dialogText = undefined;
     this.dialogHint = undefined;
     this.zippuImage = undefined;
     this.poffieImage = undefined;
   }
+
 
   private addNpcDialog(forFirstTime: boolean, onComplete: () => void) {
     const { width, height } = this.scale;
@@ -172,7 +185,12 @@ export default class StreakMaze extends Phaser.Scene {
         fontSize: "18px",
         color: "#ffff00",
       }).setDepth(100).setOrigin(0.5);
-    const advanceHandler = () => {
+    
+    
+    // IMPORTANT: prevent stacking if addNpcDialog is called again
+    this.detachDialogAdvanceListeners();
+
+    this.onDialogAdvance = () => {
       if (!this.dialogActive) return;
 
       this.showNextDialogLine(onComplete, () => {
@@ -181,10 +199,13 @@ export default class StreakMaze extends Phaser.Scene {
       });
     };
 
-    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E).on("down", advanceHandler);
-    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.input.keyboard!.on("keydown-SPACE", advanceHandler);
-    this.input.on("pointerdown", advanceHandler);
+    // Keep references so we can .off() later
+    this.keyE = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+
+    this.keyE?.on("down", this.onDialogAdvance);
+    this.input.keyboard?.on("keydown-SPACE", this.onDialogAdvance);
+    this.input.on("pointerdown", this.onDialogAdvance);
+
     this.showNextDialogLine(onComplete, () => {});
   }
 
@@ -488,4 +509,15 @@ export default class StreakMaze extends Phaser.Scene {
         }
     });
   }
+
+  private detachDialogAdvanceListeners() {
+    if (this.onDialogAdvance) {
+      this.input.off("pointerdown", this.onDialogAdvance);
+      this.input.keyboard?.off("keydown-SPACE", this.onDialogAdvance);
+      this.keyE?.off("down", this.onDialogAdvance);
+    }
+    this.onDialogAdvance = undefined;
+    this.keyE = undefined;
+  }
+
 }

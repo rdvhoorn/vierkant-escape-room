@@ -120,6 +120,9 @@ export default class DominoScene extends Phaser.Scene {
   private dialogueLines: { speaker: string; text: string }[] = [];
   private currentLineIndex = 0;
 
+  private onKeyR?: () => void;
+  private onKeyDownAny?: (event: KeyboardEvent) => void;
+
   constructor() {
     super("DominoScene");
   }
@@ -165,26 +168,33 @@ export default class DominoScene extends Phaser.Scene {
 
     this.createDialogUI(width, height);
 
-    this.input.keyboard?.on("keydown-R", () => {
-        if (this.activeDomino && !this.isDialogueActive) {
-            this.saveState();
-            this.activeDomino.angle += 90;
-            this.checkRules();
-        }
-    });
+    this.onKeyR = () => {
+      if (this.activeDomino && !this.isDialogueActive) {
+        this.saveState();
+        this.activeDomino.angle += 90;
+        this.checkRules();
+      }
+    };
+    this.input.keyboard?.on("keydown-R", this.onKeyR);
 
-    // Handle dialogue input
-    this.input.on('pointerdown', () => {
-        if (this.isDialogueActive) this.advanceDialogue();
-    });
-    
-    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
-        if (this.isDialogueActive && (event.key === " " || event.key === "Enter")) {
-            this.advanceDialogue();
-        }
-    });
+    this.onKeyDownAny = (event: KeyboardEvent) => {
+      if (this.isDialogueActive && (event.key === " " || event.key === "Enter")) {
+        this.advanceDialogue();
+      }
+    };
+    this.input.keyboard?.on("keydown", this.onKeyDownAny);
+
 
     this.checkRules();
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.onKeyR) this.input.keyboard?.off("keydown-R", this.onKeyR);
+      if (this.onKeyDownAny) this.input.keyboard?.off("keydown", this.onKeyDownAny);
+
+      this.onKeyR = undefined;
+      this.onKeyDownAny = undefined;
+    });
+
   }
 
   private createControlButtons(width: number, height: number) {

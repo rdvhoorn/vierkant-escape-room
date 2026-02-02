@@ -39,6 +39,8 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
   private normalFill = 0xffffff; // field fill
   private iconFill = 0xf2f2f2;   // icon box fill
 
+  private keyHandler?: (ev: KeyboardEvent) => void;
+
   constructor() {
     super("kvq_antwoorden_invullen");
   }
@@ -175,13 +177,8 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
     this.updateRowIndicators();
     this.checkSolved(); // in case everything was already correct
 
-
-    // default selection
-    this.setActiveSlot(0);
-    this.updateRowIndicators();
-
     // Keyboard typing (selected field)
-    this.input.keyboard!.on("keydown", (ev: KeyboardEvent) => {
+    this.keyHandler = (ev: KeyboardEvent) => {
       if (this.solved) return;
       if (this.activeSlotIndex === null) return;
 
@@ -219,6 +216,7 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
         this.saveValues();
         return;
       }
+
       if (ev.key === "ArrowDown") {
         this.stepSlotValue(this.activeSlotIndex, -1);
         this.saveValues();
@@ -228,7 +226,16 @@ export default class KVQAntwoordenInvullen extends Phaser.Scene {
       if (ev.key === "Enter") {
         this.checkSolved(true);
       }
+    };
+
+    this.input.keyboard?.on("keydown", this.keyHandler);
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      if (this.keyHandler) this.input.keyboard?.off("keydown", this.keyHandler);
+      this.keyHandler = undefined;
     });
+
+
   }
 
   // -------- UI helpers --------

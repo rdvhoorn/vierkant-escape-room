@@ -15,6 +15,7 @@ export default class LogicTowerScene extends Phaser.Scene {
   private answerInput: Phaser.GameObjects.DOMElement | undefined; 
   private onKeyHandler?: (event: KeyboardEvent) => void;
   private onPointerHandler?: () => void;
+  private onEscHandler?: () => void;
   private wrongAttempts = 0;
   private hintText?: Phaser.GameObjects.Text;
 
@@ -133,36 +134,53 @@ export default class LogicTowerScene extends Phaser.Scene {
   }
 
   private setupInputListeners() {
-    this.input.keyboard?.on("keydown-ESC", () => this.exitPuzzle());
-    this.onKeyHandler = (ev: KeyboardEvent) => {
-      if ((ev.key === "e" || ev.key === "E" || ev.key === " ") && this.isDialogActive) {
-        this.advanceDialog();
-      }
+    // ESC (store ref so we can remove just ours)
+    this.onEscHandler = () => this.exitPuzzle();
+    this.input.keyboard?.on("keydown-ESC", this.onEscHandler);
+
+    // Only letters + space (no generic "keydown")
+    this.onKeyHandler = () => {
+      if (this.isDialogActive) this.advanceDialog();
     };
-    this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    this.input.keyboard?.on("keydown", this.onKeyHandler);
+
+    this.input.keyboard?.on("keydown-E", this.onKeyHandler);
+    this.input.keyboard?.on("keydown-SPACE", this.onKeyHandler);
+
     this.onPointerHandler = () => {
       if (this.isDialogActive) this.advanceDialog();
     };
     this.input.on("pointerdown", this.onPointerHandler);
   }
 
+
   private cleanup() {
+    // keyboard
     if (this.input.keyboard && this.onKeyHandler) {
-      this.input.keyboard.off("keydown", this.onKeyHandler);
+      this.input.keyboard.off("keydown-E", this.onKeyHandler);
+      this.input.keyboard.off("keydown-SPACE", this.onKeyHandler);
     }
+    if (this.input.keyboard && this.onEscHandler) {
+      this.input.keyboard.off("keydown-ESC", this.onEscHandler);
+    }
+
+    // pointer
     if (this.onPointerHandler) {
       this.input.off("pointerdown", this.onPointerHandler);
     }
-    this.input.keyboard?.off("keydown-ESC");
 
+    // DOM input
     if (this.answerInput) {
       this.answerInput.removeListener("click");
       this.answerInput.removeListener("keydown");
       this.answerInput.destroy();
       this.answerInput = undefined;
     }
+
+    this.onKeyHandler = undefined;
+    this.onEscHandler = undefined;
+    this.onPointerHandler = undefined;
   }
+
 
   private exitPuzzle() {
     const spawnX = this.scale.width / 2;

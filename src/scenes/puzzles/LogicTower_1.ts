@@ -154,7 +154,6 @@ export default class LogicTower_1 extends Phaser.Scene {
   }
 
   private cleanup() {
-    this.input.keyboard?.off("keydown-ESC");
     if (this.dialogKeyHandler && this.input.keyboard) {
       this.input.keyboard.off("keydown", this.dialogKeyHandler);
     }

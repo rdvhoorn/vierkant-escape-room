@@ -43,6 +43,9 @@ export default class CockpitScene extends Phaser.Scene {
 
   private inputLocked = false;
 
+  private onKeyW?: () => void;
+  private onKeyS?: () => void;
+  private onKeySpace?: () => void;
 
   constructor() {
     super("CockpitScene");
@@ -114,17 +117,17 @@ export default class CockpitScene extends Phaser.Scene {
     }
 
     // Navigation controls (only when not in intro)
-    this.input.keyboard!.on("keydown-W", () => {
+    this.onKeyW = () => {
       if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.max(0, this.selectedDestination - 1);
       this.updateNavigationPanel();
-    });
+    };
 
-    this.input.keyboard!.on("keydown-S", () => {
+    this.onKeyS = () => {
       if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
       this.selectedDestination = Math.min(this.destinations.length - 1, this.selectedDestination + 1);
       this.updateNavigationPanel();
-    });
+    };
 
     this.input.keyboard!.on("keydown-UP", () => {
       if (this.currentPhase === "intro1" || this.currentPhase === "intro2") return;
@@ -138,9 +141,21 @@ export default class CockpitScene extends Phaser.Scene {
       this.updateNavigationPanel();
     });
 
+    this.input.keyboard!.on("keydown-W", this.onKeyW);
+    this.input.keyboard!.on("keydown-S", this.onKeyS);
     this.registry.events.on("changedata-energy", this.syncEnergyFromRegistry, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      // registry cleanup you already do
       this.registry.events.off("changedata-energy", this.syncEnergyFromRegistry, this);
+
+      // keyboard cleanup (letters + space)
+      if (this.onKeyW) this.input.keyboard?.off("keydown-W", this.onKeyW);
+      if (this.onKeyS) this.input.keyboard?.off("keydown-S", this.onKeyS);
+      if (this.onKeySpace) this.input.keyboard?.off("keydown-SPACE", this.onKeySpace);
+
+      this.onKeyW = undefined;
+      this.onKeyS = undefined;
+      this.onKeySpace = undefined;
     });
   }
 
