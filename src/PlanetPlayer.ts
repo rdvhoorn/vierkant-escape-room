@@ -51,6 +51,9 @@ export class PlayerController {
   private readonly accel = 900;
   private readonly moveSpeedThreshold = 20;
 
+
+  private onShutdown?: () => void;
+
   constructor(
     private readonly scene: Phaser.Scene,
     opts: PlayerControllerOptions
@@ -92,6 +95,28 @@ export class PlayerController {
       S: this.scene.input.keyboard!.addKey("S"),
       D: this.scene.input.keyboard!.addKey("D"),
     };
+
+    // IMPORTANT: release keys when the owning scene stops
+    this.onShutdown = () => {
+      this.inputEnabled = false;
+
+      // Cursor keys
+      this.cursors.left?.destroy();
+      this.cursors.right?.destroy();
+      this.cursors.up?.destroy();
+      this.cursors.down?.destroy();
+
+      // WASD keys
+      this.wasd.W.destroy();
+      this.wasd.A.destroy();
+      this.wasd.S.destroy();
+      this.wasd.D.destroy();
+
+      // (If you also add Space/E/R here, destroy them too)
+    };
+
+    this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onShutdown);
+    this.scene.events.once(Phaser.Scenes.Events.DESTROY, this.onShutdown);
 
     // 5) Animations
     this.ensureAnimations();
