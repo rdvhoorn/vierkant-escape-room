@@ -16,12 +16,12 @@ export default class CockpitScene extends Phaser.Scene {
   };
 
   // Navigation (HEINO bovenaan, DEZONIA onderaan)
-  private destinations: string[] = ["HEINO", "LUNTEREN", "MATHORIA", "CALCULON", "DEZONIA"];
+  private destinations: string[] = ["HEINO", "LUNTEREN", "MATHORIA", "DRUNEN", "DEZONIA"];
   private distances: Record<string, number> = {
     "DEZONIA": 2026,
-    "CALCULON": 850,
+    "DRUNEN": 850000,
     "MATHORIA": 2400,
-    "LUNTEREN": 450000,
+    "LUNTEREN": 790000,
     "HEINO": 785042,
   };
   private selectedDestination: number = 0; // Start with HEINO selected (index 0)
@@ -765,7 +765,7 @@ export default class CockpitScene extends Phaser.Scene {
     // 2:00 position = 60 degrees from top (12:00) = 150 degrees in our system
     // 7:00 position = 210 degrees from top (12:00)
     const baseAngle = this.currentPhase === "intro1" ? 150 :
-                      (this.currentPhase === "damaged" || this.currentPhase === "repaired") ? 210 : 90;
+      (this.currentPhase === "damaged" || this.currentPhase === "repaired") ? 210 : 90;
     const wobbleAmount = this.currentPhase === "intro1" ? 3 : 0;
 
     this.updateNeedle(cx, cy, radius, baseAngle);
